@@ -81,6 +81,7 @@ public class EventEmitter {
         OpenLineageClient.builder()
             .transport(new TransportFactory(config.getTransportConfig()).build())
             .disableFacets(disabledFacets.toArray(new String[0]))
+            .lineageCompatibility(config.getLineageConfig().getCompatibility())
             .build();
     this.applicationJobName = this.overriddenAppName.orElse(applicationJobName);
     this.applicationRunId =

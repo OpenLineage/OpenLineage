@@ -80,19 +80,23 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
 
   @Override
   public FlinkOpenLineageConfig mergeWithNonNull(FlinkOpenLineageConfig other) {
-    return new FlinkOpenLineageConfig(
-        mergePropertyWith(transportConfig, other.transportConfig),
-        mergePropertyWith(facetsConfig, other.facetsConfig),
-        mergePropertyWith(datasetConfig, other.datasetConfig),
-        mergePropertyWith(circuitBreaker, other.circuitBreaker),
-        mergePropertyWith(metricsConfig, other.metricsConfig),
-        mergePropertyWith(runConfig, other.runConfig),
-        mergePropertyWith(jobConfig, other.jobConfig),
-        mergePropertyWith(trackingIntervalInSeconds, other.trackingIntervalInSeconds),
-        mergePropertyWith(
-            detachedStartEventEmitTimeoutInSeconds, other.detachedStartEventEmitTimeoutInSeconds),
-        mergePropertyWith(enableDetachedJobTracking, other.enableDetachedJobTracking),
-        mergePropertyWith(disableCheckpointTracking, other.disableCheckpointTracking));
+    FlinkOpenLineageConfig merged =
+        new FlinkOpenLineageConfig(
+            mergePropertyWith(transportConfig, other.transportConfig),
+            mergePropertyWith(facetsConfig, other.facetsConfig),
+            mergePropertyWith(datasetConfig, other.datasetConfig),
+            mergePropertyWith(circuitBreaker, other.circuitBreaker),
+            mergePropertyWith(metricsConfig, other.metricsConfig),
+            mergePropertyWith(runConfig, other.runConfig),
+            mergePropertyWith(jobConfig, other.jobConfig),
+            mergePropertyWith(trackingIntervalInSeconds, other.trackingIntervalInSeconds),
+            mergePropertyWith(
+                detachedStartEventEmitTimeoutInSeconds,
+                other.detachedStartEventEmitTimeoutInSeconds),
+            mergePropertyWith(enableDetachedJobTracking, other.enableDetachedJobTracking),
+            mergePropertyWith(disableCheckpointTracking, other.disableCheckpointTracking));
+    merged.setLineageConfig(mergePropertyWith(lineageConfig, other.lineageConfig));
+    return merged;
   }
 
   public Integer getTrackingIntervalInSeconds() {
