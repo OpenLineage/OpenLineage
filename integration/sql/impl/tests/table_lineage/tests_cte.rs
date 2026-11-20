@@ -450,3 +450,25 @@ fn cte_nested_under_the_same_folded_name_keeps_its_tables() {
         vec!["src"]
     );
 }
+
+#[test]
+fn first_cte_with_its_own_with_keeps_the_tables_of_its_nested_ctes() {
+    for (sql, dialect) in [
+        (
+            "WITH c AS (WITH d AS (SELECT id FROM src) SELECT id FROM d) SELECT id FROM c",
+            "postgres",
+        ),
+        (
+            "WITH Outr AS (WITH Innr AS (SELECT id FROM src) SELECT id FROM innr) \
+             INSERT INTO tgt SELECT id FROM outr",
+            "snowflake",
+        ),
+        (
+            "WITH C AS (WITH c AS (SELECT id FROM src) SELECT id FROM c) \
+             INSERT INTO tgt SELECT id FROM c",
+            "snowflake",
+        ),
+    ] {
+        assert_eq!(in_tables(sql, dialect), vec!["src"], "{dialect}: {sql}");
+    }
+}

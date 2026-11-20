@@ -683,8 +683,11 @@ impl<'a> Context<'a> {
         removed_circular_deps
     }
 
-    pub fn collect_lower_nested_dependencies(&mut self, cte_name: Ident) {
-        let cte_key = ident_key(&cte_name, self.dialect().as_base());
+    /// Replaces the dependencies of a CTE whose body has its own WITH by the
+    /// tables of the nested CTEs it uses. They are left as resolved
+    /// dependencies, so `adjust_cte_dependencies` keeps them, and the nested
+    /// CTEs, whose scope has ended, are dropped.
+    pub fn collect_lower_nested_dependencies(&mut self) {
         if let Some(frame) = self.frames.last_mut() {
             let deps_in_one_level_below: Vec<CteDependency> = frame
                 .cte_dependencies
@@ -707,16 +710,7 @@ impl<'a> Context<'a> {
             }
 
             frame.cte_dependencies = HashMap::new();
-            frame.cte_dependencies.insert(
-                cte_key,
-                CteDependency {
-                    name: cte_name,
-                    is_used: false,
-                    deps: resolved_dependencies,
-                },
-            );
-
-            frame.dependencies = HashSet::new();
+            frame.dependencies = resolved_dependencies;
             frame.bare_dependencies = HashSet::new();
         }
     }

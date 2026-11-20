@@ -52,7 +52,7 @@ impl Visit for With {
             }
 
             if i == 0 {
-                context.collect_lower_nested_dependencies(cte.alias.name.clone());
+                context.collect_lower_nested_dependencies();
             }
 
             context.adjust_cte_dependencies(cte.alias.name.clone(), recursive);
