@@ -64,6 +64,37 @@ class TestOAuth2ClientCredentialsTokenProvider:
         assert provider.client_auth_method == "client_secret_post"
         assert provider.token_refresh_buffer == 30
 
+    @pytest.mark.parametrize(
+        "camel_case, snake_case, expected",
+        [(0, 30, 0), (None, 0, 0), ("", 0, 0), ("", 30, 30), (None, None, 120)],
+    )
+    def test_refresh_buffer_alias_precedence(self, camel_case, snake_case, expected):
+        provider = OAuth2ClientCredentialsTokenProvider(
+            {**CONFIG, "tokenRefreshBuffer": camel_case, "token_refresh_buffer": snake_case}
+        )
+
+        assert provider.token_refresh_buffer == expected
+
+    @pytest.mark.parametrize("config_key", ["tokenRefreshBuffer", "token_refresh_buffer"])
+    @pytest.mark.parametrize("config_value", [0, "0"])
+    @patch("requests.post")
+    def test_zero_refresh_buffer_caches_until_expiry(self, mock_post, config_key, config_value):
+        mock_post.side_effect = [
+            _token_response(access_token="token-1", expires_in=60),
+            _token_response(access_token="token-2", expires_in=60),
+        ]
+        provider = OAuth2ClientCredentialsTokenProvider({**CONFIG, config_key: config_value})
+
+        with patch.object(provider, "_get_current_time", return_value=1000000):
+            assert provider.get_bearer() == "Bearer token-1"
+        with patch.object(provider, "_get_current_time", return_value=1000059):
+            assert provider.get_bearer() == "Bearer token-1"
+        assert mock_post.call_count == 1
+
+        with patch.object(provider, "_get_current_time", return_value=1000060):
+            assert provider.get_bearer() == "Bearer token-2"
+        assert mock_post.call_count == 2
+
     def test_rejects_unknown_client_auth_method(self):
         """Test that an unsupported clientAuthMethod raises error"""
         with pytest.raises(ValueError, match="clientAuthMethod must be one of"):
@@ -244,8 +275,12 @@ class TestHttpConfigWithOAuth2ClientCredentialsAuth:
         },
         clear=True,
     )
-    def test_load_oauth2_auth_from_environment_variables(self):
-        client = OpenLineageClient()
+    @pytest.mark.parametrize("token_refresh_buffer", [0, 180])
+    def test_load_oauth2_auth_from_environment_variables(self, token_refresh_buffer):
+        with patch.dict(
+            "os.environ", {"OPENLINEAGE__TRANSPORT__AUTH__TOKEN_REFRESH_BUFFER": str(token_refresh_buffer)}
+        ):
+            client = OpenLineageClient()
         auth = client.transport.config.auth
 
         assert isinstance(auth, OAuth2ClientCredentialsTokenProvider)
@@ -254,7 +289,7 @@ class TestHttpConfigWithOAuth2ClientCredentialsAuth:
         assert auth.token_endpoint == TOKEN_ENDPOINT
         assert auth.client_auth_method == "client_secret_post"
         assert auth.scope == "openid"
-        assert auth.token_refresh_buffer == 180
+        assert auth.token_refresh_buffer == token_refresh_buffer
 
     @patch.dict(
         "os.environ",
