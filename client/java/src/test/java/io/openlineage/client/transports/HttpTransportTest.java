@@ -308,6 +308,31 @@ class HttpTransportTest {
   }
 
   @Test
+  void httpTransportAcceptsResponseWithoutBody() throws IOException {
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
+    Transport transport = new HttpTransport(http, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    // HttpClient returns no entity for a response without a body, such as 204 No Content
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    when(response.getCode()).thenReturn(204);
+    when(response.getEntity()).thenReturn(null);
+
+    when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
+        .thenAnswer(
+            invocation -> {
+              HttpClientResponseHandler<?> handler = invocation.getArgument(1);
+              return handler.handleResponse(response);
+            });
+
+    client.emit(runEvent());
+
+    verify(http, times(1)).execute(any(), any(HttpClientResponseHandler.class));
+  }
+
+  @Test
   void httpTransportRaisesOnConnectionFail() throws IOException {
     CloseableHttpClient http = mock(CloseableHttpClient.class);
     HttpConfig config = new HttpConfig();
