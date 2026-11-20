@@ -11,6 +11,7 @@ import static io.openlineage.client.OpenLineage.RunEvent.EventType.RUNNING;
 import static io.openlineage.client.OpenLineage.RunEvent.EventType.START;
 import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
@@ -23,11 +24,16 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.naming.JobNameBuilder;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.SparkContext;
+import org.apache.spark.rdd.RDD;
+import org.apache.spark.rdd.RDDOperationScope;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.JobFailed;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
@@ -36,6 +42,7 @@ import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
 import org.apache.spark.scheduler.SparkListenerStageSubmitted;
+import org.apache.spark.scheduler.StageInfo;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
@@ -54,12 +61,47 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private final EventEmitter eventEmitter;
   private final OpenLineageRunEventBuilder runEventBuilder;
 
+  private static final String CHECKPOINT_METHOD = "checkpoint";
+  private static final String LOCAL_CHECKPOINT_METHOD = "localCheckpoint";
+
+  /** Job property holding the {@link RDDOperationScope} the job was submitted under. */
+  private static final String RDD_SCOPE_PROPERTY = "spark.rdd.scope";
+
+  /** Name of the scope {@code RDD.doCheckpoint()} runs the checkpoint materialization job under. */
+  private static final String CHECKPOINT_RDD_SCOPE = "checkpoint";
+
   private boolean emittedOnSqlExecutionStart = false;
   private boolean emittedOnSqlExecutionEnd = false;
   private boolean emittedOnJobStart = false;
   private boolean emittedOnJobEnd = false;
   private Integer activeJobId;
   private AtomicBoolean finished = new AtomicBoolean(false);
+
+  /**
+   * Set when this execution corresponds to Spark materializing a {@code checkpoint()}/{@code
+   * localCheckpoint()} call rather than a user query. Such executions run under their own {@code
+   * SQLExecution} (wrapping the plan of the dataset being checkpointed), so they must not produce
+   * OpenLineage events of their own - instead, their lineage is captured and stashed in {@link
+   * io.openlineage.spark.api.CheckpointContext} to be reattached once the checkpointed RDD is read
+   * downstream.
+   */
+  private boolean isCheckpointExecution = false;
+
+  /**
+   * Long form of the call site of the {@code checkpoint()}/{@code localCheckpoint()} call, as
+   * reported by {@link SparkListenerSQLExecutionStart#details()} - the same as the long form of the
+   * checkpointed RDD's creation site.
+   */
+  private String checkpointCallSite;
+
+  private boolean isLocalCheckpoint = false;
+
+  /**
+   * Highest id of an RDD computed by a job materializing the checkpoint within this execution - see
+   * {@link #recordCheckpointJob(SparkListenerJobStart)}. Only eager checkpoints run such a job, a
+   * lazy one is materialized by the first job reading it - see {@link #resolveCheckpointRddId()}.
+   */
+  private Optional<Integer> checkpointJobRddId = Optional.empty();
 
   private SparkSQLQueryParser sqlRecorder = new SparkSQLQueryParser();
 
@@ -78,6 +120,19 @@ class SparkSQLExecutionContext implements ExecutionContext {
   public void start(SparkListenerSQLExecutionStart startEvent) {
     if (log.isDebugEnabled()) {
       log.debug("SparkListenerSQLExecutionStart - executionId: {}", startEvent.executionId());
+    }
+
+    Optional<String> checkpointMethod =
+        isCheckpointLineageEnabled()
+            ? checkpointMethod(startEvent.details())
+            : Optional.<String>empty();
+    if (checkpointMethod.isPresent()) {
+      isCheckpointExecution = true;
+      isLocalCheckpoint = LOCAL_CHECKPOINT_METHOD.equals(checkpointMethod.get());
+      checkpointCallSite = startEvent.details();
+      log.debug(
+          "Not emitting OpenLineage events for checkpoint execution: {}", startEvent.description());
+      return;
     }
     if (!olContext.getQueryExecution().isPresent()) {
       log.info(NO_EXECUTION_INFO, olContext);
@@ -120,6 +175,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
   public void end(SparkListenerSQLExecutionEnd endEvent) {
     if (log.isDebugEnabled()) {
       log.debug("SparkListenerSQLExecutionEnd - executionId: {}", endEvent.executionId());
+    }
+    if (isCheckpointExecution) {
+      captureCheckpointLineage(endEvent);
+      return;
     }
     // TODO: can we get failed event here?
     // If not, then we probably need to use this only for LogicalPlans that emit no Job events.
@@ -262,7 +321,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
   public void start(SparkListenerJobStart jobStart) {
     log.debug("SparkListenerJobStart - executionId: {}", executionId);
     olContext.setActiveJobId(jobStart.jobId());
-
+    if (isCheckpointExecution) {
+      recordCheckpointJob(jobStart);
+      return;
+    }
     if (!olContext.getQueryExecution().isPresent()) {
       log.info(NO_EXECUTION_INFO, olContext);
       return;
@@ -305,6 +367,9 @@ class SparkSQLExecutionContext implements ExecutionContext {
     try {
       log.debug("SparkListenerJobEnd - executionId: {}", executionId);
       olContext.setActiveJobId(jobEnd.jobId());
+      if (isCheckpointExecution) {
+        return;
+      }
       if (!finished.compareAndSet(false, true)) {
         log.debug("Event already finished, returning");
         return;
@@ -382,6 +447,195 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerApplicationEnd applicationEnd) {}
+
+  /**
+   * Returns {@code checkpoint} or {@code localCheckpoint} if the execution was started by the
+   * respective {@code Dataset} method, based on its call site.
+   *
+   * <p>The first line of a call site's long form is the outermost Spark frame - the Spark API
+   * method called by the user (see {@code org.apache.spark.util.Utils#getCallSite}). Unlike the
+   * execution's description, it doesn't change when a job description is set (e.g. with {@code
+   * SparkContext#setJobDescription}), and it can't be matched by a description or another library's
+   * {@code checkpoint} method. It's only replaced when a call site is set by hand with {@code
+   * SparkContext#setCallSite}, in which case the checkpoint isn't detected and emits regular events
+   * instead.
+   */
+  static Optional<String> checkpointMethod(String callSite) {
+    if (callSite == null) {
+      return Optional.empty();
+    }
+    int lineEnd = callSite.indexOf('\n');
+    String outermostSparkFrame = lineEnd < 0 ? callSite : callSite.substring(0, lineEnd);
+    int argsStart = outermostSparkFrame.indexOf('(');
+    if (argsStart < 0) {
+      return Optional.empty();
+    }
+    String qualifiedMethod = outermostSparkFrame.substring(0, argsStart);
+    int methodStart = qualifiedMethod.lastIndexOf('.');
+    if (methodStart < 0) {
+      return Optional.empty();
+    }
+    String className = qualifiedMethod.substring(0, methodStart);
+    String method = qualifiedMethod.substring(methodStart + 1);
+    // org.apache.spark.sql.Dataset up to Spark 3.5, org.apache.spark.sql.classic.Dataset in 4.0+
+    boolean isDataset =
+        className.startsWith("org.apache.spark.sql.") && className.endsWith(".Dataset");
+    if (isDataset && (CHECKPOINT_METHOD.equals(method) || LOCAL_CHECKPOINT_METHOD.equals(method))) {
+      return Optional.of(method);
+    }
+    return Optional.empty();
+  }
+
+  /**
+   * Whether capturing lineage across {@code checkpoint()}/{@code localCheckpoint()} boundaries is
+   * enabled. Disabled by default - see {@link
+   * io.openlineage.spark.api.SparkOpenLineageConfig.CheckpointConfig}.
+   */
+  private boolean isCheckpointLineageEnabled() {
+    return olContext.getOpenLineageConfig().getCheckpointConfig().getEnabled();
+  }
+
+  /**
+   * Records the RDD computed by a job materializing the checkpoint - that's the RDD of the job's
+   * result stage, which has the highest stage id, as its parent stages are created before it.
+   *
+   * <p>An eager checkpoint is materialized by {@code RDD.doCheckpoint()}, which runs its job under
+   * the {@code checkpoint} {@link RDDOperationScope}. Other jobs run within the execution - while
+   * the plan being checkpointed is prepared, e.g. broadcasts, subqueries or adaptive query
+   * execution stages - compute other RDDs and are ignored. Should a job have no properties to tell
+   * that apart, it's recorded for non-local checkpoints only, as local checkpoints can still be
+   * resolved by {@link #findLocalCheckpointRddId()}.
+   */
+  private void recordCheckpointJob(SparkListenerJobStart jobStart) {
+    Optional<Boolean> materializesCheckpoint =
+        isCheckpointMaterializationJob(jobStart.properties());
+    if (!materializesCheckpoint.orElse(!isLocalCheckpoint)) {
+      return;
+    }
+    resultStageRddId(jobStart)
+        .ifPresent(
+            rddId ->
+                checkpointJobRddId =
+                    Optional.of(checkpointJobRddId.map(id -> Math.max(id, rddId)).orElse(rddId)));
+  }
+
+  /**
+   * Whether the job was submitted by {@code RDD.doCheckpoint()}, based on its {@link
+   * RDDOperationScope}, or empty if the job has no properties to tell.
+   */
+  static Optional<Boolean> isCheckpointMaterializationJob(Properties jobProperties) {
+    if (jobProperties == null) {
+      return Optional.empty();
+    }
+    String scopeJson = jobProperties.getProperty(RDD_SCOPE_PROPERTY);
+    if (scopeJson == null) {
+      return Optional.of(false);
+    }
+    try {
+      return Optional.of(CHECKPOINT_RDD_SCOPE.equals(RDDOperationScope.fromJson(scopeJson).name()));
+    } catch (Exception e) { // fromJson throws checked Jackson exceptions, undeclared
+      log.debug("Failed to parse RDD scope of a job: {}", scopeJson, e);
+      return Optional.of(false);
+    }
+  }
+
+  private static Optional<Integer> resultStageRddId(SparkListenerJobStart jobStart) {
+    return ScalaConversionUtils.<StageInfo>fromSeq(jobStart.stageInfos()).stream()
+        .max(Comparator.comparingInt(StageInfo::stageId))
+        .filter(stage -> !stage.rddInfos().isEmpty())
+        .map(stage -> stage.rddInfos().head().id());
+  }
+
+  /**
+   * Resolves the id of the RDD checkpointed within this execution, which the captured lineage is
+   * looked up by once the checkpointed RDD is read downstream.
+   *
+   * <ul>
+   *   <li>eager checkpoints (local or non-local) are resolved from the job materializing them,
+   *       which computes exactly the checkpointed RDD.
+   *   <li>lazy local checkpoints - and eager ones with no partitions, which run no job - persist
+   *       the checkpointed RDD as soon as {@code localCheckpoint()} is called, so it's found among
+   *       the persisted RDDs.
+   *   <li>lazy non-local checkpoints run no job computing the checkpointed RDD and there's no other
+   *       way to reach it, so they're not supported.
+   * </ul>
+   */
+  @VisibleForTesting
+  Optional<Integer> resolveCheckpointRddId() {
+    if (checkpointJobRddId.isPresent()) {
+      return checkpointJobRddId;
+    }
+    return isLocalCheckpoint ? findLocalCheckpointRddId() : Optional.empty();
+  }
+
+  /**
+   * Finds the RDD of a local checkpoint among the persisted RDDs: locally checkpointed, created at
+   * the same call site as this execution and not yet claimed by another checkpoint execution. If
+   * there are multiple (e.g. checkpoints created in a loop), the one with the lowest id is picked -
+   * RDDs are numbered in creation order and checkpoint executions are handled in the same order.
+   * That doesn't hold for lazy checkpoints created concurrently at the same call site (e.g. by the
+   * same method run from multiple threads), which may be resolved to each other's RDDs. Eager ones
+   * aren't affected, as they're resolved from their materialization job instead. Only the id is
+   * kept, as persisted RDDs are referenced weakly by Spark and shouldn't be kept alive by us.
+   */
+  private Optional<Integer> findLocalCheckpointRddId() {
+    Optional<Integer> result = Optional.empty();
+    Optional<SparkContext> sparkContext = olContext.getSparkContext();
+    if (!sparkContext.isPresent()) {
+      return result;
+    }
+    scala.collection.Iterator<RDD<?>> persistedRdds =
+        sparkContext.get().getPersistentRDDs().valuesIterator();
+    while (persistedRdds.hasNext()) {
+      RDD<?> rdd = persistedRdds.next();
+      if (rdd.isLocallyCheckpointed()
+          && checkpointCallSite.equals(rdd.creationSite().longForm())
+          && !olContext.getCheckpointContext().isClaimed(rdd.id())
+          && result.map(id -> rdd.id() < id).orElse(true)) {
+        result = Optional.of(rdd.id());
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Captures the input datasets and column lineage of the plan being checkpointed - while it is
+   * still available through {@link OpenLineageContext#getQueryExecution()} - and stashes it in
+   * {@link io.openlineage.spark.api.CheckpointContext} for later use by {@link
+   * io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor} and the column lineage collectors
+   * once the checkpointed RDD is read in a downstream query.
+   */
+  private void captureCheckpointLineage(SparkListenerSQLExecutionEnd endEvent) {
+    Optional<Integer> rddId = resolveCheckpointRddId();
+    if (!rddId.isPresent()) {
+      log.debug(
+          "Not capturing checkpoint lineage for executionId: {} as the checkpointed RDD can't be "
+              + "resolved (e.g. lazy non-local checkpoint)",
+          endEvent.executionId());
+      return;
+    }
+    if (isLocalCheckpoint) {
+      // claimed before capturing, so that a failed capture doesn't leave the RDD to be resolved by
+      // the next checkpoint execution created at the same call site
+      olContext.getCheckpointContext().claim(rddId.get());
+    }
+    if (!olContext.getQueryExecution().isPresent()) {
+      log.debug(
+          "No query execution available to capture checkpoint lineage for executionId: {}",
+          endEvent.executionId());
+      return;
+    }
+    try {
+      runEventBuilder
+          .buildCheckpoint(endEvent, olContext.getQueryExecution().get())
+          .ifPresent(
+              checkpoint ->
+                  olContext.getCheckpointContext().addCheckpoint(rddId.get(), checkpoint));
+    } catch (RuntimeException e) {
+      log.warn(
+          "Failed to capture lineage for checkpoint executionId: {}", endEvent.executionId(), e);
+    }
+  }
 
   private OpenLineage.ParentRunFacet buildApplicationParentFacet() {
     return PlanUtils.parentRunFacet(

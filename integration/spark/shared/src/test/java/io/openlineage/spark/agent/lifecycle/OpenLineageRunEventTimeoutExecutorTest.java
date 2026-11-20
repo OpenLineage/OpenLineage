@@ -20,7 +20,9 @@ import io.openlineage.client.circuitBreaker.TimeoutCircuitBreakerConfig;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.DebugRunFacet;
 import io.openlineage.spark.agent.facets.builder.DebugRunFacetBuilderDelegate;
+import io.openlineage.spark.agent.lifecycle.plan.column.CheckpointColumnLineage;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.OpenLineageRunStatus;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.TimeoutConfig;
 import java.time.Duration;
@@ -394,5 +396,65 @@ class OpenLineageRunEventTimeoutExecutorTest {
         .extracting(RunFacets::getAdditionalProperties)
         .extracting(DEBUG)
         .isNotNull();
+  }
+
+  @Test
+  @SneakyThrows
+  void testCheckpointColumnLineageTimesOutWithinRemainingDatasetsBudget() {
+    when(timeoutConfig.getBuildDatasetsTimePercentage()).thenReturn(80);
+    CheckpointColumnLineage columnLineage = CheckpointColumnLineage.empty();
+
+    // inputs take ~50ms out of the 80ms budget, leaving too little for the column lineage
+    executor.timeoutInputDatasets(
+        () -> {
+          sleep(50);
+          return inputDatasets;
+        });
+    Optional<CheckpointColumnLineage> result =
+        executor.timeoutCheckpointColumnLineage(
+            () -> {
+              sleep(50);
+              return Optional.of(columnLineage);
+            });
+
+    assertThat(result).isEmpty();
+    assertThat(executor.isInputsTimedOut()).isFalse();
+    assertThat(executor.isCheckpointColumnLineageTimedOut()).isTrue();
+  }
+
+  @Test
+  void testCheckpointColumnLineageIsSkippedWhenInputsTimedOut() {
+    when(timeoutConfig.getBuildDatasetsTimePercentage()).thenReturn(80);
+    AtomicBoolean columnLineageBuilt = new AtomicBoolean(false);
+
+    executor.timeoutInputDatasets(inputsCallableWithTimeout);
+    Optional<CheckpointColumnLineage> result =
+        executor.timeoutCheckpointColumnLineage(
+            () -> {
+              columnLineageBuilt.set(true);
+              return Optional.of(CheckpointColumnLineage.empty());
+            });
+
+    assertThat(result).isEmpty();
+    assertThat(columnLineageBuilt).isFalse();
+    assertThat(executor.isCheckpointColumnLineageTimedOut()).isTrue();
+  }
+
+  @Test
+  void testReadingIncompleteCheckpointAddsLogToDebugFacet() {
+    OpenLineageRunStatus runStatus = new OpenLineageRunStatus();
+    runStatus.setReadIncompleteCheckpoint(true);
+    when(openLineageContext.getLineageRunStatus()).thenReturn(runStatus);
+
+    RunFacets runFacets =
+        executor.timeoutRunFacets(
+            () -> openLineageContext.getOpenLineage().newRunFacetsBuilder().build(),
+            openLineageContext.getOpenLineage());
+
+    DebugRunFacet facet = (DebugRunFacet) runFacets.getAdditionalProperties().get(DEBUG);
+    assertThat(facet.getLogs())
+        .containsExactly(
+            "Incomplete lineage: column lineage of a checkpoint read by this run timed out while "
+                + "being captured");
   }
 }
