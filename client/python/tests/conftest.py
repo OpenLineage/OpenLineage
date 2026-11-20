@@ -8,7 +8,15 @@ from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import httpx2
+try:
+    import httpx
+except ImportError:
+    import httpx2 as httpx
+
+try:
+    import httpx2
+except ImportError:
+    import httpx as httpx2
 import pytest
 from openlineage.client import event_v2, set_producer
 from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
