@@ -56,18 +56,24 @@ public class DeltaEventFilter implements EventFilter {
 
     // These broad plan shapes also occur in user queries; restrict them when Spark knows the root.
     boolean commandChildOrLegacy = context.getCommandChildExecution().orElse(true);
-    return isOnJobStartOrEnd(event)
-        || (commandChildOrLegacy
-            && (isFilterRoot() || isLocalRelationOnly() || isSerializeFromObject()))
+    return (commandChildOrLegacy
+            && (isOnJobStartOrEnd(event)
+                || isFilterRoot()
+                || isLocalRelationOnly()
+                || isSerializeFromObject()))
         || isLogicalRDDWithInternalDataColumns()
         || isStagedDeltaTable(event)
         || isDeltaLogProjection();
   }
 
   /**
-   * We get exact copies of OL events for org.apache.spark.scheduler.SparkListenerJobStart and
-   * org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart. The same happens for end
-   * events.
+   * A jobStart/jobEnd derived event largely duplicates the one derived from
+   * org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart (and End). It is not an exact
+   * copy: {@code spark_jobDetails} and any job-local property named by {@code
+   * spark.openlineage.capturedProperties} can only be read from a {@link SparkListenerJobStart}, so
+   * dropping it discards facets the SQL event cannot carry. It is therefore only dropped for
+   * executions Spark reports as nested under a root command - which is where Delta performs its
+   * internal bookkeeping - and kept for top-level user queries.
    */
   private boolean isOnJobStartOrEnd(SparkListenerEvent event) {
     return event instanceof SparkListenerJobStart || event instanceof SparkListenerJobEnd;
