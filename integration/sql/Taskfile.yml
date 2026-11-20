@@ -7,6 +7,12 @@ tasks:
       - cargo test
 
   publish-local:
+    # Pin the JDK, like the other publish-local tasks: the tests and the smoke
+    # test load the native library built for this machine's architecture, which
+    # a JDK of a different architecture (e.g. x86_64 under Rosetta) cannot find.
+    env:
+      JAVA_HOME:
+        sh: '"$(git rev-parse --show-toplevel)/dev/java-home.sh" "${JAVA_VERSION:-17}"'
     desc: Compile the native library, bundle it into openlineage-sql-java, test, and publish to Maven Local (required before building integration/spark)
     dir: iface-java
     cmds:
