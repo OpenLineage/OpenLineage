@@ -14,11 +14,14 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
+import org.apache.spark.sql.catalyst.expressions.Literal;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
+import org.apache.spark.sql.catalyst.plans.logical.Expand;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Union;
 
@@ -33,6 +36,10 @@ import org.apache.spark.sql.catalyst.plans.logical.Union;
  * }</pre>
  */
 public class AggregateVisitor implements OperatorVisitor {
+
+  /** Name of the group id attribute that the RewriteDistinctAggregates rule adds to Expand. */
+  private static final String DISTINCT_GROUP_ID = "gid";
+
   @Override
   public boolean isDefinedAt(LogicalPlan operator) {
     boolean defined = false;
@@ -50,20 +57,22 @@ public class AggregateVisitor implements OperatorVisitor {
   @Override
   public void apply(LogicalPlan operator, ColumnLevelLineageBuilder builder) {
     Aggregate aggregate = (Aggregate) operator;
-    List<Expression> grouppingExpressions =
-        ScalaConversionUtils.<Expression>fromSeq((aggregate).groupingExpressions());
-    String sql =
-        grouppingExpressions.stream().map(Expression::sql).collect(Collectors.joining(", "));
-    String outputExpressionString = String.format("GROUP BY %s", sql);
+    if (!isDistinctAggregatesDeduplication(aggregate)) {
+      List<Expression> grouppingExpressions =
+          ScalaConversionUtils.<Expression>fromSeq((aggregate).groupingExpressions());
+      String sql =
+          grouppingExpressions.stream().map(Expression::sql).collect(Collectors.joining(", "));
+      String outputExpressionString = String.format("GROUP BY %s", sql);
 
-    ExprId exprId = NamedExpression.newExprId();
-    builder.addDatasetDependency(exprId, outputExpressionString);
+      ExprId exprId = NamedExpression.newExprId();
+      builder.addDatasetDependency(exprId, outputExpressionString);
 
-    grouppingExpressions.forEach(
-        e ->
-            ExpressionTraverser.of(
-                    e, exprId, e.sql(), TransformationInfo.indirect(GROUP_BY, e.sql()), builder)
-                .traverse());
+      grouppingExpressions.forEach(
+          e ->
+              ExpressionTraverser.of(
+                      e, exprId, e.sql(), TransformationInfo.indirect(GROUP_BY, e.sql()), builder)
+                  .traverse());
+    }
 
     ScalaConversionUtils.<NamedExpression>fromSeq((aggregate).aggregateExpressions())
         .forEach(
@@ -75,6 +84,50 @@ public class AggregateVisitor implements OperatorVisitor {
                         TransformationInfo.identity(((Expression) e).sql()),
                         builder)
                     .traverse());
+  }
+
+  /**
+   * Spark rewrites an aggregation with several DISTINCT columns into two Aggregate nodes over an
+   * Expand node. The inner one groups by the grouping keys of the query, the DISTINCT columns and
+   * the group id that Expand generates, only to deduplicate the rows of each group. Its grouping is
+   * not a GROUP BY of the query: the keys of the query are grouped by the outer Aggregate. ROLLUP,
+   * CUBE and GROUPING SETS use a single Aggregate over Expand, which groups by spark_grouping_id
+   * instead.
+   */
+  private static boolean isDistinctAggregatesDeduplication(Aggregate aggregate) {
+    if (!(aggregate.child() instanceof Expand)) {
+      return false;
+    }
+    List<Expression> groupingExpressions =
+        ScalaConversionUtils.<Expression>fromSeq(aggregate.groupingExpressions());
+    if (groupingExpressions.isEmpty()) {
+      return false;
+    }
+    Expression last = groupingExpressions.get(groupingExpressions.size() - 1);
+    if (!(last instanceof AttributeReference
+        && DISTINCT_GROUP_ID.equals(((AttributeReference) last).name()))) {
+      return false;
+    }
+
+    // the group id is the attribute that every projection of Expand fills with a literal
+    Expand expand = (Expand) aggregate.child();
+    List<Attribute> output = ScalaConversionUtils.fromSeq(expand.output());
+    int position = -1;
+    for (int i = 0; i < output.size(); i++) {
+      if (output.get(i).exprId().equals(((AttributeReference) last).exprId())) {
+        position = i;
+      }
+    }
+    if (position < 0) {
+      return false;
+    }
+    final int groupIdPosition = position;
+    return ScalaConversionUtils.fromSeq(expand.projections()).stream()
+        .map(ScalaConversionUtils::fromSeq)
+        .allMatch(
+            projection ->
+                groupIdPosition < projection.size()
+                    && projection.get(groupIdPosition) instanceof Literal);
   }
 
   /**
