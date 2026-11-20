@@ -82,4 +82,4 @@ A test can have `success: false` and `severity: "warn"` — meaning the test det
 }
 ```
 
-The facet specification can be found [here](https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json).
+The facet specification can be found [here](https://openlineage.io/spec/facets/1-2-0/DataQualityAssertionsDatasetFacet.json).
