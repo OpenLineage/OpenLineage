@@ -13,8 +13,7 @@ import java.util.List;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.expressions.PythonUDF;
-import org.apache.spark.sql.catalyst.plans.logical.ArrowEvalPython;
-import org.apache.spark.sql.catalyst.plans.logical.BatchEvalPython;
+import org.apache.spark.sql.catalyst.plans.logical.BaseEvalPython;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 /**
@@ -23,40 +22,44 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
  * operators, which expose each UDF result as a new attribute. Without this visitor the new
  * attribute has no recorded inputs, so a column computed by a Python UDF loses its lineage. Example
  * query 'SELECT my_python_udf(a) AS b FROM t'.
+ *
+ * <p>The body of a Python UDF is opaque to Spark, so the UDF is treated as a black box, the same
+ * way as a ScalaUDF: its result depends on every argument, as a transformation. The UDF itself is
+ * never considered masking; an argument keeps the masking of its own expression, such as sha2(a).
+ * This is an approximation in some cases:
+ *
+ * <ul>
+ *   <li>Every field of a struct returned by a UDF depends on all arguments of the UDF, also when
+ *       the UDF computes a field from only some of them.
+ *   <li>An argument that the UDF ignores is still reported as an input.
+ *   <li>A UDF that hashes or redacts its arguments is not reported as masking.
+ * </ul>
+ *
+ * <p>Python UDTFs are evaluated by other operators (BatchEvalPythonUDTF and ArrowEvalPythonUDTF,
+ * since Spark 3.5) and are not handled here.
  */
 public class EvalPythonVisitor implements OperatorVisitor {
   @Override
   public boolean isDefinedAt(LogicalPlan operator) {
-    return operator instanceof BatchEvalPython || operator instanceof ArrowEvalPython;
+    return operator instanceof BaseEvalPython;
   }
 
   @Override
   public void apply(LogicalPlan operator, ColumnLevelLineageBuilder builder) {
-    List<PythonUDF> udfs;
-    List<Attribute> resultAttrs;
-    if (operator instanceof BatchEvalPython) {
-      BatchEvalPython node = (BatchEvalPython) operator;
-      udfs = ScalaConversionUtils.fromSeq(node.udfs());
-      resultAttrs = ScalaConversionUtils.fromSeq(node.resultAttrs());
-    } else {
-      ArrowEvalPython node = (ArrowEvalPython) operator;
-      udfs = ScalaConversionUtils.fromSeq(node.udfs());
-      resultAttrs = ScalaConversionUtils.fromSeq(node.resultAttrs());
-    }
+    BaseEvalPython node = (BaseEvalPython) operator;
+    List<PythonUDF> udfs = ScalaConversionUtils.fromSeq(node.udfs());
+    List<Attribute> resultAttrs = ScalaConversionUtils.fromSeq(node.resultAttrs());
     // The n-th result attribute holds the result of the n-th UDF.
     for (int i = 0; i < Math.min(udfs.size(), resultAttrs.size()); i++) {
       Expression udf = udfs.get(i);
       Attribute result = resultAttrs.get(i);
-      ScalaConversionUtils.<Expression>fromSeq(udf.children())
-          .forEach(
-              argument ->
-                  ExpressionTraverser.of(
-                          argument,
-                          result.exprId(),
-                          ((Expression) result).sql(),
-                          TransformationInfo.transformation(udf.sql()),
-                          builder)
-                      .traverse());
+      ExpressionTraverser.of(
+              udf,
+              result.exprId(),
+              ((Expression) result).sql(),
+              TransformationInfo.transformation(udf.sql()),
+              builder)
+          .traverse();
     }
   }
 }
