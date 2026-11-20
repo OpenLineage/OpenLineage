@@ -9,6 +9,11 @@ package ir
 // Type is the IR type discriminant; all concrete IR types implement this interface.
 type Type interface {
 	isIRType()
+
+	// TFKind returns the Terraform SDK scalar kind name:
+	// "String" for String and DateTime, "Bool" for Bool, "Int64" for Int, "Float64" for Float.
+	// Returns "" for non-scalar types (List, Map, Object, Union, Enum, Any).
+	TFKind() string
 }
 
 // String represents a JSON Schema string type.
@@ -67,3 +72,15 @@ func (Object) isIRType()   {}
 func (Union) isIRType()    {}
 func (Enum) isIRType()     {}
 func (Any) isIRType()      {}
+
+func (String) TFKind() string   { return "String" }
+func (Bool) TFKind() string     { return "Bool" }
+func (Int) TFKind() string      { return "Int64" }
+func (Float) TFKind() string    { return "Float64" }
+func (DateTime) TFKind() string { return "String" }
+func (List) TFKind() string     { return "" }
+func (Map) TFKind() string      { return "" }
+func (Object) TFKind() string   { return "" }
+func (Union) TFKind() string    { return "" }
+func (Enum) TFKind() string     { return "" }
+func (Any) TFKind() string      { return "" }
