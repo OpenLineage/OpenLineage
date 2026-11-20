@@ -19,7 +19,7 @@ from openlineage.client.event_v2 import RunEvent as RunEventV2
 from openlineage.client.run import RunEvent
 from openlineage.client.serde import Serde
 from openlineage.client.transport.http import HttpCompression, TokenProvider, create_token_provider
-from openlineage.client.transport.http_common import DEFAULT_RETRY_CONFIG
+from openlineage.client.transport.http_common import DEFAULT_RETRY_CONFIG, redirect_refusal
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import config_values_to_str, get_only_specified_fields
 
@@ -134,6 +134,14 @@ transport.close(timeout=30)
 
 
 log = logging.getLogger(__name__)
+
+
+async def _raise_on_method_changing_redirect(response: httpx2.Response) -> None:
+    if msg := redirect_refusal(
+        response.status_code, str(response.request.url), response.headers.get("Location")
+    ):
+        await response.aread()
+        raise httpx2.HTTPStatusError(msg, request=response.request, response=response)
 
 
 @attr.define
@@ -279,6 +287,7 @@ class AsyncHttpTransport(Transport):
             verify=self.config.verify,
             follow_redirects=True,
             transport=transport,
+            event_hooks={"response": [_raise_on_method_changing_redirect]},
         ) as client:
             last_processed_time = time.time()
             idle_sleep = 0.01
@@ -429,6 +438,9 @@ class AsyncHttpTransport(Transport):
 
                     await asyncio.sleep(self.config.retry["backoff_factor"] * (2**attempt))
 
+                except httpx2.HTTPStatusError as e:
+                    handle_failure(response=e.response)
+                    break
                 except Exception as e:
                     if attempt == self.config.retry["total"]:
                         handle_failure(response=None, exception=e)
