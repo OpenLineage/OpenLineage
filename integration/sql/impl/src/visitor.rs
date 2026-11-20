@@ -9,8 +9,9 @@ use sqlparser::ast::{
     AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
     Function, FunctionArg, FunctionArgExpr, FunctionArgumentClause, FunctionArguments, Ident, Join,
     JoinConstraint, JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select,
-    SelectItem, SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
-    UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
+    SelectItem, SetExpr, Statement, Subscript, Table, TableAlias, TableFactor, TableFunctionArgs,
+    TableObject, UpdateTableFromKind, Use, Value, ValueWithSpan, WildcardAdditionalOptions,
+    WindowSpec, WindowType, With,
 };
 use sqlparser::dialect::{
     DatabricksDialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
@@ -44,7 +45,10 @@ impl Visit for With {
                     context.default_schema().clone(),
                     context.default_database().clone(),
                 );
-                context.collect_with_table(f, table);
+                context.collect_cte(f, table.clone(), recursive);
+                if let Some(source) = pass_through_source(&cte.query, &cte.alias, context) {
+                    context.add_cte_pass_through(table, source);
+                }
             }
 
             if i == 0 {
@@ -128,7 +132,10 @@ impl Visit for TableFactor {
                         context.default_schema().clone(),
                         context.default_database().clone(),
                     );
-                    context.collect_with_table(frame, table);
+                    context.collect_with_table(frame, table.clone());
+                    if let Some(source) = pass_through_source(subquery, alias, context) {
+                        context.add_pass_through(table, source);
+                    }
                 } else {
                     context.collect(frame);
                 }
@@ -620,6 +627,25 @@ impl Visit for Select {
         let tables_frame = context.pop_frame().unwrap();
         context.collect_aliases(&tables_frame);
 
+        // An unqualified column of a lone pass-through derived table can only be
+        // found through the alias.
+        if let [from] = self.from.as_slice() {
+            if let TableFactor::Derived {
+                alias: Some(alias), ..
+            } = &from.relation
+            {
+                let table = DbTableMeta::new(
+                    vec![alias.name.clone()],
+                    context.dialect(),
+                    context.default_schema().clone(),
+                    context.default_database().clone(),
+                );
+                if from.joins.is_empty() && tables_frame.is_pass_through(&table) {
+                    context.set_table_context(Some(table));
+                }
+            }
+        }
+
         for projection in &self.projection {
             match projection {
                 SelectItem::UnnamedExpr(expr) => {
@@ -755,7 +781,7 @@ impl Visit for Query {
         context.collect(frame);
 
         // Resolve CTEs
-        context.coalesce(with_frame);
+        context.coalesce_ctes(with_frame);
 
         Ok(())
     }
@@ -1014,10 +1040,12 @@ impl Visit for Statement {
             _ => {}
         }
 
-        let frame = context.pop_frame().unwrap();
+        let mut frame = context.pop_frame().unwrap();
         let cte_deps = frame.cte_dependencies.clone();
         let deps = frame.dependencies.clone();
         context.collect_inputs(cte_deps, deps);
+        // Nothing reads a pass-through once its statement is over.
+        frame.clear_pass_through();
         context.collect(frame);
 
         Ok(())
@@ -1049,21 +1077,7 @@ fn resolve_effective_table_name(
     args: &Option<TableFunctionArgs>,
     context: &Context,
 ) -> Option<ObjectName> {
-    if context.dialect().as_base().is::<DatabricksDialect>()
-        || context.dialect().as_base().is::<MsSqlDialect>()
-    {
-        let is_identifier_function = name
-            .0
-            .first()
-            .map(|part| match part {
-                ObjectNamePart::Function(_) => false,
-                ObjectNamePart::Identifier(ident) => ident.value.to_lowercase() == "identifier",
-            })
-            .unwrap_or(false);
-
-        if !is_identifier_function {
-            return Some(name.clone());
-        }
+    if is_identifier_function(name, context) {
         let args = args.as_ref()?; // Return None if there are no args
         if args.args.len() != 1 {
             return None; // Return None if the length is not 1, we do not support it yet
@@ -1108,6 +1122,84 @@ fn convert_copy_location_to_idents(object_name: &ObjectName) -> Vec<Ident> {
     } else {
         convert_to_idents(object_name)
     }
+}
+
+/// The table a query takes all of its columns from unchanged: `SELECT * FROM table`,
+/// with nothing that adds, removes or renames a column. Any other query gives
+/// `None`, and so does a column list on `alias`, the query's own alias.
+fn pass_through_source(
+    query: &Query,
+    alias: &TableAlias,
+    context: &Context,
+) -> Option<DbTableMeta> {
+    if query.with.is_some() || !alias.columns.is_empty() {
+        return None;
+    }
+    let SetExpr::Select(select) = query.body.as_ref() else {
+        return None;
+    };
+    let [SelectItem::Wildcard(WildcardAdditionalOptions {
+        wildcard_token: _,
+        opt_ilike: None,
+        opt_exclude: None,
+        opt_except: None,
+        opt_replace: None,
+        opt_rename: None,
+        opt_alias: None,
+    })] = select.projection.as_slice()
+    else {
+        return None;
+    };
+    if !select.lateral_views.is_empty()
+        || select.value_table_mode.is_some()
+        || select.exclude.is_some()
+    {
+        return None;
+    }
+    let [from] = select.from.as_slice() else {
+        return None;
+    };
+    if !from.joins.is_empty() {
+        return None;
+    }
+    let TableFactor::Table {
+        name,
+        alias: table_alias,
+        args,
+        with_ordinality: false,
+        json_path: None,
+        ..
+    } = &from.relation
+    else {
+        return None;
+    };
+    if table_alias
+        .as_ref()
+        .is_some_and(|alias| !alias.columns.is_empty())
+    {
+        return None;
+    }
+    if args.is_some() && !is_identifier_function(name, context) {
+        return None;
+    }
+    let name = resolve_effective_table_name(name, args, context)?;
+    Some(DbTableMeta::new(
+        convert_to_idents(&name),
+        context.dialect(),
+        context.default_schema().clone(),
+        context.default_database().clone(),
+    ))
+}
+
+/// Whether `name` in `FROM` is the `IDENTIFIER(...)` function of a dialect that
+/// parses it as a table name with arguments.
+fn is_identifier_function(name: &ObjectName, context: &Context) -> bool {
+    let dialect = context.dialect().as_base();
+    (dialect.is::<DatabricksDialect>() || dialect.is::<MsSqlDialect>())
+        && matches!(
+            name.0.as_slice(),
+            [ObjectNamePart::Identifier(ident)] if ident.value.eq_ignore_ascii_case("identifier")
+        )
 }
 
 fn convert_to_idents(object_name: &ObjectName) -> Vec<Ident> {
