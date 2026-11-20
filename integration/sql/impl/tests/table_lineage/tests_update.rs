@@ -195,3 +195,23 @@ fn update_identifier_function_databricks() {
         );
     }
 }
+
+#[test]
+fn update_from_derived_with_inputs_are_collected() {
+    // The derived table's CTE resolves to src, and the table read by the
+    // WHERE subquery is an input as well; only the UPDATE target is an
+    // output.
+    assert_eq!(
+        test_sql(
+            "UPDATE t1 SET v = q.v \
+             FROM (WITH c AS (SELECT * FROM src) SELECT * FROM c) q \
+             WHERE t1.id IN (SELECT id FROM ref)",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["ref", "src"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}

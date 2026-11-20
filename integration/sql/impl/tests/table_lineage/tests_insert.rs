@@ -689,3 +689,782 @@ fn insert_overwrite_partition_dates() {
         }
     )
 }
+
+#[test]
+fn insert_all_multiple_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL INTO t1 VALUES (x) INTO t2 VALUES (y) SELECT x, y FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_exists_predicate_table_is_input_with_cte_source() {
+    // The source query defines and reads a CTE while the WHEN predicate
+    // reads another table: both the CTE's own input and the predicate
+    // table are inputs of the statement. (The CTE rides on the source
+    // query - a WITH leading the whole INSERT ALL is not a shape the
+    // parser accepts.)
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN EXISTS (SELECT 1 FROM ref) THEN INTO t1 VALUES (x) \
+             WITH c AS (SELECT x FROM s) SELECT x FROM c",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["ref", "s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_first_when_scalar_subquery_table_is_input_with_cte_source() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT FIRST WHEN x > (SELECT MAX(m) FROM limits) THEN INTO t1 VALUES (x) \
+             ELSE INTO t2 VALUES (x) WITH c AS (SELECT x FROM s) SELECT x FROM c",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["limits", "s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_plain_comparison_adds_no_input_with_cte_source() {
+    // Control: with a CTE source and a WHEN condition that reads no
+    // table, the CTE's input is the statement's only input.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN x > 0 THEN INTO t1 VALUES (x) \
+             WITH c AS (SELECT x FROM s) SELECT x FROM c",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_first_when_else_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT FIRST WHEN x > 0 THEN INTO t1 VALUES (x) \
+             WHEN x < 0 THEN INTO t2 VALUES (x) ELSE INTO t3 VALUES (x) \
+             SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t2", "t3"])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_target() {
+    // IDENTIFIER('t1') names the target through a function call; the raw
+    // name would register a false output called IDENTIFIER.
+    assert_eq!(
+        test_sql_dialect("INSERT INTO IDENTIFIER('t1') SELECT * FROM s", "snowflake")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_identifier_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL INTO IDENTIFIER('t1') VALUES (x) INTO IDENTIFIER('t2') VALUES (y) \
+             SELECT x, y FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_first_identifier_when_else_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT FIRST WHEN x > 0 THEN INTO IDENTIFIER('t1') VALUES (x) \
+             ELSE INTO IDENTIFIER('t3') VALUES (x) SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t3"])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_qualified_target() {
+    // A qualified IDENTIFIER('db.schema.t1') value is an object name, not
+    // a single table name: database, schema and table must be recorded
+    // separately, exactly as for a literal qualified target.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO IDENTIFIER('db.schema.t1') SELECT * FROM s",
+            "snowflake"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["db.schema.t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_quoted_qualified_target() {
+    // Quoted components inside the IDENTIFIER value stay quoted and exact.
+    let output = test_sql_dialect(
+        "INSERT INTO IDENTIFIER('\"db\".\"Schema\".\"t1\"') SELECT * FROM s",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.table_lineage.out_tables.len(), 1);
+    let target = &output.table_lineage.out_tables[0];
+    assert_eq!(target.database.as_deref(), Some("db"));
+    assert_eq!(target.schema.as_deref(), Some("Schema"));
+    assert_eq!(target.name, "t1");
+}
+
+#[test]
+fn insert_into_identifier_mixed_quoted_qualified_target() {
+    let output = test_sql_dialect(
+        "INSERT INTO IDENTIFIER('db.\"Schema\".t1') SELECT * FROM s",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.table_lineage.out_tables.len(), 1);
+    let target = &output.table_lineage.out_tables[0];
+    assert_eq!(target.database.as_deref(), Some("db"));
+    assert_eq!(target.schema.as_deref(), Some("Schema"));
+    assert_eq!(target.name, "t1");
+}
+
+#[test]
+fn insert_all_identifier_qualified_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL INTO IDENTIFIER('db.schema.t1') VALUES (x) \
+             INTO IDENTIFIER('db2.schema2.t2') VALUES (y) SELECT x, y FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["db.schema.t1", "db2.schema2.t2"])
+        }
+    );
+}
+
+#[test]
+fn select_from_identifier_qualified_table() {
+    // resolve_effective_table_name is shared by every table factor, not
+    // only insert targets: a qualified IDENTIFIER('db.schema.t') in a
+    // plain SELECT resolves to the same database/schema/table
+    // components as a literal qualified name, not to one table
+    // literally named "db.schema.t".
+    assert_eq!(
+        test_sql_dialect("SELECT * FROM IDENTIFIER('db.schema.t')", "snowflake")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["db.schema.t"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn insert_target_named_like_cte() {
+    // The target is outside the CTE's alias scope: sharing its name must
+    // not suppress it as an output.
+    assert_eq!(
+        test_sql_dialect(
+            "WITH t1 AS (SELECT * FROM s) INSERT INTO t1 SELECT * FROM t1",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_target_named_like_cte_in_source() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO t1 WITH t1 AS (SELECT a FROM s) SELECT * FROM t1",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_target_with_unrelated_cte() {
+    assert_eq!(
+        test_sql_dialect(
+            "WITH c AS (SELECT * FROM s) INSERT INTO t1 SELECT * FROM c",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_does_not_abort_other_statements() {
+    // A multi-table insert used to panic, aborting the whole parse call and
+    // losing the lineage of every other statement in it.
+    assert_eq!(
+        test_multiple_sql_dialect(
+            vec![
+                "INSERT INTO a SELECT * FROM b",
+                "INSERT ALL INTO db.schema.t1 (c1) VALUES (x) INTO t2 VALUES (y) \
+                 SELECT x, y FROM s",
+            ],
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["b", "s"]),
+            // SqlMeta sorts outputs by (database, schema, name), so the
+            // unqualified t2 sorts ahead of the qualified db.schema.t1.
+            out_tables: tables(vec!["a", "t2", "db.schema.t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_exists_predicate_table_is_input() {
+    // A WHEN predicate is a general expression: a table it reads through
+    // a subquery is an input of the statement, like the source query's.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN EXISTS (SELECT 1 FROM ref) THEN INTO t1 VALUES (x) \
+             SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["ref", "s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_first_when_scalar_subquery_table_is_input() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT FIRST WHEN x > (SELECT MAX(m) FROM limits) THEN INTO t1 VALUES (x) \
+             ELSE INTO t2 VALUES (x) SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["limits", "s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_plain_comparison_adds_no_input() {
+    // Control: WHEN conditions that read no table add nothing beyond the
+    // source query's inputs.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN x > 0 THEN INTO t1 VALUES (x) \
+             WHEN x < 0 THEN INTO t2 VALUES (x) SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_prefixed_qualified_name_mssql() {
+    // A qualified target whose first part is `identifier` is a plain
+    // table name - a catalog or schema called identifier - not an
+    // IDENTIFIER() call: the call form carries an argument list, a plain
+    // name does not.
+    assert_eq!(
+        test_sql_dialect("INSERT INTO identifier.dbo.t1 SELECT * FROM src", "mssql")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["identifier.dbo.t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_into_table_named_identifier_databricks() {
+    // Same for the bare one-part name on Databricks.
+    assert_eq!(
+        test_sql_dialect("INSERT INTO identifier SELECT * FROM src", "databricks")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["identifier"])
+        }
+    );
+}
+
+#[test]
+fn insert_into_table_named_identifier_with_columns_databricks() {
+    // A genuine column list of plain names belongs to a table called
+    // `identifier`, not to an IDENTIFIER(...) call: the target stands.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO identifier (a, b) SELECT * FROM src",
+            "databricks",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["identifier"])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_function_databricks() {
+    // Databricks also accepts IDENTIFIER('cat.sch.t1') as the target;
+    // sqlparser parses that as the bare name IDENTIFIER with the string
+    // in the column list, and the target is the named table.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO IDENTIFIER('cat.sch.t1') SELECT * FROM src",
+            "databricks",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["cat.sch.t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_cte_does_not_hide_later_when_table() {
+    // A CTE defined inside one WHEN predicate is scoped to that
+    // predicate: the real table q read by the second predicate stays an
+    // input, alongside the first predicate's lookup table lk.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL \
+             WHEN x IN (WITH q AS (SELECT x FROM lk) SELECT x FROM q) THEN INTO o1 \
+             WHEN x IN (SELECT x FROM q) THEN INTO o2 \
+             SELECT x FROM src",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["lk", "q", "src"]),
+            out_tables: tables(vec!["o1", "o2"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_source_cte_shadows_same_named_table() {
+    // Pinned behavior: a WHEN predicate's reference to c resolves to the
+    // source query's CTE of the same name, so s is the only input. How
+    // Snowflake scopes the source WITH against WHEN subqueries is not
+    // modelled; the predicate reference is treated as a CTE reference.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN EXISTS (SELECT 1 FROM c) THEN INTO t1 VALUES (x) \
+             WITH c AS (SELECT x FROM s) SELECT x FROM c",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_target_named_like_source_cte_is_output() {
+    // A multi-table target is outside the source CTE's alias scope:
+    // sharing its name must not suppress it as an output, and the CTE's
+    // own input is still collected.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL INTO c VALUES (x) \
+             WITH c AS (SELECT x FROM s) SELECT x FROM c",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["c"])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_variable_target_has_no_output() {
+    // IDENTIFIER($t) names the target through a session variable: there
+    // is no static table name to report, so no output is emitted. This
+    // matches the SELECT side, where IDENTIFIER($t) yields no input.
+    assert_eq!(
+        test_sql_dialect("INSERT INTO IDENTIFIER($t) SELECT * FROM s", "snowflake")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_bind_variable_target_has_no_output() {
+    // Same for a bind variable, IDENTIFIER(:bind).
+    assert_eq!(
+        test_sql_dialect("INSERT INTO IDENTIFIER(:bind) SELECT * FROM s", "snowflake")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_quoted_parts_target_has_no_output() {
+    // IDENTIFIER("db"."t1") passes identifier parts rather than one
+    // string literal; that form is not resolved, again as on the SELECT
+    // side.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO IDENTIFIER(\"db\".\"t1\") SELECT * FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_empty_string_has_no_output() {
+    // IDENTIFIER('') names nothing: no output is emitted rather than a
+    // dataset with an empty name. IDENTIFIER('""') behaves the same.
+    for sql in [
+        "INSERT INTO IDENTIFIER('') SELECT x FROM s",
+        "INSERT INTO IDENTIFIER('\"\"') SELECT x FROM s",
+    ] {
+        assert_eq!(
+            test_sql_dialect(sql, "snowflake").unwrap().table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["s"]),
+                out_tables: tables(vec![])
+            }
+        );
+    }
+}
+
+#[test]
+fn insert_into_identifier_empty_string_databricks_has_no_output() {
+    // On Databricks the IDENTIFIER('...') argument lands in the insert
+    // column list; an empty string names nothing, so no output is
+    // emitted - the same check the function form applies.
+    assert_eq!(
+        test_sql_dialect("INSERT INTO IDENTIFIER('') SELECT * FROM s", "databricks")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_blank_string_mssql_has_no_output() {
+    // A blank string names nothing either.
+    assert_eq!(
+        test_sql_dialect("INSERT INTO IDENTIFIER('   ') SELECT * FROM s", "mssql")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_quoted_parts_databricks_has_no_output() {
+    // IDENTIFIER("db"."t1") passes identifier parts, not one string
+    // literal; that form is not resolved, so no output is emitted
+    // rather than a phantom one called IDENTIFIER - as on Snowflake.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO IDENTIFIER(\"db\".\"t1\") SELECT * FROM s",
+            "databricks",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn select_from_identifier_four_part_name_keeps_last_three_parts() {
+    // A four-part name keeps its last three components (database, schema,
+    // table) - with IDENTIFIER exactly as without, since a plain
+    // four-part name is treated the same way.
+    for sql in [
+        "SELECT * FROM IDENTIFIER('a.b.c.d')",
+        "SELECT * FROM a.b.c.d",
+    ] {
+        assert_eq!(
+            test_sql_dialect(sql, "snowflake").unwrap().table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["b.c.d"]),
+                out_tables: tables(vec![])
+            }
+        );
+    }
+}
+
+#[test]
+fn select_from_identifier_string_with_comment() {
+    // The IDENTIFIER string is tokenized as SQL, so a comment inside it
+    // is dropped: 't1 -- x' names the table t1.
+    assert_eq!(
+        test_sql_dialect("SELECT * FROM IDENTIFIER('t1 -- x')", "snowflake")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["t1"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn select_from_identifier_mssql_bracketed_parts() {
+    // The string is parsed with the statement's dialect: under MsSql the
+    // bracketed parts are three components, database "my db", schema
+    // "dbo", table "t 1", each carrying its bracket quote style. (Under
+    // the generic dialect the same string is a single name.)
+    let output =
+        test_sql_dialect("SELECT * FROM IDENTIFIER('[my db].[dbo].[t 1]')", "mssql").unwrap();
+    assert_eq!(output.table_lineage.in_tables.len(), 1);
+    let input = &output.table_lineage.in_tables[0];
+    assert_eq!(input.database.as_deref(), Some("my db"));
+    assert_eq!(input.schema.as_deref(), Some("dbo"));
+    assert_eq!(input.name, "t 1");
+    let quote_style = input.quote_style.as_ref().unwrap();
+    assert_eq!(quote_style.database, Some('['));
+    assert_eq!(quote_style.schema, Some('['));
+    assert_eq!(quote_style.name, Some('['));
+}
+
+#[test]
+fn select_from_identifier_name_with_space() {
+    // A value that does not parse as a dotted name falls back to a single
+    // table name, spaces included.
+    assert_eq!(
+        test_sql_dialect("SELECT * FROM IDENTIFIER('t1 t2')", "snowflake")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["t1 t2"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn select_from_identifier_unparseable_string_is_single_name() {
+    // 'db.IDENTIFIER(''t'')' does not parse as identifiers only, so the
+    // whole string becomes one table name.
+    let output = test_sql_dialect(
+        "SELECT * FROM IDENTIFIER('db.IDENTIFIER(''t'')')",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.table_lineage.in_tables.len(), 1);
+    let input = &output.table_lineage.in_tables[0];
+    assert_eq!(input.database, None);
+    assert_eq!(input.schema, None);
+    assert_eq!(input.name, "db.IDENTIFIER('t')");
+}
+
+#[test]
+fn select_from_identifier_databricks_qualified() {
+    assert_eq!(
+        test_sql_dialect("SELECT * FROM IDENTIFIER('cat.sch.t')", "databricks")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["cat.sch.t"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_second_subquery_table_not_hidden_by_first_subquery_cte() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN x IN (WITH q AS (SELECT x FROM lk) SELECT x FROM q) \
+             AND y IN (SELECT y FROM q) THEN INTO o1 SELECT x, y FROM src",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["lk", "q", "src"]),
+            out_tables: tables(vec!["o1"])
+        }
+    );
+}
+
+#[test]
+fn insert_source_with_referencing_statement_cte() {
+    assert_eq!(
+        test_sql(
+            "WITH c AS (SELECT * FROM a) \
+             INSERT INTO t1 WITH d AS (SELECT * FROM c) SELECT * FROM d"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_into_quoted_empty_name_has_no_output() {
+    // A quoted empty identifier names nothing, like IDENTIFIER(''):
+    // no output is registered for it.
+    assert_eq!(
+        test_sql_dialect("INSERT INTO \"\" SELECT * FROM s", "snowflake")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn insert_all_into_quoted_empty_name_has_no_output() {
+    // A quoted empty target in a multi-table clause names nothing,
+    // like the regular INSERT INTO "" case; the other targets stand.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL INTO \"\" VALUES (1) INTO t2 VALUES (2) SELECT * FROM src",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_into_quoted_empty_name_has_no_output() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN 1=1 THEN INTO \"\" VALUES (1) SELECT * FROM src",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec![])
+        }
+    );
+}

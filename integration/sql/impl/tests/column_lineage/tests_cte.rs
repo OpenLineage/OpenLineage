@@ -39,3 +39,54 @@ fn test_simple_cte() {
         ]
     );
 }
+
+#[test]
+fn test_cte_column_lineage_with_case_differing_reference() {
+    // The reference MYCTE names the CTE defined as MyCte (Snowflake
+    // folds unquoted names to upper case): its columns expand through
+    // the CTE body, as they do for a same-spelling reference, instead
+    // of pointing at the phantom CTE name.
+    let output = crate::test_utils::test_sql_dialect(
+        "WITH MyCte AS (SELECT a FROM t1) SELECT a FROM MYCTE",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![ColumnLineage {
+            descendant: ColumnMeta {
+                origin: None,
+                name: "a".to_string()
+            },
+            lineage: vec![ColumnMeta {
+                origin: Some(table("t1")),
+                name: "a".to_string()
+            }]
+        }]
+    );
+}
+
+#[test]
+fn test_cte_column_lineage_rename_with_folded_reference() {
+    // Postgres folds unquoted names to lower case: mycte names the
+    // CTE defined as MyCte, and the renamed column traces back to the
+    // body's column.
+    let output = crate::test_utils::test_sql_dialect(
+        "WITH MyCte AS (SELECT a AS x FROM t1) SELECT x FROM mycte",
+        "postgres",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![ColumnLineage {
+            descendant: ColumnMeta {
+                origin: None,
+                name: "x".to_string()
+            },
+            lineage: vec![ColumnMeta {
+                origin: Some(table("t1")),
+                name: "a".to_string()
+            }]
+        }]
+    );
+}
