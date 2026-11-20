@@ -24,6 +24,7 @@ import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.Expand;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Union;
+import org.apache.spark.sql.types.IntegerType;
 
 /**
  * Extracts expression dependencies from an Aggregate operator in {@link LogicalPlan}. Example
@@ -89,10 +90,10 @@ public class AggregateVisitor implements OperatorVisitor {
   /**
    * Spark rewrites an aggregation with several DISTINCT columns into two Aggregate nodes over an
    * Expand node. The inner one groups by the grouping keys of the query, the DISTINCT columns and
-   * the group id that Expand generates, only to deduplicate the rows of each group. Its grouping is
-   * not a GROUP BY of the query: the keys of the query are grouped by the outer Aggregate. ROLLUP,
-   * CUBE and GROUPING SETS use a single Aggregate over Expand, which groups by spark_grouping_id
-   * instead.
+   * the integer group id that Expand generates, only to deduplicate the rows of each group. Its
+   * grouping is not a GROUP BY of the query: the keys of the query are grouped by the outer
+   * Aggregate. ROLLUP, CUBE and GROUPING SETS use a single Aggregate over Expand, which groups by
+   * spark_grouping_id instead.
    */
   private static boolean isDistinctAggregatesDeduplication(Aggregate aggregate) {
     if (!(aggregate.child() instanceof Expand)) {
@@ -104,8 +105,10 @@ public class AggregateVisitor implements OperatorVisitor {
       return false;
     }
     Expression last = groupingExpressions.get(groupingExpressions.size() - 1);
+    // the key column of an UNPIVOT can be named gid as well, but it is a string
     if (!(last instanceof AttributeReference
-        && DISTINCT_GROUP_ID.equals(((AttributeReference) last).name()))) {
+        && DISTINCT_GROUP_ID.equals(((AttributeReference) last).name())
+        && last.dataType() instanceof IntegerType)) {
       return false;
     }
 

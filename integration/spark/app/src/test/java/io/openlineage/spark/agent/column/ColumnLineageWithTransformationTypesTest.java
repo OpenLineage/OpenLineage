@@ -912,6 +912,44 @@ class ColumnLineageWithTransformationTypesTest {
   }
 
   @Test
+  @EnabledIfSystemProperty(named = "spark.version", matches = "^(3\\.[4-9].*|[4-9].*)$")
+  void queryWithGroupByOverUnpivotKeyNamedGid() {
+    createTable("t1", "a;int", "b;int", "c;int");
+    // gid is also the name of the group id that Spark generates for DISTINCT aggregates
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("a;int", "gid;string", "total;bigint"),
+            "SELECT a, gid, sum(v) AS total\n"
+                + "FROM t1 UNPIVOT INCLUDE NULLS (v FOR gid IN (b, c))\n"
+                + "GROUP BY a, gid");
+    assertCountColumnDependencies(facet, 3);
+    assertColumnDependsOnType(
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
+    assertColumnDependsOnType(
+        facet,
+        "total",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.aggregation("sum(spark_catalog.default.t1.b) AS total"));
+    assertColumnDependsOnType(
+        facet,
+        "total",
+        FILE,
+        T1_EXPECTED_NAME,
+        "c",
+        TransformationInfo.aggregation("sum(spark_catalog.default.t1.c) AS total"));
+    // the key has no input
+    assertCountDatasetDependencies(facet, 1);
+    assertDatasetDependsOnType(
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(GROUP_BY, "GROUP BY spark_catalog.default.t1.a, gid"));
+  }
+
+  @Test
   void queryWithMultipleCountDistinct() {
     createTable("t1", "a;int", "b;int", "c;int");
     OpenLineage.ColumnLineageDatasetFacet facet =
