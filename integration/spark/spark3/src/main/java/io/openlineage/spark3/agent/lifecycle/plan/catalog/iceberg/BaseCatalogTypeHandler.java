@@ -87,7 +87,7 @@ abstract class BaseCatalogTypeHandler {
       if (tableCatalog instanceof SparkCatalog) {
         SparkCatalog sparkCatalog = (SparkCatalog) tableCatalog;
         org.apache.spark.sql.connector.catalog.Table loadedTable =
-            sparkCatalog.loadTable(identifier);
+            IsolatedSparkCatalog.loadTable(sparkCatalog, identifier);
 
         // Handle different table implementations safely
         if (loadedTable instanceof SparkTable) {
@@ -121,7 +121,8 @@ abstract class BaseCatalogTypeHandler {
       } else if (tableCatalog instanceof SparkSessionCatalog) {
         TableIdentifier tableIdentifier = TableIdentifier.parse(identifier.toString());
         SparkSessionCatalog sparkCatalog = (SparkSessionCatalog) tableCatalog;
-        return Optional.ofNullable(sparkCatalog.icebergCatalog().loadTable(tableIdentifier));
+        return Optional.ofNullable(
+            IsolatedSparkCatalog.isolate(sparkCatalog.icebergCatalog()).loadTable(tableIdentifier));
       } else {
         log.warn(
             "Unknown catalog type: {} for identifier: {}. Expected SparkCatalog or SparkSessionCatalog.",
