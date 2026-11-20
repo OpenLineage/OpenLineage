@@ -38,15 +38,14 @@ impl Visit for With {
             context.push_frame();
             cte.query.visit(context)?;
             let frame = context.pop_frame();
-            if let Some(mut f) = frame {
+            if let Some(f) = frame {
                 let table = DbTableMeta::new(
                     vec![cte.alias.name.clone()],
                     context.dialect(),
                     context.default_schema().clone(),
                     context.default_database().clone(),
                 );
-                context.resolve_earlier_pass_through(&mut f);
-                context.collect_with_table(f, table.clone());
+                context.collect_cte(f, table.clone(), recursive);
                 if let Some(source) = pass_through_source(&cte.query, &cte.alias, context) {
                     context.add_cte_pass_through(table, source);
                 }
@@ -604,21 +603,6 @@ impl Visit for Select {
                     context.add_table_alias(table.clone(), vec![alias.clone().name]);
                 }
                 context.set_table_context(Some(table));
-            } else if let TableFactor::Derived {
-                subquery,
-                alias: Some(alias),
-                ..
-            } = &t.relation
-            {
-                // An unqualified column can only be found through the alias here.
-                if t.joins.is_empty() && pass_through_source(subquery, alias, context).is_some() {
-                    context.set_table_context(Some(DbTableMeta::new(
-                        vec![alias.name.clone()],
-                        context.dialect(),
-                        context.default_schema().clone(),
-                        context.default_database().clone(),
-                    )));
-                }
             }
         }
 
@@ -642,6 +626,25 @@ impl Visit for Select {
 
         let tables_frame = context.pop_frame().unwrap();
         context.collect_aliases(&tables_frame);
+
+        // An unqualified column of a lone pass-through derived table can only be
+        // found through the alias.
+        if let [from] = self.from.as_slice() {
+            if let TableFactor::Derived {
+                alias: Some(alias), ..
+            } = &from.relation
+            {
+                let table = DbTableMeta::new(
+                    vec![alias.name.clone()],
+                    context.dialect(),
+                    context.default_schema().clone(),
+                    context.default_database().clone(),
+                );
+                if from.joins.is_empty() && tables_frame.is_pass_through(&table) {
+                    context.set_table_context(Some(table));
+                }
+            }
+        }
 
         for projection in &self.projection {
             match projection {
@@ -778,7 +781,7 @@ impl Visit for Query {
         context.collect(frame);
 
         // Resolve CTEs
-        context.coalesce(with_frame);
+        context.coalesce_ctes(with_frame);
 
         Ok(())
     }
@@ -1037,10 +1040,12 @@ impl Visit for Statement {
             _ => {}
         }
 
-        let frame = context.pop_frame().unwrap();
+        let mut frame = context.pop_frame().unwrap();
         let cte_deps = frame.cte_dependencies.clone();
         let deps = frame.dependencies.clone();
         context.collect_inputs(cte_deps, deps);
+        // Nothing reads a pass-through once its statement is over.
+        frame.clear_pass_through();
         context.collect(frame);
 
         Ok(())
@@ -1072,21 +1077,7 @@ fn resolve_effective_table_name(
     args: &Option<TableFunctionArgs>,
     context: &Context,
 ) -> Option<ObjectName> {
-    if context.dialect().as_base().is::<DatabricksDialect>()
-        || context.dialect().as_base().is::<MsSqlDialect>()
-    {
-        let is_identifier_function = name
-            .0
-            .first()
-            .map(|part| match part {
-                ObjectNamePart::Function(_) => false,
-                ObjectNamePart::Identifier(ident) => ident.value.to_lowercase() == "identifier",
-            })
-            .unwrap_or(false);
-
-        if !is_identifier_function {
-            return Some(name.clone());
-        }
+    if is_identifier_function(name, context) {
         let args = args.as_ref()?; // Return None if there are no args
         if args.args.len() != 1 {
             return None; // Return None if the length is not 1, we do not support it yet
@@ -1188,7 +1179,7 @@ fn pass_through_source(
     {
         return None;
     }
-    if args.is_some() && !is_identifier_function_with_args(name, context) {
+    if args.is_some() && !is_identifier_function(name, context) {
         return None;
     }
     let name = resolve_effective_table_name(name, args, context)?;
@@ -1200,14 +1191,14 @@ fn pass_through_source(
     ))
 }
 
-/// Whether `name(args)` in `FROM` is the `IDENTIFIER(...)` function of a dialect
-/// that parses it as a table name with arguments.
-fn is_identifier_function_with_args(name: &ObjectName, context: &Context) -> bool {
+/// Whether `name` in `FROM` is the `IDENTIFIER(...)` function of a dialect that
+/// parses it as a table name with arguments.
+fn is_identifier_function(name: &ObjectName, context: &Context) -> bool {
     let dialect = context.dialect().as_base();
     (dialect.is::<DatabricksDialect>() || dialect.is::<MsSqlDialect>())
         && matches!(
-            name.0.first(),
-            Some(ObjectNamePart::Identifier(ident)) if ident.value.eq_ignore_ascii_case("identifier")
+            name.0.as_slice(),
+            [ObjectNamePart::Identifier(ident)] if ident.value.eq_ignore_ascii_case("identifier")
         )
 }
 

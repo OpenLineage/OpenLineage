@@ -346,3 +346,101 @@ fn test_cte_select_wildcard_alias_with_dot_is_not_a_qualified_table() {
         test_sql(r#"WITH "s.t" AS (SELECT * FROM raw_customers) SELECT id FROM s.t"#).unwrap();
     assert_eq!(output.column_lineage, vec![column("id", "s.t")]);
 }
+
+fn renamed(name: &str, origin: &str, origin_name: &str) -> ColumnLineage {
+    ColumnLineage {
+        descendant: ColumnMeta {
+            origin: None,
+            name: name.to_string(),
+        },
+        lineage: vec![ColumnMeta {
+            origin: Some(table(origin)),
+            name: origin_name.to_string(),
+        }],
+    }
+}
+
+#[test]
+fn test_cte_named_like_table_read_through_earlier_select_wildcard_cte() {
+    for sql in [
+        "WITH source AS (SELECT * FROM orders),
+              orders AS (SELECT order_id AS id FROM source)
+         SELECT id FROM orders",
+        "WITH source AS (SELECT * FROM orders),
+              orders AS (
+                  SELECT source.order_id AS id, other.y AS order_id
+                  FROM source JOIN other ON source.id = other.id
+              )
+         SELECT id FROM orders",
+    ] {
+        let output = test_sql(sql).unwrap();
+        assert_eq!(
+            output.column_lineage,
+            vec![renamed("id", "orders", "order_id")],
+            "{sql}"
+        );
+    }
+}
+
+#[test]
+fn test_cte_reading_select_wildcard_cte_of_table_named_like_later_cte() {
+    let output = test_sql(
+        "WITH a AS (SELECT * FROM b),
+              d AS (SELECT id FROM a),
+              b AS (SELECT x AS id FROM c)
+         SELECT id FROM d",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![column("id", "b")]);
+}
+
+#[test]
+fn test_cte_reading_table_named_like_later_cte() {
+    let output = test_sql(
+        "WITH a AS (SELECT id FROM b),
+              b AS (SELECT x AS id FROM c)
+         SELECT id FROM a",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![column("id", "b")]);
+}
+
+#[test]
+fn test_cte_select_wildcard_from_cte_quoted_differently() {
+    for sql in [
+        r#"WITH "base" AS (SELECT a AS id FROM t1),
+                source AS (SELECT * FROM base)
+           SELECT id FROM source"#,
+        r#"WITH "base" AS (SELECT a AS id FROM t1),
+                source AS (SELECT * FROM base),
+                final AS (SELECT id FROM source)
+           SELECT id FROM final"#,
+    ] {
+        let output = test_sql(sql).unwrap();
+        assert_eq!(
+            output.column_lineage,
+            vec![renamed("id", "t1", "a")],
+            "{sql}"
+        );
+    }
+}
+
+#[test]
+fn test_recursive_cte_resolves_its_own_columns() {
+    let output = test_sql(
+        "WITH RECURSIVE r AS (SELECT a FROM t UNION ALL SELECT a FROM r)
+         SELECT a FROM r",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![column("a", "t")]);
+}
+
+#[test]
+fn test_cte_select_wildcard_from_function_in_schema_named_identifier_keeps_cte_origin() {
+    let output = test_sql_dialect(
+        "WITH source AS (SELECT * FROM identifier.my_tvf('raw_customers')) SELECT id FROM source",
+        "databricks",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![column("id", "source")]);
+}

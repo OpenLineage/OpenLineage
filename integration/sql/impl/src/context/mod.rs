@@ -24,12 +24,8 @@ fn table_key(table: &DbTableMeta) -> TableKey {
     )
 }
 
-#[derive(Debug, Clone)]
-struct PassThrough {
-    source: DbTableMeta,
-    // Whether `source` is a CTE declared before, whose recorded columns are to be
-    // followed. Otherwise `source` is a table, even if a later CTE has its name.
-    source_is_cte: bool,
+fn same_table(a: &DbTableMeta, b: &DbTableMeta) -> bool {
+    a.database == b.database && a.schema == b.schema && a.name == b.name
 }
 
 #[derive(Debug)]
@@ -52,7 +48,7 @@ pub struct ContextFrame {
     // CTEs and derived tables that are a bare `SELECT *` over one table, mapped to
     // that table. Their columns are the table's columns, but the wildcard records
     // no column ancestry to follow.
-    pass_through: HashMap<TableKey, PassThrough>,
+    pass_through: HashMap<TableKey, DbTableMeta>,
     pub is_main_body: bool,
 }
 
@@ -75,6 +71,14 @@ impl ContextFrame {
             pass_through: HashMap::new(),
             is_main_body: true,
         }
+    }
+
+    pub fn is_pass_through(&self, table: &DbTableMeta) -> bool {
+        self.pass_through.contains_key(&table_key(table))
+    }
+
+    pub fn clear_pass_through(&mut self) {
+        self.pass_through.clear();
     }
 }
 
@@ -287,70 +291,46 @@ impl<'a> Context<'a> {
     /// Records that every column of `alias` is the column of the same name in the
     /// table `source`.
     pub fn add_pass_through(&mut self, alias: DbTableMeta, source: DbTableMeta) {
-        self.insert_pass_through(
-            alias,
-            PassThrough {
-                source,
-                source_is_cte: false,
-            },
-        );
-    }
-
-    /// Like [`Context::add_pass_through`], for a CTE: `source` may name a CTE
-    /// declared earlier in the same `WITH`.
-    pub fn add_cte_pass_through(&mut self, alias: DbTableMeta, source: DbTableMeta) {
-        let Some(frame) = self.frames.last() else {
-            return;
-        };
-        let key = table_key(&source);
-        let pass_through = match frame.pass_through.get(&key) {
-            Some(earlier) => earlier.clone(),
-            None => PassThrough {
-                source_is_cte: frame
-                    .column_ancestry
-                    .keys()
-                    .any(|column| column.origin.as_ref().map(table_key).as_ref() == Some(&key)),
-                source,
-            },
-        };
-        self.insert_pass_through(alias, pass_through);
-    }
-
-    fn insert_pass_through(&mut self, alias: DbTableMeta, pass_through: PassThrough) {
-        let alias = table_key(&alias);
-        if alias == table_key(&pass_through.source) {
+        if same_table(&alias, &source) {
             return;
         }
         if let Some(frame) = self.frames.last_mut() {
-            frame.pass_through.insert(alias, pass_through);
+            frame.pass_through.insert(table_key(&alias), source);
         }
     }
 
-    /// Rewrites the ancestors in `old`, the frame of a CTE, that refer to a
-    /// pass-through CTE declared before it. A CTE sees only the CTEs before it,
-    /// so this cannot wait until every CTE of the `WITH` is known.
-    pub fn resolve_earlier_pass_through(&self, old: &mut ContextFrame) {
-        let Some(frame) = self.frames.last() else {
+    /// Like [`Context::add_pass_through`], for a CTE: `source` may name a CTE
+    /// declared earlier in the same `WITH`. The columns already resolved for
+    /// that CTE are copied under `alias`, so nothing declared later is consulted
+    /// when `alias` is read.
+    pub fn add_cte_pass_through(&mut self, alias: DbTableMeta, source: DbTableMeta) {
+        let Some(frame) = self.frames.last_mut() else {
             return;
         };
-        if frame.pass_through.is_empty() {
-            return;
-        }
-        for ancestors in old.column_ancestry.values_mut() {
-            *ancestors = ancestors
-                .drain()
-                .map(|mut ancestor| {
-                    let pass_through = ancestor
-                        .origin
-                        .as_ref()
-                        .and_then(|origin| frame.pass_through.get(&table_key(origin)));
-                    if let Some(pass_through) = pass_through {
-                        ancestor.origin = Some(pass_through.source.clone());
-                    }
-                    ancestor
-                })
-                .collect();
-        }
+        let copied: Vec<(ColumnMeta, ColumnAncestors)> = frame
+            .column_ancestry
+            .iter()
+            .filter(|(column, _)| {
+                column
+                    .origin
+                    .as_ref()
+                    .is_some_and(|origin| same_table(origin, &source))
+            })
+            .map(|(column, ancestors)| {
+                (
+                    ColumnMeta::new(column.name.clone(), Some(alias.clone())),
+                    ancestors.clone(),
+                )
+            })
+            .collect();
+        frame.column_ancestry.extend(copied);
+
+        let source = frame
+            .pass_through
+            .get(&table_key(&source))
+            .cloned()
+            .unwrap_or(source);
+        self.add_pass_through(alias, source);
     }
 
     pub fn add_table_dependency(&mut self, table: Vec<Ident>) {
@@ -447,6 +427,21 @@ impl<'a> Context<'a> {
     // to compute synthesized attributes.
 
     pub fn coalesce(&mut self, old: ContextFrame) {
+        self.coalesce_with(old, Context::expand_ancestors);
+    }
+
+    /// Like [`Context::coalesce`], for the frame holding the CTEs of a `WITH`.
+    /// Each CTE was resolved when it was declared, so one lookup is enough and
+    /// what it gives is not looked up again.
+    pub fn coalesce_ctes(&mut self, old: ContextFrame) {
+        self.coalesce_with(old, Context::resolve_through_ctes);
+    }
+
+    fn coalesce_with(
+        &mut self,
+        old: ContextFrame,
+        expand: fn(&ColumnMeta, &ContextFrame) -> Vec<ColumnMeta>,
+    ) {
         if self.frames.last().is_none() {
             return;
         }
@@ -458,11 +453,7 @@ impl<'a> Context<'a> {
             let mut expanded = ColumnAncestors::new();
             for ancestor in ancestors {
                 // here we need also look on other if they are connected
-                let traversed = Context::expand_ancestors(ancestor.clone(), &old);
-
-                if !traversed.is_empty() {
-                    expanded.extend(traversed.iter().cloned());
-                }
+                expanded.extend(expand(ancestor, &old));
             }
             result.insert(col.clone(), expanded);
         }
@@ -473,14 +464,38 @@ impl<'a> Context<'a> {
         frame.is_main_body = old.is_main_body;
     }
 
-    fn expand_ancestors(ancestor: ColumnMeta, old: &ContextFrame) -> Vec<ColumnMeta> {
+    fn find_ancestors<'b>(
+        column: &ColumnMeta,
+        old: &'b ContextFrame,
+    ) -> Option<&'b ColumnAncestors> {
+        old.column_ancestry
+            .get(column)
+            // try to find by name in case of column without origin
+            // this can happen when selecting from subquery without alias
+            .or_else(|| {
+                old.column_ancestry.iter().find_map(|(col, anc)| {
+                    if col.name == column.name && column.origin.is_none() {
+                        Some(anc)
+                    } else {
+                        None
+                    }
+                })
+            })
+    }
+
+    fn through_pass_through(column: &ColumnMeta, old: &ContextFrame) -> Option<ColumnMeta> {
+        let source = old.pass_through.get(&table_key(column.origin.as_ref()?))?;
+        Some(ColumnMeta::new(column.name.clone(), Some(source.clone())))
+    }
+
+    fn expand_ancestors(ancestor: &ColumnMeta, old: &ContextFrame) -> Vec<ColumnMeta> {
         let mut result = Vec::new();
         let mut stack = Vec::new();
         let mut max_iter = 40;
 
         // Only the ancestor itself may go through `pass_through`. What it leads to
-        // was written inside another CTE or derived table, where the aliases of
-        // this frame are not in scope.
+        // was written inside another derived table, where the aliases of this
+        // frame are not in scope.
         stack.push((ancestor.clone(), true));
 
         while let Some((current, direct)) = stack.pop() {
@@ -489,50 +504,86 @@ impl<'a> Context<'a> {
                 break;
             }
 
-            let column_ancestors = old
-                .column_ancestry
-                .get(&current)
-                // try to find by name in case of column without origin
-                // this can happen when selecting from subquery without alias
-                .or_else(|| {
-                    old.column_ancestry.iter().find_map(|(col, anc)| {
-                        if col.name == current.name && current.origin.is_none() {
-                            Some(anc)
-                        } else {
-                            None
-                        }
-                    })
-                });
-            if column_ancestors.is_none() {
-                let pass_through = current
-                    .origin
-                    .as_ref()
-                    .filter(|_| direct)
-                    .and_then(|origin| old.pass_through.get(&table_key(origin)));
-                match pass_through {
-                    Some(pass_through) => {
-                        let column = ColumnMeta::new(
-                            current.name.clone(),
-                            Some(pass_through.source.clone()),
-                        );
-                        if pass_through.source_is_cte {
-                            stack.push((column, false));
-                        } else {
-                            result.push(column);
+            match Context::find_ancestors(&current, old) {
+                Some(ancestors) => {
+                    for anc in ancestors {
+                        // avoid infinite loop
+                        if anc != &current {
+                            stack.push((anc.clone(), false));
                         }
                     }
-                    None => result.push(current.clone()),
                 }
+                None => {
+                    let source = if direct {
+                        Context::through_pass_through(&current, old)
+                    } else {
+                        None
+                    };
+                    result.push(source.unwrap_or(current));
+                }
+            }
+        }
+
+        result
+    }
+
+    /// What `column` is in `ctes`, the frame of a `WITH`: the ancestors recorded
+    /// for it, or the same column of the table its pass-through CTE reads, or
+    /// `column` itself when it does not belong to a CTE.
+    fn resolve_through_ctes(column: &ColumnMeta, ctes: &ContextFrame) -> Vec<ColumnMeta> {
+        match Context::find_ancestors(column, ctes) {
+            Some(ancestors) => ancestors.iter().cloned().collect(),
+            None => {
+                vec![Context::through_pass_through(column, ctes).unwrap_or_else(|| column.clone())]
+            }
+        }
+    }
+
+    /// Resolves the ancestors of a CTE against `earlier`, the CTEs declared
+    /// before it, which are the only ones it can see. What is kept for a CTE is
+    /// then final: a table name left in it is a table, even if a CTE declared
+    /// later, or the CTE itself, has the same name.
+    fn resolve_cte(
+        ancestry: HashMap<ColumnMeta, ColumnAncestors>,
+        earlier: &ContextFrame,
+        recursive: bool,
+    ) -> HashMap<ColumnMeta, ColumnAncestors> {
+        ancestry
+            .iter()
+            .map(|(column, ancestors)| {
+                let mut resolved = ColumnAncestors::new();
+                for ancestor in ancestors {
+                    let own = if recursive {
+                        Context::expand_own_columns(ancestor, &ancestry)
+                    } else {
+                        vec![ancestor.clone()]
+                    };
+                    for ancestor in &own {
+                        resolved.extend(Context::resolve_through_ctes(ancestor, earlier));
+                    }
+                }
+                (column.clone(), resolved)
+            })
+            .collect()
+    }
+
+    /// Follows the references a recursive CTE makes to its own columns, until
+    /// only columns from outside of it are left.
+    fn expand_own_columns(
+        ancestor: &ColumnMeta,
+        ancestry: &HashMap<ColumnMeta, ColumnAncestors>,
+    ) -> Vec<ColumnMeta> {
+        let mut result = Vec::new();
+        let mut seen = HashSet::new();
+        let mut stack = vec![ancestor];
+
+        while let Some(current) = stack.pop() {
+            if !seen.insert(current) {
                 continue;
             }
-
-            if let Some(ancestors) = column_ancestors {
-                for anc in ancestors {
-                    // avoid infinite loop
-                    if anc != &current {
-                        stack.push((anc.clone(), false));
-                    }
-                }
+            match ancestry.get(current) {
+                Some(ancestors) => stack.extend(ancestors),
+                None => result.push(current.clone()),
             }
         }
 
@@ -572,9 +623,24 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn collect_with_table(&mut self, mut old: ContextFrame, from_table: DbTableMeta) {
+    pub fn collect_with_table(&mut self, old: ContextFrame, from_table: DbTableMeta) {
+        self.collect_table(old, from_table, None);
+    }
+
+    /// Like [`Context::collect_with_table`], for the frame of the CTE `cte`.
+    /// `recursive` is whether the CTE's own name is in scope inside its body.
+    pub fn collect_cte(&mut self, old: ContextFrame, cte: DbTableMeta, recursive: bool) {
+        self.collect_table(old, cte, Some(recursive));
+    }
+
+    fn collect_table(
+        &mut self,
+        mut old: ContextFrame,
+        from_table: DbTableMeta,
+        recursive_cte: Option<bool>,
+    ) {
         if let Some(frame) = self.frames.last_mut() {
-            let old_ancestry = old
+            let mut old_ancestry = old
                 .column_ancestry
                 .drain()
                 .map(|(mut col, anc)| {
@@ -587,6 +653,10 @@ impl<'a> Context<'a> {
                 Context::remove_circular_deps(&old_ancestry, frame, from_table);
 
             if !removed_circular_deps.is_empty() {
+                // After the check above, which is about the names as written.
+                if let Some(recursive) = recursive_cte {
+                    old_ancestry = Context::resolve_cte(old_ancestry, frame, recursive);
+                }
                 frame.column_ancestry.extend(old_ancestry);
             }
 
