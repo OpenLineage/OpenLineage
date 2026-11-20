@@ -107,6 +107,8 @@ public class ContainerHiveTestBase {
             comment != null ? "COMMENT \"" + comment + "\"" : "",
             partitionColumn != null ? "PARTITIONED BY (" + partitionColumn + ")" : "",
             properties != null ? "TBLPROPERTIES (" + properties + ")" : ""));
+    // Fixture setup is not part of the event assertions for the query under test.
+    mockServerClient.clear(request("/api/v1/lineage"), ClearType.LOG);
   }
 
   public void createManagedHiveTable(String tableName, String hiveDDL) {

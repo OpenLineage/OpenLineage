@@ -7,6 +7,7 @@ package io.openlineage.hive.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
+import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.hive.testutils.MockServerTestUtils;
 import java.util.List;
@@ -40,8 +41,53 @@ public class TableLevelLineageTests extends ContainerHiveTestBase {
   public void testAddColumn() {
     createManagedHiveTable("test_table3", HIVE_TEST_TABLE_DDL);
     runHiveQuery(String.format("ALTER TABLE %s ADD COLUMNS (fl FLOAT)", "test_table3"));
-    assertThat(mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
-        .isEmpty();
+    assertLifecycle(OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.ALTER);
+  }
+
+  @Test
+  public void testCreateTable() {
+    runHiveQuery("CREATE TABLE ddl_created (id INT)");
+    assertLifecycle(OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
+  }
+
+  @Test
+  public void testDropTable() {
+    createManagedHiveTable("ddl_dropped", "id INT");
+    runHiveQuery("DROP TABLE ddl_dropped");
+    assertLifecycle(OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP);
+  }
+
+  @Test
+  public void testTruncateTable() {
+    createManagedHiveTable("ddl_truncated", "id INT");
+    runHiveQuery("TRUNCATE TABLE ddl_truncated");
+    assertLifecycle(OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.TRUNCATE);
+  }
+
+  @Test
+  public void testRenameTable() {
+    createManagedHiveTable("ddl_old", "id INT");
+    runHiveQuery("ALTER TABLE ddl_old RENAME TO ddl_new");
+    assertLifecycle(OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.RENAME);
+    OpenLineage.OutputDataset output = getEventsEmitted().get(1).getOutputs().get(0);
+    assertThat(output.getName()).isEqualTo("test.ddl_new");
+    assertThat(output.getFacets().getLifecycleStateChange().getPreviousIdentifier().getName())
+        .isEqualTo("test.ddl_old");
+  }
+
+  private void assertLifecycle(
+      OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange expected) {
+    List<RunEvent> emitted = MockServerTestUtils.getEventsEmitted(mockServerClient);
+    assertThat(emitted).hasSize(2);
+    assertThat(emitted.get(0).getEventType()).isEqualTo(RunEvent.EventType.START);
+    assertThat(emitted.get(1).getEventType()).isEqualTo(RunEvent.EventType.COMPLETE);
+    assertThat(emitted.get(1).getInputs()).isEmpty();
+    assertThat(emitted.get(1).getOutputs())
+        .singleElement()
+        .satisfies(
+            output ->
+                assertThat(output.getFacets().getLifecycleStateChange().getLifecycleStateChange())
+                    .isEqualTo(expected));
   }
 
   @Test
@@ -79,6 +125,15 @@ public class TableLevelLineageTests extends ContainerHiveTestBase {
     assertThat(emitted.get(0).getEventType()).isEqualTo(RunEvent.EventType.START);
     assertThat(emitted.get(1).getEventType()).isEqualTo(RunEvent.EventType.COMPLETE);
     assertThat(emitted.get(0).getRun().getRunId()).isEqualTo(emitted.get(1).getRun().getRunId());
+    assertThat(
+            emitted
+                .get(1)
+                .getOutputs()
+                .get(0)
+                .getFacets()
+                .getLifecycleStateChange()
+                .getLifecycleStateChange())
+        .isEqualTo(OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
   }
 
   @Test

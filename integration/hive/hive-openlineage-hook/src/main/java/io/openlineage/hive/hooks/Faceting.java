@@ -38,6 +38,7 @@ import io.openlineage.hive.parsing.Parsing;
 import io.openlineage.hive.parsing.QueryExpr;
 import io.openlineage.hive.util.HiveUtils;
 import io.openlineage.hive.util.NetworkUtils;
+import java.net.URI;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -58,6 +59,8 @@ import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.parse.SemanticAnalyzer;
+import org.apache.hadoop.hive.ql.plan.AlterTableDesc;
+import org.apache.hadoop.hive.ql.plan.DDLWork;
 import org.apache.hadoop.hive.ql.plan.ExportWork;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hive.common.util.HiveVersionInfo;
@@ -75,6 +78,10 @@ public class Faceting {
   }
 
   public static List<InputDataset> getInputDatasets(OpenLineageContext olContext) throws Exception {
+    if (HiveDdlOperations.lifecycleState(olContext.getHookContext().getQueryPlan().getOperation())
+        != null) {
+      return Collections.emptyList();
+    }
     if (olContext.getHookContext().getQueryPlan().getOperation() == HiveOperation.LOAD
         || olContext.getHookContext().getQueryPlan().getOperation() == HiveOperation.IMPORT) {
       return getIdentityInputDataset(olContext);
@@ -126,15 +133,13 @@ public class Faceting {
         DatasetIdentifier di = HiveUtils.getDatasetIdentifierFromTable(table);
         OpenLineage ol = olContext.getOpenLineage();
         SchemaDatasetFacet schemaFacet = getSchemaDatasetFacet(ol, table);
-        SymlinksDatasetFacet symlinksDatasetFacet = getSymlinkFacets(ol, di);
         inputs.add(
             ol.newInputDatasetBuilder()
                 .namespace(getDatasetNamespace(olContext))
                 .name(di.getName())
                 .facets(
-                    ol.newDatasetFacetsBuilder()
+                    tableFacets(ol, olContext.getHookContext().getConf(), table)
                         .schema(schemaFacet)
-                        .symlinks(symlinksDatasetFacet)
                         .build())
                 .build());
       }
@@ -161,12 +166,90 @@ public class Faceting {
   public static List<OutputDataset> getOutputDatasets(
       OpenLineageContext olContext, List<InputDataset> inputDatasets) throws Exception {
     HookContext hookContext = olContext.getHookContext();
+    if (HiveDdlOperations.lifecycleState(hookContext.getQueryPlan().getOperation()) != null) {
+      return getDdlOutputDatasets(olContext);
+    }
     if (hookContext.getQueryPlan().getOperation() == HiveOperation.EXPORT
         || hookContext.getQueryPlan().getOperation() == HiveOperation.LOAD
         || hookContext.getQueryPlan().getOperation() == HiveOperation.IMPORT) {
       return getIdentityOutputDataset(olContext, inputDatasets);
     }
     return getQueryOutputDatasets(olContext, inputDatasets, hookContext);
+  }
+
+  private static List<OutputDataset> getDdlOutputDatasets(OpenLineageContext olContext) {
+    HookContext hookContext = olContext.getHookContext();
+    HiveOperation operation = hookContext.getQueryPlan().getOperation();
+    OpenLineage ol = olContext.getOpenLineage();
+    AlterTableDesc rename = null;
+    if (operation == HiveOperation.ALTERTABLE_RENAME
+        && hookContext.getQueryPlan().getRootTasks() != null
+        && !hookContext.getQueryPlan().getRootTasks().isEmpty()
+        && hookContext.getQueryPlan().getRootTasks().get(0).getWork() instanceof DDLWork) {
+      rename =
+          ((DDLWork) hookContext.getQueryPlan().getRootTasks().get(0).getWork()).getAlterTblDesc();
+    }
+    List<OutputDataset> outputs = new ArrayList<>();
+    for (WriteEntity entity : olContext.getWriteEntities()) {
+      Table table = entity.getTable();
+      if (table == null) {
+        continue;
+      }
+      if (operation != HiveOperation.DROPTABLE
+          && olContext.getEventType() == RunEvent.EventType.COMPLETE) {
+        String dbName = table.getDbName();
+        String tableName = table.getTableName();
+        if (rename != null && rename.getNewName() != null) {
+          String newName = rename.getNewName();
+          int separator = newName.indexOf('.');
+          dbName = separator < 0 ? dbName : newName.substring(0, separator);
+          tableName = separator < 0 ? newName : newName.substring(separator + 1);
+        }
+        // WriteEntity can contain the pre-DDL schema; the metastore has the completed result.
+        table = HiveUtils.getTable(hookContext.getConf(), dbName, tableName, table);
+      } else if (operation != HiveOperation.DROPTABLE
+          && (table.getSd() == null
+              || table.getSd().getCols() == null
+              || table.getSd().getCols().isEmpty())) {
+        table = HiveUtils.getTable(hookContext.getConf(), table);
+      }
+      DatasetIdentifier identifier = HiveUtils.getDatasetIdentifierFromTable(table);
+      String datasetName = identifier.getName();
+      DatasetFacetsBuilder facets = tableFacets(ol, hookContext.getConf(), table);
+      SchemaDatasetFacet schema = getSchemaDatasetFacet(ol, table);
+      if (schema != null) {
+        facets.schema(schema);
+      }
+      OpenLineage.LifecycleStateChangeDatasetFacetBuilder lifecycle =
+          ol.newLifecycleStateChangeDatasetFacetBuilder()
+              .lifecycleStateChange(HiveDdlOperations.lifecycleState(operation));
+      if (rename != null) {
+        if (rename.getOldName() != null) {
+          lifecycle.previousIdentifier(
+              ol.newLifecycleStateChangeDatasetFacetPreviousIdentifierBuilder()
+                  .namespace(getDatasetNamespace(olContext))
+                  .name(
+                      rename.getOldName().contains(".")
+                          ? rename.getOldName()
+                          : table.getDbName() + "." + rename.getOldName())
+                  .build());
+        }
+        if (rename.getNewName() != null) {
+          datasetName =
+              rename.getNewName().contains(".")
+                  ? rename.getNewName()
+                  : table.getDbName() + "." + rename.getNewName();
+        }
+      }
+      facets.lifecycleStateChange(lifecycle.build());
+      outputs.add(
+          ol.newOutputDatasetBuilder()
+              .namespace(getDatasetNamespace(olContext))
+              .name(datasetName)
+              .facets(facets.build())
+              .build());
+    }
+    return outputs;
   }
 
   private static List<OutputDataset> getQueryOutputDatasets(
@@ -192,9 +275,15 @@ public class Faceting {
         DatasetIdentifier di = HiveUtils.getDatasetIdentifierFromTable(outputTable);
         OpenLineage ol = olContext.getOpenLineage();
         SchemaDatasetFacet schemaFacet = getSchemaDatasetFacet(ol, outputTable);
-        SymlinksDatasetFacet symlinksFacet = getSymlinkFacets(ol, di);
         DatasetFacetsBuilder datasetFacetsBuilder =
-            ol.newDatasetFacetsBuilder().schema(schemaFacet).symlinks(symlinksFacet);
+            tableFacets(ol, hookContext.getConf(), outputTable).schema(schemaFacet);
+        if (hookContext.getQueryPlan().getOperation() == HiveOperation.CREATETABLE_AS_SELECT) {
+          datasetFacetsBuilder.lifecycleStateChange(
+              ol.newLifecycleStateChangeDatasetFacetBuilder()
+                  .lifecycleStateChange(
+                      OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE)
+                  .build());
+        }
         QueryExpr query =
             Parsing.buildQueryTree(semanticAnalyzer.getQB(), outputTable.getFullyQualifiedName());
         OutputCLL outputCLL = ColumnLineageCollector.collectCLL(query, outputTable);
@@ -234,21 +323,67 @@ public class Faceting {
     }
 
     InputDataset inputDataset = inputDatasets.get(0);
+    DatasetFacetsBuilder facets =
+        olContext
+            .getOpenLineage()
+            .newDatasetFacetsBuilder()
+            .schema(inputDataset.getFacets().getSchema())
+            .columnLineage(getIdentityCLL(inputDataset, olContext));
+    if (olContext.getHookContext().getQueryPlan().getOperation() != HiveOperation.EXPORT) {
+      addTableMetadata(
+          facets,
+          olContext.getOpenLineage(),
+          olContext.getHookContext().getConf(),
+          writeEntity.getTable());
+    }
     return Collections.singletonList(
         olContext
             .getOpenLineage()
             .newOutputDatasetBuilder()
             .namespace(datasetIdentifier.getNamespace())
             .name(datasetIdentifier.getName())
-            .facets(
-                olContext
-                    .getOpenLineage()
-                    .newDatasetFacetsBuilder()
-                    .schema(inputDataset.getFacets().getSchema())
-                    .symlinks(getSymlinkFacets(olContext.getOpenLineage(), datasetIdentifier))
-                    .columnLineage(getIdentityCLL(inputDataset, olContext))
-                    .build())
+            .facets(facets.build())
             .build());
+  }
+
+  static DatasetFacetsBuilder tableFacets(OpenLineage ol, Configuration conf, Table table) {
+    DatasetFacetsBuilder facets = ol.newDatasetFacetsBuilder();
+    addTableMetadata(facets, ol, conf, table);
+    return facets;
+  }
+
+  private static void addTableMetadata(
+      DatasetFacetsBuilder facets, OpenLineage ol, Configuration conf, Table table) {
+    String metastoreUris = conf.getTrimmed("hive.metastore.uris");
+    if (metastoreUris != null && !metastoreUris.isEmpty()) {
+      URI metastoreUri = parseUri(metastoreUris.split(",", 2)[0].trim());
+      if (metastoreUri != null && metastoreUri.getHost() != null) {
+        facets.dataSource(
+            ol.newDatasourceDatasetFacetBuilder()
+                .name(metastoreUri.toString())
+                .uri(metastoreUri)
+                .build());
+      }
+    }
+    if (table.getSd() != null && table.getSd().getLocation() != null) {
+      URI location = parseUri(table.getSd().getLocation());
+      if (location != null && location.getScheme() != null) {
+        facets.storage(
+            ol.newStorageDatasetFacetBuilder()
+                .storageLayer(location.getScheme())
+                .put("location", location.toString())
+                .build());
+      }
+    }
+  }
+
+  private static URI parseUri(String value) {
+    try {
+      return URI.create(value);
+    } catch (IllegalArgumentException e) {
+      log.debug("Skipping dataset metadata facet due to invalid URI");
+      return null;
+    }
   }
 
   private static ColumnLineageDatasetFacet getIdentityCLL(

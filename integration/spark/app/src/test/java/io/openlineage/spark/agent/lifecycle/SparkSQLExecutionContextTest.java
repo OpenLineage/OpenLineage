@@ -198,6 +198,44 @@ class SparkSQLExecutionContextTest {
   }
 
   @Test
+  void testSqlExecutionEndDoesNotCompleteFailedJob(SparkSession spark) {
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
+    when(jobEnd.jobResult()).thenReturn(mock(JobFailed.class));
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.start(mock(SparkListenerJobStart.class));
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.end(jobEnd);
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+    }
+    verify(eventEmitter, times(3)).emit(lineageEvent.capture());
+    assertThat(lineageEvent.getAllValues())
+        .extracting(RunEvent::getEventType)
+        .containsExactly(EventType.START, EventType.RUNNING, EventType.FAIL);
+  }
+
+  @Test
+  void testFailedJobAfterSqlExecutionEndRemainsFailed(SparkSession spark) {
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
+    when(jobEnd.jobResult()).thenReturn(mock(JobFailed.class));
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.start(mock(SparkListenerJobStart.class));
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+      context.end(jobEnd);
+    }
+    verify(eventEmitter, times(4)).emit(lineageEvent.capture());
+    assertThat(lineageEvent.getAllValues())
+        .extracting(RunEvent::getEventType)
+        .containsExactly(EventType.START, EventType.RUNNING, EventType.RUNNING, EventType.FAIL);
+  }
+
+  @Test
   void testSingleCompleteIsSentWithJobType(SparkSession spark) {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {

@@ -16,6 +16,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.SnowflakeUtils;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.agent.vendor.snowflake.LogicalRelationTestUtils;
 import io.openlineage.spark.agent.vendor.snowflake.lifecycle.SnowflakeDataset;
 import io.openlineage.spark.agent.vendor.snowflake.lifecycle.SnowflakeRelationVisitor;
 import io.openlineage.spark.api.DatasetFactory;
@@ -99,19 +100,16 @@ public class SnowflakeRelationVisitorTest {
         new SnowflakeRelationVisitor<>(openLineageContext, DatasetFactory.output(context));
 
     LogicalRelation lr =
-        new LogicalRelation(
+        LogicalRelationTestUtils.create(
             relation,
-            ScalaConversionUtils.fromList(
-                Collections.singletonList(
-                    new AttributeReference(
-                        FIELD_NAME,
-                        StringType$.MODULE$,
-                        false,
-                        null,
-                        ExprId.apply(1L),
-                        ScalaConversionUtils.<String>asScalaSeqEmpty()))),
-            Option.empty(),
-            false);
+            Collections.singletonList(
+                new AttributeReference(
+                    FIELD_NAME,
+                    StringType$.MODULE$,
+                    false,
+                    null,
+                    ExprId.apply(1L),
+                    ScalaConversionUtils.<String>asScalaSeqEmpty())));
 
     List<OpenLineage.Dataset> datasets = visitor.apply(lr);
 
@@ -148,19 +146,16 @@ public class SnowflakeRelationVisitorTest {
         new SnowflakeRelationVisitor<>(openLineageContext, DatasetFactory.output(context));
 
     LogicalRelation lr =
-        new LogicalRelation(
+        LogicalRelationTestUtils.create(
             relation,
-            ScalaConversionUtils.fromList(
-                Collections.singletonList(
-                    new AttributeReference(
-                        FIELD_NAME,
-                        StringType$.MODULE$,
-                        false,
-                        null,
-                        ExprId.apply(1L),
-                        ScalaConversionUtils.<String>asScalaSeqEmpty()))),
-            Option.empty(),
-            false);
+            Collections.singletonList(
+                new AttributeReference(
+                    FIELD_NAME,
+                    StringType$.MODULE$,
+                    false,
+                    null,
+                    ExprId.apply(1L),
+                    ScalaConversionUtils.<String>asScalaSeqEmpty())));
 
     List<OpenLineage.Dataset> datasets = visitor.apply(lr);
 
@@ -197,19 +192,16 @@ public class SnowflakeRelationVisitorTest {
         new SnowflakeRelationVisitor<>(openLineageContext, DatasetFactory.output(context));
 
     LogicalRelation lr =
-        new LogicalRelation(
+        LogicalRelationTestUtils.create(
             relation,
-            ScalaConversionUtils.fromList(
-                Collections.singletonList(
-                    new AttributeReference(
-                        FIELD_NAME,
-                        StringType$.MODULE$,
-                        false,
-                        null,
-                        ExprId.apply(1L),
-                        ScalaConversionUtils.<String>asScalaSeqEmpty()))),
-            Option.empty(),
-            false);
+            Collections.singletonList(
+                new AttributeReference(
+                    FIELD_NAME,
+                    StringType$.MODULE$,
+                    false,
+                    null,
+                    ExprId.apply(1L),
+                    ScalaConversionUtils.<String>asScalaSeqEmpty())));
 
     List<OpenLineage.Dataset> datasets = visitor.apply(lr);
 

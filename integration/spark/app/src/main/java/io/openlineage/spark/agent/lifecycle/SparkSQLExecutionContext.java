@@ -58,6 +58,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private boolean emittedOnSqlExecutionEnd = false;
   private boolean emittedOnJobStart = false;
   private boolean emittedOnJobEnd = false;
+  private boolean failedOnJobEnd = false;
   private Integer activeJobId;
   private AtomicBoolean finished = new AtomicBoolean(false);
 
@@ -117,7 +118,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   @Override
-  public void end(SparkListenerSQLExecutionEnd endEvent) {
+  public synchronized void end(SparkListenerSQLExecutionEnd endEvent) {
     if (log.isDebugEnabled()) {
       log.debug("SparkListenerSQLExecutionEnd - executionId: {}", endEvent.executionId());
     }
@@ -125,6 +126,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
     // If not, then we probably need to use this only for LogicalPlans that emit no Job events.
     // Maybe use QueryExecutionListener?
     olContext.setActiveJobId(activeJobId);
+    if (failedOnJobEnd) {
+      emittedOnSqlExecutionEnd = true;
+      return;
+    }
     if (!olContext.getQueryExecution().isPresent()) {
       log.info(NO_EXECUTION_INFO, olContext);
       return;
@@ -301,7 +306,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   @Override
-  public void end(SparkListenerJobEnd jobEnd) {
+  public synchronized void end(SparkListenerJobEnd jobEnd) {
     try {
       log.debug("SparkListenerJobEnd - executionId: {}", executionId);
       olContext.setActiveJobId(jobEnd.jobId());
@@ -322,6 +327,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
       // only one COMPLETE event is expected,
       EventType eventType;
       if (jobEnd.jobResult() instanceof JobFailed) {
+        failedOnJobEnd = true;
         eventType = FAIL;
       } else if (emittedOnSqlExecutionStart && !emittedOnSqlExecutionEnd) {
         // still waiting for sqlExecutionEnd event which will emit COMPLETE event

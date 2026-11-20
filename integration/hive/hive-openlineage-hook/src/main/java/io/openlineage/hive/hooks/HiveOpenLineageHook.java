@@ -97,14 +97,24 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionH
     }
   }
 
-  private boolean shouldEmitEvent(
+  boolean shouldEmitEvent(
       HookContext hookContext, Set<ReadEntity> validInputs, Set<WriteEntity> validOutputs) {
     QueryPlan queryPlan = hookContext.getQueryPlan();
     if (!SUPPORTED_HOOK_TYPES.contains(hookContext.getHookType())
         || SessionState.get() == null
         || hookContext.getIndex() == null
-        || !SUPPORTED_OPERATIONS.contains(queryPlan.getOperation())
-        || queryPlan.isExplain()
+        || queryPlan.isExplain()) {
+      return false;
+    }
+
+    if (HiveDdlOperations.lifecycleState(queryPlan.getOperation()) != null) {
+      // Hive often supplies no input entity for DDL. A missing output means that no table changed.
+      return !validOutputs.isEmpty()
+          && queryPlan.getRootTasks() != null
+          && !queryPlan.getRootTasks().isEmpty();
+    }
+
+    if (!SUPPORTED_OPERATIONS.contains(queryPlan.getOperation())
         || queryPlan.getInputs().isEmpty()
         || queryPlan.getOutputs().isEmpty()) {
       return false;

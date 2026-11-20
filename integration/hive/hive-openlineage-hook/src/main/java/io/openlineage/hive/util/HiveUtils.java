@@ -8,9 +8,9 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
-import lombok.SneakyThrows;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.Context;
@@ -31,11 +31,16 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 public class HiveUtils {
 
   public static Table getTable(Configuration conf, Table table) {
+    return getTable(conf, table.getDbName(), table.getTableName(), table);
+  }
+
+  public static Table getTable(
+      Configuration conf, String dbName, String tableName, Table fallback) {
     HiveConf hiveConf = new HiveConf(conf, HiveConf.class);
     try {
-      return Hive.get(hiveConf).getTable(table.getDbName(), table.getTableName());
+      return Hive.get(hiveConf).getTable(dbName, tableName);
     } catch (HiveException e) {
-      return table;
+      return fallback;
     }
   }
 
@@ -75,20 +80,22 @@ public class HiveUtils {
     }
   }
 
-  @SneakyThrows
   public static DatasetIdentifier getDatasetIdentifierFromTable(Table table) {
     if (table.getParameters() != null && table.getParameters().get("bq.table") != null) {
       return new DatasetIdentifier(table.getParameters().get("bq.table"), "bigquery");
     }
+    DatasetIdentifier di = new DatasetIdentifier(table.getFullyQualifiedName(), table.getCatName());
     if (table.getSd() != null && table.getSd().getLocation() != null) {
-      URI uri = new URI(table.getSd().getLocation());
-      DatasetIdentifier symlink = FilesystemDatasetUtils.fromLocation(uri);
-      DatasetIdentifier di =
-          new DatasetIdentifier(table.getFullyQualifiedName(), table.getCatName());
-      return di.withSymlink(
-          symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.LOCATION);
+      try {
+        URI uri = new URI(table.getSd().getLocation());
+        DatasetIdentifier symlink = FilesystemDatasetUtils.fromLocation(uri);
+        return di.withSymlink(
+            symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.LOCATION);
+      } catch (URISyntaxException e) {
+        return di;
+      }
     }
-    return new DatasetIdentifier(table.getFullyQualifiedName(), table.getCatName());
+    return di;
   }
 
   public static SemanticAnalyzer analyzeQuery(
