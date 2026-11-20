@@ -124,13 +124,19 @@ impl Visit for TableFactor {
                 Ok(())
             }
             TableFactor::Derived {
-                lateral: _,
+                lateral,
                 subquery,
                 alias,
                 sample: _,
             } => {
+                // Only a LATERAL subquery sees the FROM items beside it.
+                let hidden = (!lateral).then(|| context.hide_from_names());
                 context.push_frame();
-                subquery.visit(context)?;
+                let visited = subquery.visit(context);
+                if let Some(hidden) = hidden {
+                    context.restore_from_names(hidden);
+                }
+                visited?;
                 let frame = context.pop_frame().unwrap();
 
                 if let Some(alias) = alias {
@@ -161,11 +167,12 @@ impl Visit for TableFactor {
             TableFactor::NestedJoin {
                 table_with_joins, ..
             } => {
-                table_with_joins.relation.visit(context)?;
-                for join in &table_with_joins.joins {
-                    join.visit(context)?;
-                }
-                Ok(())
+                // Members are named as they are visited, so a LATERAL member
+                // sees the ones before it.
+                context.push_join_scope();
+                let visited = visit_nested_join(table_with_joins, context);
+                context.pop_join_scope();
+                visited
             }
             TableFactor::UNNEST { array_exprs, .. } => {
                 // https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unnest_operator
@@ -726,6 +733,18 @@ fn correlation_names(relation: &TableFactor, context: &Context) -> Vec<(Ident, V
             .collect(),
         _ => vec![],
     }
+}
+
+fn visit_nested_join(table_with_joins: &TableWithJoins, context: &mut Context) -> Result<()> {
+    table_with_joins.relation.visit(context)?;
+    let names = correlation_names(&table_with_joins.relation, context);
+    context.add_correlation_names(names);
+    for join in &table_with_joins.joins {
+        join.visit(context)?;
+        let names = correlation_names(&join.relation, context);
+        context.add_correlation_names(names);
+    }
+    Ok(())
 }
 
 fn table_factor_alias(relation: &TableFactor) -> Option<&TableAlias> {

@@ -141,6 +141,8 @@ pub struct Context<'a> {
     // An alias stands for itself, so the alias table resolves it; an unaliased
     // table stands for its full name (`orders` for `FROM raw.orders`).
     correlation_names: Vec<HashMap<String, Vec<Ident>>>,
+    // Where each SELECT's scopes begin in `correlation_names`.
+    select_scope_starts: Vec<usize>,
 }
 
 impl<'a> Context<'a> {
@@ -155,6 +157,7 @@ impl<'a> Context<'a> {
             dialect: &SnowflakeDialect,
             column_id: 0,
             correlation_names: Vec::new(),
+            select_scope_starts: Vec::new(),
         }
     }
 
@@ -172,6 +175,7 @@ impl<'a> Context<'a> {
             dialect,
             column_id: 0,
             correlation_names: Vec::new(),
+            select_scope_starts: Vec::new(),
         }
     }
 
@@ -392,7 +396,32 @@ impl<'a> Context<'a> {
     /// filled by `add_correlation_names` and closed by
     /// `pop_correlation_names`.
     pub fn push_correlation_names(&mut self) {
+        self.select_scope_starts.push(self.correlation_names.len());
         self.correlation_names.push(HashMap::new());
+    }
+
+    /// Opens a scope for the members of a parenthesized join, which a
+    /// LATERAL member sees as they are added. Closed by `pop_join_scope`.
+    pub fn push_join_scope(&mut self) {
+        self.correlation_names.push(HashMap::new());
+    }
+
+    pub fn pop_join_scope(&mut self) {
+        self.correlation_names.pop();
+    }
+
+    /// Removes the scopes of the SELECT whose FROM clause is being visited,
+    /// so a non-LATERAL derived table cannot bind to the items beside it;
+    /// enclosing SELECTs stay visible. Undone by `restore_from_names`.
+    pub fn hide_from_names(&mut self) -> Vec<HashMap<String, Vec<Ident>>> {
+        match self.select_scope_starts.last() {
+            Some(&start) => self.correlation_names.split_off(start),
+            None => Vec::new(),
+        }
+    }
+
+    pub fn restore_from_names(&mut self, hidden: Vec<HashMap<String, Vec<Ident>>>) {
+        self.correlation_names.extend(hidden);
     }
 
     /// Adds `names` to the innermost scope, each an alias or an unaliased
@@ -408,8 +437,11 @@ impl<'a> Context<'a> {
         }
     }
 
+    /// Closes the SELECT's scope, and any join scope a failed visit left open.
     pub fn pop_correlation_names(&mut self) {
-        self.correlation_names.pop();
+        if let Some(start) = self.select_scope_starts.pop() {
+            self.correlation_names.truncate(start);
+        }
     }
 
     /// The relation a column qualifier names through the FROM clause of an

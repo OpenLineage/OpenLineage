@@ -278,3 +278,30 @@ fn alias_inside_a_parenthesized_join_shadows_an_outer_from_item() {
         vec!["id <- inner_src.id"]
     );
 }
+
+#[test]
+fn non_lateral_derived_table_does_not_see_its_sibling_from_items() {
+    // Without LATERAL, `orders` inside the derived table can only be the
+    // enclosing query's `raw.orders`, never the sibling `stage.orders`.
+    assert_eq!(
+        edges(
+            "SELECT (SELECT s.id FROM stage.orders CROSS JOIN (SELECT orders.id) AS s) AS id \
+             FROM raw.orders",
+            "postgres"
+        ),
+        vec!["id <- raw.orders.id"]
+    );
+}
+
+#[test]
+fn lateral_inside_a_parenthesized_join_is_not_captured_by_an_outer_from_item() {
+    let inner = "SELECT s.id \
+                 FROM (inner_src AS orders CROSS JOIN LATERAL (SELECT orders.id) AS s)";
+    assert_eq!(
+        edges(
+            &format!("SELECT ({inner}) AS id FROM raw.orders"),
+            "postgres"
+        ),
+        edges(inner, "postgres")
+    );
+}
