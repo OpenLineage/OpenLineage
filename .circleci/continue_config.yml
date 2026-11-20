@@ -1337,6 +1337,72 @@ jobs:
           key: v1-go-mod-{{ checksum "go.sum" }}-{{ checksum "../../generator/go/go.sum" }}
           paths:
             - /home/circleci/go/pkg/mod
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - go/pkg/mod
+            - openlineage/client/go
+
+  # Byool Terraform Jobs
+  build-byool-terraform:
+    working_directory: ~/openlineage/byool/terraform/openlineage-base-resource
+    docker:
+      - image: cimg/go:1.26
+    resource_class: medium
+    environment:
+      # terraform-plugin-testing downloads this Terraform binary for the provider tests.
+      TF_ACC_TERRAFORM_VERSION: 1.13.4
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Create go.work file
+          command: |
+            cd ~/openlineage/byool/terraform
+            go work init
+            go work use ../../client/go ./openlineage-base-resource ./terraform-provider-openlineage-file
+      - restore_cache:
+          keys:
+            - v2-byool-terraform-{{ checksum "go.sum" }}-{{ checksum "../terraform-provider-openlineage-file/go.sum" }}-{{ checksum "../../../generator/go/go.sum" }}
+      - run:
+          name: Download generator dependencies
+          command: cd ~/openlineage/generator/go && go mod download
+      - run:
+          name: Test generator
+          command: cd ~/openlineage/generator/go && go test ./...
+      - run:
+          name: Run Terraform facet generator
+          command: cd ~/openlineage/generator/go && go run . --target terraform
+      - run:
+          name: Check generated files are up to date
+          command: |
+            if ! git diff --quiet -- ol/; then
+              echo "ERROR: Generated Terraform files are out of sync with the spec."
+              echo "Run 'cd generator/go && go run . --target terraform' from the repo root and commit the result."
+              echo ""
+              git diff -- ol/
+              exit 1
+            fi
+      - run:
+          name: Download dependencies
+          command: |
+            go mod download
+            cd ../terraform-provider-openlineage-file && go mod download
+      - run:
+          name: Lint base resource
+          command: golangci-lint run ./...
+      - run:
+          name: Build and test base resource
+          command: go build ./... && go test ./...
+      - run:
+          name: Lint example provider
+          command: cd ../terraform-provider-openlineage-file && golangci-lint run ./...
+      - run:
+          name: Build and test example provider
+          command: cd ../terraform-provider-openlineage-file && go build ./... && go test ./...
+      - save_cache:
+          key: v2-byool-terraform-{{ checksum "go.sum" }}-{{ checksum "../terraform-provider-openlineage-file/go.sum" }}-{{ checksum "../../../generator/go/go.sum" }}
+          paths:
+            - /home/circleci/go/pkg/mod
 
   release-client-go:
     working_directory: ~/openlineage/client/go
