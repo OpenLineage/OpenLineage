@@ -107,6 +107,16 @@ export const Producers: Array<Partner> = [
       "https://docs.google.com/presentation/d/e/2PACX-1vTCfQcWUM_9e-lNlBqtaWLPjQ7ihvwHPjq0sJ47eJjjc0zNoLXlWOdcznE90t6IVNGBWFwGZBoU-d-o/pub?start=true&loop=true&delayms=3000&slide=id.g136261d2e68_0_1",
   },
   {
+    image: "prefect_logo.png",
+    org: "Prefect",
+    full_name: "Prefect",
+    description:
+      "OpenLineage-Prefect leverages the OpenLineage Python Client to collect, adapt and emit standard run-level information plus deployment, version, parent-run, and dataset information.",
+    docs_url: "https://openlineage.io/docs/integrations/prefect/",
+    org_url: "https://github.com/PrefectHQ/prefect",
+  },
+
+  {
     image: "snowflake_logo.svg",
     org: "Snowflake",
     full_name: "Snowflake",
