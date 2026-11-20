@@ -69,6 +69,7 @@ import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.*;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
+import org.apache.spark.util.SerializableConfiguration;
 import org.apache.spark.util.SerializableJobConf;
 import scala.collection.Seq;
 
@@ -126,29 +127,51 @@ class RddExecutionContext implements ExecutionContext {
         Field f = getConfigField(resultStage);
         f.setAccessible(true);
         Object conf = f.get(resultStage.func());
-
-        if (conf instanceof HadoopMapRedWriteConfigUtil) {
-          Field confField = HadoopMapRedWriteConfigUtil.class.getDeclaredField("conf");
-          confField.setAccessible(true);
-          SerializableJobConf serializableJobConf = (SerializableJobConf) confField.get(conf);
-          jobConf = serializableJobConf.value();
-        } else if (conf instanceof HadoopMapReduceWriteConfigUtil) {
-          Field confField = HadoopMapReduceWriteConfigUtil.class.getDeclaredField("conf");
-          confField.setAccessible(true);
-          SerializableJobConf serializableJobConf = (SerializableJobConf) confField.get(conf);
-          jobConf = serializableJobConf.value();
-        } else {
-          log.info(
-              "Config field is not HadoopMapRedWriteConfigUtil or HadoopMapReduceWriteConfigUtil, it's {}",
-              conf.getClass().getCanonicalName());
-        }
-      } catch (IllegalAccessException | NoSuchFieldException nfe) {
-        log.warn("Unable to access job conf from RDD", nfe);
+        jobConf = extractJobConf(conf);
+      } catch (IllegalAccessException | NoSuchFieldException | ClassCastException e) {
+        log.warn("Unable to access job conf from RDD", e);
       }
       log.info("Found job conf from RDD {}", jobConf);
     }
     this.activeJobId = activeJob.jobId();
     this.outputs = findOutputs(finalRDD, jobConf);
+  }
+
+  /**
+   * Extracts the Hadoop {@link JobConf} from the write config util object captured by the result
+   * stage function.<br>
+   * {@link HadoopMapRedWriteConfigUtil} (old {@code mapred} API, e.g. {@code saveAsHadoopFile})
+   * holds a {@link SerializableJobConf}.<br>
+   * {@link HadoopMapReduceWriteConfigUtil} (new {@code mapreduce} API, e.g. {@code
+   * saveAsNewAPIHadoopFile}) holds a {@link SerializableConfiguration}, which is wrapped in a new
+   * {@link JobConf}.
+   *
+   * @param writeConfigUtil object captured by the result stage function
+   * @return job conf, or an empty one when the object is of an unknown type
+   * @throws NoSuchFieldException when the Spark class no longer has a {@code conf} field
+   * @throws IllegalAccessException when the {@code conf} field cannot be read
+   * @throws ClassCastException when the {@code conf} field is of an unexpected type
+   */
+  @SuppressWarnings("PMD") // confField.setAccessible(true);
+  static JobConf extractJobConf(Object writeConfigUtil)
+      throws NoSuchFieldException, IllegalAccessException {
+    if (writeConfigUtil instanceof HadoopMapRedWriteConfigUtil) {
+      Field confField = HadoopMapRedWriteConfigUtil.class.getDeclaredField("conf");
+      confField.setAccessible(true);
+      SerializableJobConf serializableJobConf =
+          (SerializableJobConf) confField.get(writeConfigUtil);
+      return serializableJobConf.value();
+    } else if (writeConfigUtil instanceof HadoopMapReduceWriteConfigUtil) {
+      Field confField = HadoopMapReduceWriteConfigUtil.class.getDeclaredField("conf");
+      confField.setAccessible(true);
+      SerializableConfiguration serializableConfiguration =
+          (SerializableConfiguration) confField.get(writeConfigUtil);
+      return new JobConf(serializableConfiguration.value());
+    }
+    log.info(
+        "Config field is not HadoopMapRedWriteConfigUtil or HadoopMapReduceWriteConfigUtil, it's {}",
+        writeConfigUtil == null ? null : writeConfigUtil.getClass().getCanonicalName());
+    return new JobConf();
   }
 
   /**

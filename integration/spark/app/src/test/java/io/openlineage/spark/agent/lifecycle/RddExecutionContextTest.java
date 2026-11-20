@@ -23,23 +23,36 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import org.apache.spark.internal.io.HadoopMapRedWriteConfigUtil;
+import org.apache.spark.internal.io.HadoopMapReduceWriteConfigUtil;
 import org.apache.spark.scheduler.JobSucceeded$;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
+import org.apache.spark.util.SerializableConfiguration;
+import org.apache.spark.util.SerializableJobConf;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import scala.reflect.ClassTag;
+import scala.reflect.ClassTag$;
 
 /**
  * Verifies that {@link RddExecutionContext} applies {@code
  * spark.openlineage.dataset.removePath.pattern} to inputs/outputs of RDD jobs, same as {@link
  * OpenLineageRunEventBuilder} already does for non-RDD jobs. See
  * https://github.com/OpenLineage/OpenLineage/issues/4719
+ *
+ * <p>Also verifies that the Hadoop job conf is extracted from both the old ({@code mapred}) and the
+ * new ({@code mapreduce}) Hadoop API write config utils.
  */
 class RddExecutionContextTest {
 
   private static final String REMOVE_PATH_PATTERN = "spark.openlineage.dataset.removePath.pattern";
+  private static final String OUTPUT_DIR = "mapreduce.output.fileoutputformat.outputdir";
+  private static final ClassTag<String> STRING_TAG = ClassTag$.MODULE$.apply(String.class);
 
   private final OpenLineageContext olContext = mock(OpenLineageContext.class);
   private final OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
@@ -119,5 +132,37 @@ class RddExecutionContextTest {
     assertThat(holder.getJobStagesSize()).isZero();
     assertThat(holder.getStageMetricsSize()).isZero();
     assertThat(holder.getJobMetricsSize()).isZero();
+  }
+
+  @Test
+  void extractJobConfFromHadoopMapRedWriteConfigUtil() throws Exception {
+    JobConf jobConf = new JobConf(false);
+    jobConf.set(OUTPUT_DIR, "/tmp/mapred-output");
+    HadoopMapRedWriteConfigUtil<String, String> writeConfigUtil =
+        new HadoopMapRedWriteConfigUtil<>(new SerializableJobConf(jobConf), STRING_TAG);
+
+    JobConf result = RddExecutionContext.extractJobConf(writeConfigUtil);
+
+    assertThat(result.get(OUTPUT_DIR)).isEqualTo("/tmp/mapred-output");
+  }
+
+  @Test
+  void extractJobConfFromHadoopMapReduceWriteConfigUtil() throws Exception {
+    Configuration configuration = new Configuration(false);
+    configuration.set(OUTPUT_DIR, "/tmp/mapreduce-output");
+    HadoopMapReduceWriteConfigUtil<String, String> writeConfigUtil =
+        new HadoopMapReduceWriteConfigUtil<>(
+            new SerializableConfiguration(configuration), STRING_TAG);
+
+    JobConf result = RddExecutionContext.extractJobConf(writeConfigUtil);
+
+    assertThat(result.get(OUTPUT_DIR)).isEqualTo("/tmp/mapreduce-output");
+  }
+
+  @Test
+  void extractJobConfReturnsEmptyConfForUnknownObject() throws Exception {
+    JobConf result = RddExecutionContext.extractJobConf(new Object());
+
+    assertThat(result.get(OUTPUT_DIR)).isNull();
   }
 }
