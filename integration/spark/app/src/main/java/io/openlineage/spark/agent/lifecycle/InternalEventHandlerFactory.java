@@ -17,6 +17,7 @@ import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.spark.agent.facets.builder.*;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.api.CustomFacetBuilder;
+import io.openlineage.spark.api.DatasetIdentifierResolver;
 import io.openlineage.spark.api.DatasetIdentityFacetBuilder;
 import io.openlineage.spark.api.FileWriteTargetResolver;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -254,5 +255,13 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
     return ImmutableList.copyOf(
         generate(
             eventHandlerFactories, factory -> factory.createFileWriteTargetResolvers(context)));
+  }
+
+  @Override
+  public List<DatasetIdentifierResolver> createDatasetIdentifierResolvers(
+      OpenLineageContext context) {
+    return ImmutableList.copyOf(
+        generate(
+            eventHandlerFactories, factory -> factory.createDatasetIdentifierResolvers(context)));
   }
 }
