@@ -408,6 +408,18 @@ type OwnershipJobFacet struct {
 	Owners []OwnershipJobFacetOwner `json:"owners,omitempty"`
 }
 
+// The parent job of this job, if this job is a sub-job of another job by design (for example, a task defined within a DAG). Should be used on job events. It may also be used on run events when the specific run of the parent job is not known; if a ParentRunFacet is also present, it takes precedence.
+type ParentJobFacet struct {
+	// URI identifying the producer of this metadata.
+	Producer string `json:"_producer"`
+	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// set to true to delete a facet
+	Deleted *bool               `json:"_deleted,omitempty"`
+	Job     ParentJobFacetJob   `json:"job"`
+	Root    *ParentJobFacetRoot `json:"root,omitempty"`
+}
+
 // SQLJobFacet
 type SQLJobFacet struct {
 	// URI identifying the producer of this metadata.
@@ -1338,6 +1350,21 @@ type OwnershipJobFacetOwner struct {
 	Name string `json:"name"`
 	// The type of ownership (optional)
 	Type *string `json:"type,omitempty"`
+}
+
+// ParentJobFacetJob
+type ParentJobFacetJob struct {
+	// Selected subset of facets of the referenced job (not the current job), forwarded here for convenience. See the referenced job's own event for full information.
+	Facets map[string]interface{} `json:"facets,omitempty"`
+	// The unique name for that job within that namespace
+	Name string `json:"name"`
+	// The namespace containing that job
+	Namespace string `json:"namespace"`
+}
+
+// ParentJobFacetRoot
+type ParentJobFacetRoot struct {
+	Job ParentJobFacetJob `json:"job"`
 }
 
 // ParentRunFacetJob

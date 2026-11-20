@@ -4,7 +4,7 @@ import datetime
 
 import pytest
 from openlineage.client.event_v2 import DatasetEvent, Job, JobEvent, Run, RunEvent, RunState, StaticDataset
-from openlineage.client.facet_v2 import parent_run
+from openlineage.client.facet_v2 import parent_job, parent_run
 from openlineage.client.transport.transform.transformers.job_namespace_replace_transformer import (
     JobNamespaceReplaceTransformer,
 )
@@ -181,3 +181,48 @@ def test_transformer_with_include_parent_false_and_parent_run_facet_present():
             job=parent_run.RootJob(namespace="root_job_namespace", name="root_job_name"),  # Unchanged
         ),
     )
+
+
+def _parent_job_facet():
+    return parent_job.ParentJobFacet(
+        job=parent_job.ParentJobFacetJob(namespace="parent_job_namespace", name="parent_job_name"),
+        root=parent_job.ParentJobFacetRoot(
+            job=parent_job.ParentJobFacetJob(namespace="root_job_namespace", name="root_job_name")
+        ),
+    )
+
+
+@pytest.mark.parametrize("include_parent_facet", [True, False])
+def test_transformer_replaces_parent_job_facet_for_job_event(include_parent_facet):
+    event = JobEvent(
+        eventTime=datetime.datetime.now().isoformat(),
+        job=Job(namespace="old_namespace", name="test", facets={"parent": _parent_job_facet()}),
+        producer="prod",
+    )
+
+    transformer = JobNamespaceReplaceTransformer(
+        properties={"new_job_namespace": "new_namespace", "include_parent_facet": include_parent_facet}
+    )
+    result = transformer.transform(event)
+
+    expected_parent = "new_namespace" if include_parent_facet else "parent_job_namespace"
+    expected_root = "new_namespace" if include_parent_facet else "root_job_namespace"
+    assert result.job.namespace == "new_namespace"
+    assert result.job.facets["parent"].job.namespace == expected_parent
+    assert result.job.facets["parent"].root.job.namespace == expected_root
+
+
+def test_transformer_replaces_parent_job_facet_for_run_event():
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime=datetime.datetime.now().isoformat(),
+        run=Run(runId=str(generate_new_uuid())),
+        job=Job(namespace="old_namespace", name="test", facets={"parent": _parent_job_facet()}),
+        producer="prod",
+    )
+
+    transformer = JobNamespaceReplaceTransformer(properties={"new_job_namespace": "new_namespace"})
+    result = transformer.transform(event)
+
+    assert result.job.facets["parent"].job.namespace == "new_namespace"
+    assert result.job.facets["parent"].root.job.namespace == "new_namespace"
