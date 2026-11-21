@@ -1077,6 +1077,7 @@ It can be installed also by specifying kafka client extension: `pip install open
   Default values for `messageKey` are:
   - `run:{rootJob.namespace}/{rootJob.name}` - for RunEvent with parent facet containing link to `root` job
   - `run:{parentJob.namespace}/{parentJob.name}` - for RunEvent with parent facet
+  - `run:{rootJob.namespace}/{rootJob.name}` or `run:{parentJob.namespace}/{parentJob.name}` - for RunEvent with a `ParentJobFacet` on its job (and no `ParentRunFacet`), where the parent run is not known
   - `run:{job.namespace}/{job.name}` - for RunEvent
   - `job:{job.namespace}/{job.name}` - for JobEvent
   - `dataset:{dataset.namespace}/{dataset.name}` - for DatasetEvent

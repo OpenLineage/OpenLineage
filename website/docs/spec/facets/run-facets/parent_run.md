@@ -23,7 +23,10 @@ a source of truth if the two ever differ. In practice, the forwarded facets and 
 the specification only defines the shape of this field - it cannot guarantee that every implementation keeps the forwarded values
 in sync with the parent's own event. Resolving the parent run's own event remains the authoritative way to get full information.
 
-Example: 
+To document the design-time hierarchy between jobs on Job events, see the [Parent Job Facet](../job-facets/parent_job.md).
+On Run events, the Parent Run Facet takes precedence.
+
+Example:
 
 ```json
 {
