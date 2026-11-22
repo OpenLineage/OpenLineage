@@ -7,7 +7,7 @@ Unit tests for facets module.
 Tests cover custom Prefect deployment facet definition and properties.
 """
 
-from openlineage.client.facet import BaseFacet
+from openlineage.client.facet_v2 import BaseFacet
 from openlineage.client.serde import Serde
 from prefect_adapter.facets.run_facets import PrefectDeploymentRunFacet
 

@@ -8,7 +8,7 @@ from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
-from openlineage.client.run import RunEvent, RunState
+from openlineage.client.event_v2 import RunEvent, RunState
 from openlineage_prefect.prefect_adapter.adapter import (
     PRODUCER,
     DatasetInfo,

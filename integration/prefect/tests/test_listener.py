@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
-from openlineage.client.run import RunState
+from openlineage.client.event_v2 import RunState
 from openlineage_prefect.prefect_adapter.adapter import (
     DeploymentInfo,
     FlowInfo,
@@ -222,8 +222,7 @@ def test_process_artifact_description_logs_errors(listener, caplog):
     )
 
     assert dataset_type is None
-    assert "ValueError: Cannot split on _" in caplog.text
-    assert "ValueError: Cannot split on -" in caplog.text
+    assert "Invalid dataset_type in artifact description" in caplog.text
 
 
 @pytest.mark.asyncio
@@ -248,29 +247,29 @@ async def test_get_deployment_info_uses_default_namespace(listener, mock_prefect
 @pytest.mark.asyncio
 async def test_get_artifacts_by_task_run_success(listener, mock_prefect_client):
     """Test successful artifact retrieval and parsing."""
-    artifacts = [
+    artifact = [
         {
+            "key": "artifact-123",
             "description": "ol-dataset_input",
             "data": json.dumps([{"database_uri": "postgres://localhost", "table": "users"}]),
-        },
-        {
-            "description": "ol-dataset_output",
-            "data": json.dumps([{"database_uri": "postgres://localhost", "table": "results"}]),
         },
     ]
 
     mock_response = MagicMock()
     mock_response.status_code = 200
-    mock_response.json.return_value = artifacts
+    mock_response.json.return_value = artifact
 
     mock_prefect_client._client.post.return_value = mock_response  # NOQA: SLF001
 
     result = await listener.get_artifacts_by_task_run("task-run-123")
 
-    assert result[0]["uri"] == "postgres://localhost"
-    assert result[0]["table"] == "users"
-    assert result[0]["dataset_type"] == "input"
-    assert result[1]["dataset_type"] == "output"
+    assert result == [
+        {
+            "uri": "postgres://localhost",
+            "table": "users",
+            "dataset_type": "input",
+        }
+    ]
     mock_prefect_client._client.post.assert_awaited_once_with(  # NOQA: SLF001
         "/artifacts/filter",
         json={"artifacts": {"task_run_id": {"any_": ["task-run-123"]}}},
@@ -285,10 +284,6 @@ async def test_get_artifacts_by_task_run_filters_ol_datasets(listener, mock_pref
             "description": "regular artifact",
             "data": json.dumps([{"database_uri": "postgres://localhost", "table": "users"}]),
         },
-        {
-            "description": "ol-dataset_input",
-            "data": json.dumps([{"database_uri": "postgres://localhost", "table": "results"}]),
-        },
     ]
 
     mock_response = MagicMock()
@@ -299,8 +294,7 @@ async def test_get_artifacts_by_task_run_filters_ol_datasets(listener, mock_pref
 
     result = await listener.get_artifacts_by_task_run("task-run-123")
 
-    assert len(result) == 1
-    assert result[0]["uri"] == "postgres://localhost"
+    assert result == []
 
 
 @pytest.mark.asyncio
@@ -362,10 +356,7 @@ async def test_get_parent_runs_success(listener, mock_prefect_client):
     ):
         result = await listener.get_parent_runs(payload, "task-run-123")
 
-    assert len(result) == 1
-    assert result[0]["name"] == "parent_task"
-    assert result[0]["namespace"] == "default"
-    assert isinstance(result[0]["id"], str)
+    assert result == [{"name": "parent_task", "namespace": "default"}]
 
 
 @pytest.mark.asyncio

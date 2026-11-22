@@ -10,7 +10,7 @@ import re
 from datetime import datetime
 
 import httpx
-from openlineage.client.run import RunState
+from openlineage.client.event_v2 import RunState
 from openlineage.client.uuid import generate_static_uuid
 from openlineage_prefect.prefect_adapter.adapter import (
     DatasetInfo,
