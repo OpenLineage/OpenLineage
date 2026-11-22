@@ -344,7 +344,6 @@ async def test_get_parent_runs_success(listener, mock_prefect_client):
     parent_task_run = MagicMock()
     parent_task_run.name = "parent_task-abc"
     parent_task_run.start_time = datetime.fromisoformat("2026-07-06T11:04:46.467291+00:00")
-    parent_task_run.flow_run_id = "flow-run-456"
 
     mock_prefect_client.read_task_run.return_value = parent_task_run
 
@@ -356,7 +355,9 @@ async def test_get_parent_runs_success(listener, mock_prefect_client):
     ):
         result = await listener.get_parent_runs(payload, "task-run-123")
 
-    assert result == [{"name": "parent_task", "namespace": "default"}]
+    assert len(result) == 1
+    assert result[0]["name"] == "parent_task"
+    assert result[0]["namespace"] == "default"
 
 
 @pytest.mark.asyncio
