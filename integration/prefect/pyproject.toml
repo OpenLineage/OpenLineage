@@ -37,6 +37,7 @@ dev = [
     "pytest-env",
     "pytest-timeout>=2.3.1",
     "pytest-xdist",
+    "ruff",
 ]
 
 [project.urls]
