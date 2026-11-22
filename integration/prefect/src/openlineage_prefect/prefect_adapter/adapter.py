@@ -6,7 +6,13 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from openlineage.client import OpenLineageClient
-from openlineage.client.event_v2 import Dataset
+from openlineage.client.event_v2 import (
+    Dataset,
+    Job,
+    Run,
+    RunEvent,
+    RunState,
+)
 from openlineage.client.facet_v2 import (
     error_message_run,
     job_dependencies_run,
@@ -15,7 +21,6 @@ from openlineage.client.facet_v2 import (
     parent_run,
     processing_engine_run,
 )
-from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage_prefect.prefect_adapter.facets.run_facets import PrefectDeploymentRunFacet
 
 PRODUCER: str = "https://github.com/OpenLineage/openlineage/integration/prefect"

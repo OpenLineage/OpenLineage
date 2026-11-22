@@ -6,13 +6,16 @@ The `openlineage-prefect` integration collects, adapts, and emits Prefect flow a
 
 The integration collects and emits lineage metadata of Prefect tasks and flows, enabling the analysis of both over time in OpenLineage-compatible consumers. A custom facet collects deployment information, and other OpenLineage facets are leveraged to collect version information, input and output datasets, parent run information, and nominal start times of runs.
 
-**Note:** by default, the integration tracks runs of idempotent tasks and flows. If tracking unique runs is preferred, environment variables are provided to override the default behavior. 
+### Job Naming
+By default, the integration tracks runs of idempotent tasks and flows. If tracking unique runs is preferred, environment variables are provided to override the default behavior. 
 - To collect unique task runs, set the TASK_NAME_TYPE env variable to "full". Setting it to "base" reverts to the default idempotent names.
 - To collect unique flow runs, set the FLOW_NAME_TYPE env variable to "flow-run". Setting it to "flow" reverts to the default idempotent names.
 ```sh
 export TASK_NAME_TYPE="full"
 export FLOW_NAME_TYPE="flow-run"
 ```
+
+**Note:** the integration does not emit events for standalone tasks -- i.e., task runs outside flow runs.
 
 OpenLineage Datasets enable the aggregation of a data source's producers and consumers across OpenLineage-compatible systems and platforms. This allows for the tracking of external upstream and downstream dependencies of Prefect data sources together with their producing and consuming tasks in Prefect flows. For more details, see "Leveraging Datasets" below.
 
@@ -45,9 +48,11 @@ work_pool:
 
 For more details of OpenLineage transport options and how to configure them, consult the [OpenLineage Python Client Documentation](https://openlineage.io/docs/client/python/).
 
+**Note on replays:** the integration extends the replay behavior of the Prefect Python client, which requests events from the previous 60 seconds on restart. 
+
 ## Leveraging Datasets
 
-The integration looks for OpenLineage Datasets in Prefect Artifacts. To attach an input or output Dataset to a job run, use `create_table_artifact` from the Prefect Artifact library to create an Artifact in a task definition context. Provide a database URI and table name via an Artifact's `table` and `description`, respectively, as shown below. Distinguish the type of Dataset by appending `_output` or `_input` to `ol-dataset` in the description.
+The integration looks for OpenLineage Datasets in Prefect Artifacts. To attach an input or output Dataset to a job run, use `create_table_artifact` from the Prefect Artifact library to create an Artifact in a task definition context. Create a new Artifact for each dataset. Provide a database URI and table name via an Artifact's `table` and `description`, respectively, as shown below. Distinguish the type of Dataset by appending `_output` or `_input` to `ol-dataset` in the description.
 
 For example:
 
@@ -60,6 +65,8 @@ create_table_artifact(
     description="ol-dataset_output"
 )
 ```
+
+**Note on dataset naming:** do not include passwords in Postgres URIs. See [OpenLineage Naming Conventions](https://openlineage.io/docs/spec/naming) for guidance on constructing names. 
 
 ## Execution
 

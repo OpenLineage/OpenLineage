@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import attr
-from openlineage.client.facet import BaseFacet
+from openlineage.client.facet_v2 import RunFacet
 
 
 @attr.define
-class PrefectDeploymentRunFacet(BaseFacet):
+class PrefectDeploymentRunFacet(RunFacet):
     deploymentId: str  # NOQA: N815
     created: str
     updated: str

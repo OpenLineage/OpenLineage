@@ -70,6 +70,7 @@ def test_build_run_id_returns_string(listener):
         execution_time=datetime.fromisoformat("2026-07-06T11:04:46.467291+00:00"),
         run_name="test_flow",
         namespace="default",
+        prefect_run_id="prefect-run-id",
     )
     assert isinstance(run_id, str)
     assert len(run_id) > 0
@@ -81,8 +82,9 @@ def test_build_run_id_deterministic(listener):
     run_name = "test_flow"
     namespace = "default"
 
-    run_id_1 = listener.build_run_id(execution_time, run_name, namespace)
-    run_id_2 = listener.build_run_id(execution_time, run_name, namespace)
+    prefect_run_id = "prefect-run-id"
+    run_id_1 = listener.build_run_id(execution_time, run_name, namespace, prefect_run_id)
+    run_id_2 = listener.build_run_id(execution_time, run_name, namespace, prefect_run_id)
 
     assert run_id_1 == run_id_2
 
@@ -91,8 +93,9 @@ def test_build_run_id_different_for_different_inputs(listener):
     """Test that different inputs produce different UUIDs."""
     execution_time = datetime.fromisoformat("2026-07-06T11:04:46.467291+00:00")
 
-    run_id_1 = listener.build_run_id(execution_time, "flow_a", "default")
-    run_id_2 = listener.build_run_id(execution_time, "flow_b", "default")
+    prefect_run_id = "prefect-run-id"
+    run_id_1 = listener.build_run_id(execution_time, "flow_a", "default", prefect_run_id)
+    run_id_2 = listener.build_run_id(execution_time, "flow_b", "default", prefect_run_id)
 
     assert run_id_1 != run_id_2
 
