@@ -32,6 +32,7 @@ Right now, `openlineage-dbt` supports only these dbt adapters:
 * `fabric` (Microsoft Fabric Warehouse)
 * `dremio`
 * `duckdb`
+* `polars` ([dbt-polars](https://github.com/datamindedbe/dbt-polars), Iceberg REST and SQL catalogs only, see [dbt-polars](#dbt-polars))
 
 ## Installation
 
@@ -96,6 +97,48 @@ Additional table and column level metadata will be available if `catalog.json`, 
 If you need to send events without running the job you can use the command `dbt-ol send-events`, it will send the metadata of your last run without running the job.
 
 Commands other than `run`, `build`, `test`, `seed`, `snapshot` and `retry` produce no lineage: `dbt-ol` runs them as plain `dbt`, without sending OpenLineage events. Earlier versions sent a wrapper START and COMPLETE/FAIL event for commands like `compile`, `run-operation` and `docs generate` in the default mode; they no longer do.
+
+### dbt-polars
+
+[dbt-polars](https://github.com/datamindedbe/dbt-polars) runs models in-process with Polars and stores tables
+in the catalogs listed in the profile. `openlineage-dbt` supports its Iceberg catalogs that pyiceberg reaches
+through a REST or a SQL catalog:
+
+```bash
+$ pip3 install openlineage-dbt 'dbt-polars[iceberg]'
+$ dbt-ol build
+```
+
+For dbt-polars, the `database` of a relation is the name of a catalog in the profile, which is local to the
+project. Datasets are named after the physical catalog instead:
+
+| pyiceberg catalog | Namespace                                       | Name                                       |
+|:------------------|:------------------------------------------------|:-------------------------------------------|
+| REST              | catalog `uri`, e.g. `https://catalog.example.com/api/catalog` | `{warehouse}.{schema}.{table}`, or `{schema}.{table}` without a `warehouse` |
+| SQL               | catalog `uri`, e.g. `sqlite:///catalog.db` or `postgresql://host:5432/iceberg` | `{catalog name in the profile}.{schema}.{table}` |
+
+The `uri` is written without user name, password, query string, fragment, SQLAlchemy driver, default HTTP(S)
+port or trailing slash. A REST `warehouse` that is a URL is cleaned the same way. Other catalog options,
+such as `token` or `credential`, are never read. A SQL catalog's own name is part of the dataset name because
+pyiceberg keeps the tables of several catalogs in one database and tells them apart by that name. A relative
+SQLite path is kept as written: dbt-polars resolves it against the project directory.
+
+Each model, source and test uses the namespace of its own catalog, so a project that sets `catalog` on
+some models or sources, or reads across several catalogs, gets one namespace per catalog.
+
+Limitations:
+
+* Other dbt-polars catalogs (local files, S3, Azure, Databricks, Fabric, Snowflake), other pyiceberg catalog
+  types (Glue, Hive, ...), `py-catalog-impl`, in-memory SQL catalogs and catalogs whose `uri` comes from
+  `.pyiceberg.yaml` or `PYICEBERG_*` variables instead of the profile are not supported. Listing them in the
+  profile is fine, but lineage processing fails with an error when a model, source or test uses one, rather
+  than reporting a dataset that could not be identified.
+* A REST catalog is identified by the `uri` and `warehouse` in the profile; vendor-specific dataset names, such
+  as `unitycatalog://` for Unity Catalog's Iceberg REST endpoint, are not derived.
+* Column-level lineage comes from parsing the compiled SQL and was tested with simple projections only. When
+  the parser does not understand a statement, or a column comes from a catalog that cannot be identified, the
+  `columnLineage` facet is left out; table-level lineage is still reported. Python models have no column-level
+  lineage.
 
 ### dbt Core v2
 

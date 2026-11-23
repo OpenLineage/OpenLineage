@@ -48,6 +48,7 @@ from openlineage.common.provider.dbt.facets import (
     DbtVersionRunFacet,
     ParentRunMetadata,
 )
+from openlineage.common.provider.dbt.polars import PolarsCatalogs, parse_polars_profile
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
 from openlineage.common.provider.fabric import canonical_fabric_endpoint
 from openlineage.common.provider.snowflake import fix_account_name
@@ -73,6 +74,7 @@ class Adapter(Enum):
     GLUE = "glue"
     CLICKHOUSE = "clickhouse"
     FABRIC = "fabric"
+    POLARS = "polars"
 
     @staticmethod
     def adapters() -> str:
@@ -203,6 +205,9 @@ class DbtArtifactProcessor:
         # the primary dataset namespace. For Athena, this is populated from the supported
         # assume-role ARN or a best-effort STS lookup; lookup failures leave it unset.
         self.dataset_symlink_namespace: str | None = None
+        # dbt-polars relations live in catalogs named in the profile, so their namespace
+        # is resolved per dataset from the relation's database (the catalog name).
+        self.polars_catalogs: PolarsCatalogs | None = None
         # Populated by parse(); retained so manifest-declared exposures can be indexed
         # and attached to the datasets they depend on.
         self.manifest: dict[str, Any] = {}
@@ -829,14 +834,19 @@ class DbtArtifactProcessor:
         has_facets: bool = False,
     ) -> tuple[str, str, dict, dict]:
         """Resolve physical source identifiers or materialized aliases with dataset facets."""
+        if node.type == "source":
+            table = node.metadata_node.get("identifier") or node.metadata_node["name"]
+        else:
+            table = node.metadata_node["alias"]
+        namespace, name = self._dataset_identity(
+            node.metadata_node["database"], node.metadata_node["schema"], table
+        )
         facets: dict[str, DatasetFacet] = {}
         input_facets: dict[str, InputDatasetFacet] = {}
         if symlink := self._create_dataset_symlink(node):
             facets["symlinks"] = symlink
         if has_facets:
-            facets["dataSource"] = datasource_dataset.DatasourceDatasetFacet(
-                name=self.dataset_namespace, uri=self.dataset_namespace
-            )
+            facets["dataSource"] = datasource_dataset.DatasourceDatasetFacet(name=namespace, uri=namespace)
 
             documentation = node.metadata_node.get("description", "")
             if documentation:
@@ -865,20 +875,13 @@ class DbtArtifactProcessor:
 
             if dbt_model_facet := self._create_dbt_model_dataset_facet(node):
                 facets["dbt_model"] = dbt_model_facet
-        if node.type == "source":
-            table = node.metadata_node.get("identifier") or node.metadata_node["name"]
-        else:
-            table = node.metadata_node["alias"]
-        return (
-            self.dataset_namespace,
-            self._format_dataset_name(
-                node.metadata_node["database"],
-                node.metadata_node["schema"],
-                table,
-            ),
-            facets,
-            input_facets,
-        )
+        return namespace, name, facets, input_facets
+
+    def _dataset_identity(self, database: str | None, schema: str | None, table: str) -> tuple[str, str]:
+        """The namespace and name of the table ``database.schema.table`` of a dbt relation."""
+        if self.adapter_type == Adapter.POLARS and self.polars_catalogs:
+            return self.polars_catalogs.dataset_identity(database, schema, table)
+        return self.dataset_namespace, self._format_dataset_name(database, schema, table)
 
     def _create_dataset_symlink(self, node: ModelNode) -> symlinks_dataset.SymlinksDatasetFacet | None:
         """Create an alternate catalog identifier for an Athena dataset.
@@ -1201,6 +1204,11 @@ class DbtArtifactProcessor:
                 return f"arn:aws:glue:{profile['region']}:{profile['role_arn'].split(':')[4]}"
         elif self.adapter_type == Adapter.DUCKDB:
             return f"duckdb://{profile['path']}"
+        elif self.adapter_type == Adapter.POLARS:
+            # Datasets get the namespace of their own catalog (see _dataset_identity);
+            # this is the default catalog's, empty when it is not supported.
+            self.polars_catalogs = parse_polars_profile(profile)
+            return self.polars_catalogs.default_namespace
         elif self.adapter_type == Adapter.SPARK:
             port = ""
 
@@ -1350,21 +1358,26 @@ class DbtArtifactProcessor:
             fields = {}
             if parsed:
                 for cll_item in parsed.column_lineage:
-                    fields[cll_item.descendant.name] = column_lineage_dataset.Fields(
-                        inputFields=[
-                            column_lineage_dataset.InputField(
-                                namespace=namespace,
-                                name=self._format_dataset_name(
-                                    column_meta.origin.database,
-                                    column_meta.origin.schema,
-                                    column_meta.origin.name,
-                                ),
-                                field=column_meta.name,
+                    input_fields = []
+                    for column_meta in cll_item.lineage:
+                        if not column_meta.origin:
+                            continue
+                        origin = column_meta.origin
+                        if self.adapter_type == Adapter.POLARS:
+                            field_namespace, field_dataset = self._dataset_identity(
+                                origin.database, origin.schema, origin.name
                             )
-                            for column_meta in cll_item.lineage
-                            if column_meta.origin
-                        ],
-                    )
+                        else:
+                            field_namespace = namespace
+                            field_dataset = self._format_dataset_name(
+                                origin.database, origin.schema, origin.name
+                            )
+                        input_fields.append(
+                            column_lineage_dataset.InputField(
+                                namespace=field_namespace, name=field_dataset, field=column_meta.name
+                            )
+                        )
+                    fields[cll_item.descendant.name] = column_lineage_dataset.Fields(inputFields=input_fields)
             if fields:
                 return column_lineage_dataset.ColumnLineageDatasetFacet(fields=fields)
         except Exception as e:
