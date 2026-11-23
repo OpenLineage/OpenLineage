@@ -1191,6 +1191,16 @@ def test_parse_waits_for_dbt_after_event_parsing_error(
         error = end.run.facets["extractionError"].errors[0]
         assert error.errorMessage.startswith("Failed to parse a dbt log event")
         assert "JSONDecodeError" in error.errorMessage
+        assert datetime.datetime.fromisoformat(end.eventTime).utcoffset() == datetime.timedelta(0)
+
+
+def test_dbt_command_abort_event_time_is_utc():
+    processor = node_finished_processor()
+
+    event = processor._get_dbt_command_abort_event()
+
+    assert event.eventType.value == "ABORT"
+    assert datetime.datetime.fromisoformat(event.eventTime).utcoffset() == datetime.timedelta(0)
 
 
 @pytest.mark.parametrize(
