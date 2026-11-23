@@ -94,6 +94,8 @@ def test_column_lineage_uses_catalog_identity():
             "postgresql+psycopg2://u:p@/iceberg?host=db.example.com&port=5433",
             "postgresql://db.example.com:5433/iceberg",
         ),
+        ("postgresql:///iceberg?host=::1&port=5432", "postgresql://[::1]:5432/iceberg"),
+        ("postgresql:///iceberg?host=[fd00::7]", "postgresql://[fd00::7]/iceberg"),
         ("sqlite://", None),
         ("sqlite:///:memory:", None),
         ("sqlite:///file:cat?mode=memory&uri=true", None),

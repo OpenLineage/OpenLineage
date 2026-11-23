@@ -156,8 +156,11 @@ def _resolve_catalog(entry: dict[str, Any]) -> PolarsCatalog:
         hosts = query.get("host", [])
         if len(hosts) != 1 or not hosts[0] or hosts[0].startswith("/") or "," in hosts[0]:
             return unsupported("the SQL catalog uri does not name a single database server")
+        host = hosts[0].strip("[]")
+        if ":" in host:  # IPv6 literal
+            host = f"[{host}]"
         port = query.get("port", [""])[0]
-        parts = parts._replace(netloc=f"{hosts[0]}:{port}" if port else hosts[0])
+        parts = parts._replace(netloc=f"{host}:{port}" if port else host)
     namespace = _strip_credentials(parts, drop_driver=True)
     return PolarsCatalog(alias=alias, namespace=namespace, catalog=alias)
 
