@@ -16,7 +16,7 @@ producing a dataset that could be confused with another one.
 from __future__ import annotations
 
 from typing import Any
-from urllib.parse import SplitResult, urlsplit
+from urllib.parse import SplitResult, parse_qs, urlsplit
 
 import attr
 
@@ -141,12 +141,24 @@ def _resolve_catalog(entry: dict[str, Any]) -> PolarsCatalog:
             namespace=_strip_credentials(parts),
             catalog=_normalize_warehouse(warehouse) if warehouse else None,
         )
-    # SQL catalog
-    if ":memory:" in uri:
-        return unsupported("in-memory SQL catalogs are not persistent")
-    # pyiceberg's SQL catalog keeps the tables of every catalog in one database and tells
-    # them apart by catalog name, which dbt-polars sets to the catalog's name in the profile.
-    namespace = _strip_credentials(urlsplit(uri), drop_driver=True)
+    # SQL catalog. pyiceberg's SQL catalog keeps the tables of every catalog in one database
+    # and tells them apart by catalog name, which dbt-polars sets to the catalog's name in
+    # the profile.
+    parts = urlsplit(uri)
+    query = parse_qs(parts.query)
+    if parts.scheme.lower().startswith("sqlite"):
+        database = parts.path[1:]  # sqlite:///relative.db or sqlite:////absolute.db
+        if not database or ":memory:" in database or "memory" in query.get("mode", []):
+            return unsupported("in-memory SQLite catalogs are not persistent")
+    elif not parts.hostname:
+        # SQLAlchemy also takes the server from a "host" query parameter, possibly a
+        # socket directory or several hosts. Only a single network host is identifiable.
+        hosts = query.get("host", [])
+        if len(hosts) != 1 or not hosts[0] or hosts[0].startswith("/") or "," in hosts[0]:
+            return unsupported("the SQL catalog uri does not name a single database server")
+        port = query.get("port", [""])[0]
+        parts = parts._replace(netloc=f"{hosts[0]}:{port}" if port else hosts[0])
+    namespace = _strip_credentials(parts, drop_driver=True)
     return PolarsCatalog(alias=alias, namespace=namespace, catalog=alias)
 
 

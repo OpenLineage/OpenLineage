@@ -838,9 +838,11 @@ class DbtArtifactProcessor:
             table = node.metadata_node.get("identifier") or node.metadata_node["name"]
         else:
             table = node.metadata_node["alias"]
-        namespace, name = self._dataset_identity(
-            node.metadata_node["database"], node.metadata_node["schema"], table
-        )
+        database = node.metadata_node["database"]
+        if self.adapter_type == Adapter.POLARS:
+            # dbt-polars stores a relation in its configured catalog, else in its database
+            database = (node.metadata_node.get("config") or {}).get("catalog") or database
+        namespace, name = self._dataset_identity(database, node.metadata_node["schema"], table)
         facets: dict[str, DatasetFacet] = {}
         input_facets: dict[str, InputDatasetFacet] = {}
         if symlink := self._create_dataset_symlink(node):

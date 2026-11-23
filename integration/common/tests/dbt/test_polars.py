@@ -84,3 +84,34 @@ def test_column_lineage_uses_catalog_identity():
         "id": [("https://catalog.example.com/api/catalog", "lakehouse.s.a")],
         "x": [("sqlite:///catalog.db", "local.s.b")],
     }
+
+
+@pytest.mark.parametrize(
+    ("uri", "expected"),
+    [
+        ("sqlite:///catalog.db", "sqlite:///catalog.db"),
+        (
+            "postgresql+psycopg2://u:p@/iceberg?host=db.example.com&port=5433",
+            "postgresql://db.example.com:5433/iceberg",
+        ),
+        ("sqlite://", None),
+        ("sqlite:///:memory:", None),
+        ("sqlite:///file:cat?mode=memory&uri=true", None),
+        ("postgresql:///iceberg?host=/var/run/postgresql", None),
+        ("postgresql:///iceberg", None),
+    ],
+)
+def test_sql_catalog_endpoint(uri, expected):
+    processor = processor_for({"type": "polars", "catalogs": [{**SQL, "uri": uri}]})
+    if expected:
+        assert processor.dataset_namespace == expected
+    else:
+        with pytest.raises(NotImplementedError):
+            processor.node_to_dataset(model("local"))
+
+
+def test_configured_catalog_wins_over_database():
+    processor = processor_for({"type": "polars", "catalog": "local", "catalogs": [REST, SQL]})
+    node = model("local")
+    node.metadata_node["config"] = {"catalog": "lake"}
+    assert processor.node_to_dataset(node).namespace == "https://catalog.example.com/api/catalog"
