@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import sys
 import time
 
-runtime_version = os.environ.get("DATABRICKS_RUNTIME_VERSION", None).replace(".", "_")
+# suffix for names and paths, e.g. 16_4_scala2_13, passed by DatabricksEnvironment.runScript
+runtime_version = sys.argv[1]
 
 dbutils.fs.rm("dbfs:/user/hive/warehouse/test_db.db/updates_{}".format(runtime_version), True)
 dbutils.fs.rm("dbfs:/user/hive/warehouse/test_db.db/events_{}".format(runtime_version), True)
