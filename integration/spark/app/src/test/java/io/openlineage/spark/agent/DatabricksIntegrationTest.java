@@ -262,9 +262,13 @@ class DatabricksIntegrationTest {
             .findFirst()
             .get();
 
-    // assert input and output are the same
+    // assert input and output are the same table. Only the table name is compared, not the path:
+    // the first output found can be the DROP TABLE IF EXISTS event, which reports the table's
+    // LOCATION only if the listener handles it before the drop finishes, and the default warehouse
+    // path otherwise.
     assertThat(inputDataset.getNamespace()).isEqualTo(outputDataset.getNamespace());
-    assertThat(inputDataset.getName()).isEqualTo(outputDataset.getName());
+    assertThat(inputDataset.getName()).endsWith("/t1_" + platformVersion);
+    assertThat(outputDataset.getName()).endsWith("/t1_" + platformVersion);
     assertThat(runEvents.size()).isLessThan(20);
   }
 
