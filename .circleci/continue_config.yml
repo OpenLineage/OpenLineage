@@ -871,7 +871,7 @@ jobs:
                 # the Databricks runtime for this Spark/Scala version, so the CI principal does not
                 # need cluster creation rights. See DatabricksIntegrationTest.
                 name: Run Databricks integration tests on a pre-created cluster
-                command: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Dopenlineage.tests.databricks.workspace.host=$DATABRICKS_HOST -Dopenlineage.tests.databricks.workspace.token=$DATABRICKS_TOKEN -Dopenlineage.tests.databricks.development.createTestCluster=true
+                command: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Dopenlineage.tests.databricks.workspace.host=$DATABRICKS_HOST -Dopenlineage.tests.databricks.workspace.token=$DATABRICKS_TOKEN
             - store_test_results:
                 path: app/build/test-results/databricksIntegrationTest
             - store_artifacts:
