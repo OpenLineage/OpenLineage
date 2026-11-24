@@ -74,6 +74,9 @@ def parse_multiple_args(args, keys: list[str], default=None) -> list[str]:
             # `--foo bar baz` case
             if arg == key:
                 cur_key = arg
+                # A repeated key starts a fresh value, so drop the previous one
+                # instead of letting the append below collect it a second time.
+                cur_value = None
             # `--foo=bar` with single value case
             elif arg.startswith(f"{key}="):
                 parsed_values.append(arg.split("=", 1)[1])
@@ -89,6 +92,7 @@ def parse_multiple_args(args, keys: list[str], default=None) -> list[str]:
             # Add cur_value only if it's set, if cur_key is set and the argument is
             if cur_key and cur_value:
                 parsed_values.append(cur_value)
+                cur_value = None
 
     return parsed_values or default or []
 

@@ -87,6 +87,22 @@ def test_parse_multiple_args():
     ) == ["model1", "model2", "model3", "model4"]
 
 
+SELECTION_KEYS = ["-m", "-s", "--model", "--models", "--select"]
+
+
+@pytest.mark.parametrize(
+    "args, expected",
+    [
+        (["--select", "model1", "--select", "model2"], ["model1", "model2"]),
+        (["-s", "model1", "-s", "model2", "-s", "model3"], ["model1", "model2", "model3"]),
+        (["--select", "model1", "--select=model2"], ["model1", "model2"]),
+        (["--select", "model1", "model2", "--select", "model3"], ["model1", "model2", "model3"]),
+    ],
+)
+def test_parse_multiple_args_repeated_key_does_not_duplicate(args, expected):
+    assert parse_multiple_args(["dbt", "run", *args], SELECTION_KEYS) == expected
+
+
 @pytest.mark.parametrize(
     "command_line, arg_name, arg_value, expected_command_line",
     [
