@@ -47,10 +47,15 @@ public class DataSourceV2RelationDatasetExtractor {
         includeVersionFacet);
   }
 
+  /** For input datasets: the version comes from the table the relation holds when it can. */
   public static <D extends OpenLineage.Dataset> List<D> extractIncludingVersionFacet(
       DatasetFactory<D> datasetFactory, OpenLineageContext context, DataSourceV2Relation relation) {
     return extract(
-        datasetFactory, context, relation, datasetFactory.createCompositeFacetBuilder(), true);
+        datasetFactory,
+        context,
+        relation,
+        datasetFactory.createCompositeFacetBuilder(),
+        VersionSource.INPUT);
   }
 
   public static <D extends OpenLineage.Dataset> List<D> extractIncludingVersionFacet(
@@ -58,7 +63,7 @@ public class DataSourceV2RelationDatasetExtractor {
       OpenLineageContext context,
       DataSourceV2Relation relation,
       DatasetCompositeFacetsBuilder datasetFacetsBuilder) {
-    return extract(datasetFactory, context, relation, datasetFacetsBuilder, true);
+    return extract(datasetFactory, context, relation, datasetFacetsBuilder, VersionSource.INPUT);
   }
 
   public static <D extends OpenLineage.Dataset> List<D> extract(
@@ -67,6 +72,20 @@ public class DataSourceV2RelationDatasetExtractor {
       DataSourceV2Relation relation,
       DatasetCompositeFacetsBuilder datasetFacetsBuilder,
       boolean includeVersionFacet) {
+    return extract(
+        datasetFactory,
+        context,
+        relation,
+        datasetFacetsBuilder,
+        includeVersionFacet ? VersionSource.CATALOG : VersionSource.NONE);
+  }
+
+  private static <D extends OpenLineage.Dataset> List<D> extract(
+      DatasetFactory<D> datasetFactory,
+      OpenLineageContext context,
+      DataSourceV2Relation relation,
+      DatasetCompositeFacetsBuilder datasetFacetsBuilder,
+      VersionSource versionSource) {
     OpenLineage openLineage = context.getOpenLineage();
     if (ExtensionDataSourceV2Utils.hasQueryExtensionLineage(relation)) {
       return getQueryDatasets(datasetFactory, relation);
@@ -78,7 +97,11 @@ public class DataSourceV2RelationDatasetExtractor {
               if (ExtensionDataSourceV2Utils.hasExtensionLineage(relation)) {
                 ExtensionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
               } else {
-                if (includeVersionFacet) {
+                if (versionSource == VersionSource.INPUT) {
+                  DatasetVersionDatasetFacetUtils.extractInputVersionFromDataSourceV2Relation(
+                          context, relation)
+                      .ifPresent(s -> datasetFactory.buildVersionFacets(datasetFacetsBuilder, s));
+                } else if (versionSource == VersionSource.CATALOG) {
                   DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
                           context, relation)
                       .ifPresent(s -> datasetFactory.buildVersionFacets(datasetFacetsBuilder, s));
@@ -333,5 +356,11 @@ public class DataSourceV2RelationDatasetExtractor {
       log.warn("Could not resolve dataset from relation {}", relation.simpleString(5), e);
       return Optional.empty();
     }
+  }
+
+  private enum VersionSource {
+    NONE,
+    CATALOG,
+    INPUT
   }
 }

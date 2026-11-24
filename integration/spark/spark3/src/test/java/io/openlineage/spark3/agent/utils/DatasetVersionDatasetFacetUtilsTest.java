@@ -6,9 +6,12 @@
 package io.openlineage.spark3.agent.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
@@ -21,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.iceberg.exceptions.ServiceFailureException;
+import org.apache.iceberg.spark.source.SparkTable;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.connector.catalog.CatalogPlugin;
 import org.apache.spark.sql.connector.catalog.Identifier;
@@ -112,6 +116,96 @@ class DatasetVersionDatasetFacetUtilsTest {
       assertEquals(
           Optional.of("some-version"),
           DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+              openLineageContext, v2Relation));
+    }
+  }
+
+  /** An input's version comes from the Iceberg table the relation holds, without a catalog load. */
+  @Test
+  void testInputVersionComesFromTheRelationsIcebergTable() {
+    SparkTable sparkTable = mock(SparkTable.class);
+    org.apache.iceberg.Table icebergTable = mock(org.apache.iceberg.Table.class);
+    org.apache.iceberg.Snapshot icebergSnapshot = mock(org.apache.iceberg.Snapshot.class);
+    when(v2Relation.table()).thenReturn(sparkTable);
+    when(sparkTable.table()).thenReturn(icebergTable);
+    when(icebergTable.currentSnapshot()).thenReturn(icebergSnapshot);
+    when(icebergSnapshot.snapshotId()).thenReturn(42L);
+
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      assertEquals(
+          Optional.of("42"),
+          DatasetVersionDatasetFacetUtils.extractInputVersionFromDataSourceV2Relation(
+              openLineageContext, v2Relation));
+      mocked.verify(() -> CatalogUtils.getDatasetVersion(any(), any(), any(), any()), never());
+    }
+  }
+
+  /** An Iceberg input with no snapshot yet has no version, and the catalog isn't asked again. */
+  @Test
+  void testInputVersionIsEmptyWhenTheRelationsIcebergTableHasNoSnapshot() {
+    SparkTable sparkTable = mock(SparkTable.class);
+    when(v2Relation.identifier()).thenReturn(Option.apply(identifier));
+    when(v2Relation.catalog()).thenReturn(Option.apply(tableCatalog));
+    when(v2Relation.table()).thenReturn(sparkTable);
+    when(sparkTable.properties()).thenReturn(tableProperties);
+    when(sparkTable.table()).thenReturn(mock(org.apache.iceberg.Table.class));
+
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      when(CatalogUtils.getDatasetVersion(
+              openLineageContext, tableCatalog, identifier, tableProperties))
+          .thenReturn(Optional.of("catalog-version"));
+      assertEquals(
+          Optional.empty(),
+          DatasetVersionDatasetFacetUtils.extractInputVersionFromDataSourceV2Relation(
+              openLineageContext, v2Relation));
+      mocked.verify(() -> CatalogUtils.getDatasetVersion(any(), any(), any(), any()), never());
+    }
+  }
+
+  /** A failure reading the snapshot of the relation's table falls back to one catalog lookup. */
+  @Test
+  void testInputVersionFallsBackToTheCatalogWhenTheRelationsTableFails() {
+    SparkTable sparkTable = mock(SparkTable.class);
+    org.apache.iceberg.Table icebergTable = mock(org.apache.iceberg.Table.class);
+    when(sparkTable.table()).thenReturn(icebergTable);
+    when(icebergTable.currentSnapshot()).thenThrow(new IllegalStateException("refresh failed"));
+    when(sparkTable.properties()).thenReturn(tableProperties);
+    when(v2Relation.identifier()).thenReturn(Option.apply(identifier));
+    when(v2Relation.catalog()).thenReturn(Option.apply(tableCatalog));
+    when(v2Relation.table()).thenReturn(sparkTable);
+
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      when(CatalogUtils.getDatasetVersion(
+              openLineageContext, tableCatalog, identifier, tableProperties))
+          .thenReturn(Optional.of("some-version"));
+      assertEquals(
+          Optional.of("some-version"),
+          DatasetVersionDatasetFacetUtils.extractInputVersionFromDataSourceV2Relation(
+              openLineageContext, v2Relation));
+      verify(icebergTable).currentSnapshot();
+      mocked.verify(
+          () ->
+              CatalogUtils.getDatasetVersion(
+                  openLineageContext, tableCatalog, identifier, tableProperties),
+          times(1));
+    }
+  }
+
+  /** Any other input table keeps the catalog lookup. */
+  @Test
+  void testInputVersionOfANonIcebergTableComesFromTheCatalog() {
+    when(v2Relation.identifier()).thenReturn(Option.apply(identifier));
+    when(v2Relation.catalog()).thenReturn(Option.apply(tableCatalog));
+    when(v2Relation.table()).thenReturn(table);
+    when(table.properties()).thenReturn(tableProperties);
+
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      when(CatalogUtils.getDatasetVersion(
+              openLineageContext, tableCatalog, identifier, tableProperties))
+          .thenReturn(Optional.of("some-version"));
+      assertEquals(
+          Optional.of("some-version"),
+          DatasetVersionDatasetFacetUtils.extractInputVersionFromDataSourceV2Relation(
               openLineageContext, v2Relation));
     }
   }

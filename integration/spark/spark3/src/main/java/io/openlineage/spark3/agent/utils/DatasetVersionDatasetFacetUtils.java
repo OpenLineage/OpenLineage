@@ -9,6 +9,8 @@ import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptiona
 
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergRelationHandler;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergSparkTables;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
@@ -22,6 +24,25 @@ public final class DatasetVersionDatasetFacetUtils {
   private DatasetVersionDatasetFacetUtils() {}
 
   private static final String DELTA = "delta";
+
+  /**
+   * The version of an input dataset. An Iceberg input relation already holds the table the query
+   * reads, so its current snapshot is taken from there instead of loading the table through the
+   * catalog again on every event. Any other relation, or a failure reading the table, falls back to
+   * the catalog lookup. Outputs keep the catalog lookup; they are not changed here.
+   */
+  public static Optional<String> extractInputVersionFromDataSourceV2Relation(
+      OpenLineageContext context, DataSourceV2Relation table) {
+    Optional<Optional<String>> fromRelation = Optional.empty();
+    try {
+      if (new IcebergRelationHandler(context).hasClasses()) {
+        fromRelation = IcebergSparkTables.currentSnapshotId(table.table());
+      }
+    } catch (LinkageError e) {
+      log.debug("Couldn't read the version from the relation's table, loading it instead", e);
+    }
+    return fromRelation.orElseGet(() -> extractVersionFromDataSourceV2Relation(context, table));
+  }
 
   /**
    * Check if we have all the necessary properties in DataSourceV2Relation to get dataset version.
