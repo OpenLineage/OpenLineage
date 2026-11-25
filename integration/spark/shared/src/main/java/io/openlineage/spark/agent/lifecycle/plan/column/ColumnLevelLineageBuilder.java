@@ -283,7 +283,7 @@ public class ColumnLevelLineageBuilder {
 
     List<Pair<SchemaDatasetFacetFields, List<TransformedInput>>> collected =
         schema.getFields().stream()
-            .map(field -> Pair.of(field, getInputsUsedFor(field.getName())))
+            .map(field -> Pair.of(field, getInputsUsedFor(field)))
             .filter(pair -> !pair.getRight().isEmpty())
             .collect(Collectors.toList());
 
@@ -336,6 +336,19 @@ public class ColumnLevelLineageBuilder {
                             .collect(Collectors.toList()))
                     .build())
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Returns the inputs of the given output field. Unlike looking it up by name, it can't be
+   * mistaken for another field whose name only differs by case.
+   */
+  private List<TransformedInput> getInputsUsedFor(OpenLineage.SchemaDatasetFacetFields field) {
+    ExprId outputExprId = outputs.get(field);
+    if (outputExprId == null) {
+      return Collections.emptyList();
+    }
+    String outputExpressionString = isDescriptionsEnabled() ? field.getName() : "";
+    return getInputsUsedFor(outputExprId, outputExpressionString);
   }
 
   List<TransformedInput> getInputsUsedFor(String outputName) {
@@ -445,7 +458,7 @@ public class ColumnLevelLineageBuilder {
         .getFields()
         .forEach(
             field -> {
-              List<TransformedInput> fieldInput = getInputsUsedFor(field.getName());
+              List<TransformedInput> fieldInput = getInputsUsedFor(field);
               if (!fieldInput.isEmpty()) {
                 fieldInputs.put(field.getName(), fieldInput);
               }

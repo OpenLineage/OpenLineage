@@ -440,6 +440,44 @@ class OpenLineageRunEventTimeoutExecutorTest {
     assertThat(executor.isCheckpointColumnLineageTimedOut()).isTrue();
   }
 
+  /**
+   * The inputs may use up the whole datasets budget without timing out, leaving none for the column
+   * lineage. A budget of 0 would otherwise mean no timeout at all.
+   */
+  @Test
+  void testCheckpointColumnLineageIsSkippedWhenDatasetsBudgetIsUsedUp() {
+    when(timeoutConfig.getBuildDatasetsTimePercentage()).thenReturn(80);
+    AtomicBoolean columnLineageBuilt = new AtomicBoolean(false);
+
+    executor.recordDatasetsTimeSpent(80);
+    Optional<CheckpointColumnLineage> result =
+        executor.timeoutCheckpointColumnLineage(
+            () -> {
+              columnLineageBuilt.set(true);
+              return Optional.of(CheckpointColumnLineage.empty());
+            });
+
+    assertThat(result).isEmpty();
+    assertThat(columnLineageBuilt).isFalse();
+    assertThat(executor.isInputsTimedOut()).isFalse();
+    assertThat(executor.isCheckpointColumnLineageTimedOut()).isTrue();
+  }
+
+  @Test
+  void testCheckpointColumnLineageRunsWithoutTimeoutWhenNoneConfigured() {
+    AtomicBoolean columnLineageBuilt = new AtomicBoolean(false);
+
+    executor.recordDatasetsTimeSpent(80);
+    executor.timeoutCheckpointColumnLineage(
+        () -> {
+          columnLineageBuilt.set(true);
+          return Optional.of(CheckpointColumnLineage.empty());
+        });
+
+    assertThat(columnLineageBuilt).isTrue();
+    assertThat(executor.isCheckpointColumnLineageTimedOut()).isFalse();
+  }
+
   @Test
   void testReadingIncompleteCheckpointAddsLogToDebugFacet() {
     OpenLineageRunStatus runStatus = new OpenLineageRunStatus();
@@ -454,7 +492,7 @@ class OpenLineageRunEventTimeoutExecutorTest {
     DebugRunFacet facet = (DebugRunFacet) runFacets.getAdditionalProperties().get(DEBUG);
     assertThat(facet.getLogs())
         .containsExactly(
-            "Incomplete lineage: column lineage of a checkpoint read by this run timed out while "
-                + "being captured");
+            "Incomplete lineage: column lineage of a checkpoint read by this run, or of a "
+                + "checkpoint it was built from, timed out while being captured");
   }
 }

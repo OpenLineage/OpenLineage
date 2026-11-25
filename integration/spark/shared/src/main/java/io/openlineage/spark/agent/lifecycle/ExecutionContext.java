@@ -53,6 +53,12 @@ public interface ExecutionContext {
   /** Called only when Spark provides enough information to classify the SQL execution. */
   default void setCommandChildExecution(boolean commandChildExecution) {}
 
+  /**
+   * Marks the SQL execution as materializing a checkpoint, detected from its start event by the
+   * listener as no context could be created for it then.
+   */
+  default void setCheckpointExecution(CheckpointExecution checkpoint) {}
+
   /** Release scheduler objects retained for a completed Spark job. */
   default void evictJob(int jobId) {}
 

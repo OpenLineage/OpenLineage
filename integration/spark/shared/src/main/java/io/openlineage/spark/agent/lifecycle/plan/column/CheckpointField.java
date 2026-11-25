@@ -6,6 +6,8 @@
 package io.openlineage.spark.agent.lifecycle.plan.column;
 
 import io.openlineage.client.utils.TransformationInfo;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -37,8 +39,21 @@ class CheckpointField {
               TransformationInfo merged =
                   downstream.merge(
                       captured.getTransformationInfo(),
-                      (outer, inner) -> descriptionsEnabled ? outer.replace(fieldName, inner) : "");
+                      (outer, inner) ->
+                          descriptionsEnabled ? substitute(outer, fieldName, inner) : "");
               return new TransformedInput(captured.getInput(), merged);
             });
+  }
+
+  /**
+   * Substitutes the description of the field's captured expression for references to the field in
+   * the description of the downstream expression. Only whole identifiers are replaced, optionally
+   * backtick-quoted - not occurrences within function names, keywords, string literals or other
+   * identifiers.
+   */
+  static String substitute(String outer, String fieldName, String inner) {
+    Pattern reference =
+        Pattern.compile("(?<![\\w`])`?" + Pattern.quote(fieldName) + "`?(?![\\w`])");
+    return reference.matcher(outer).replaceAll(Matcher.quoteReplacement(inner));
   }
 }

@@ -7,10 +7,13 @@ package io.openlineage.spark.agent.lifecycle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.MockClock;
@@ -27,6 +30,9 @@ import io.openlineage.client.OpenLineage.RunFacetsBuilder;
 import io.openlineage.client.circuitBreaker.TimeoutCircuitBreakerConfig;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.DebugRunFacet;
+import io.openlineage.spark.agent.lifecycle.plan.column.CheckpointColumnLineage;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
+import io.openlineage.spark.api.Checkpoint;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
@@ -46,11 +52,14 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.Stage;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
+import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.MockedStatic;
 import scala.PartialFunction;
 import scala.collection.JavaConverters;
 
@@ -160,6 +169,56 @@ class OpenLineageRunEventBuilderTest {
 
     // test that the debug facet contains the timeout message
     assertThat(facet.getLogs().get(0)).startsWith("Incomplete lineage:");
+  }
+
+  /**
+   * A checkpoint built from a checkpoint whose column lineage timed out misses that column lineage
+   * too, even if its own capture doesn't time out, so it must be marked incomplete as well.
+   */
+  @Test
+  void testCheckpointBuiltFromIncompleteCheckpointIsIncomplete() {
+    when(config.getFacetsConfig().getEffectiveDisabledFacets()).thenReturn(new String[0]);
+    when(openLineageEventHandlerFactory.createInputDatasetBuilder(openLineageContext))
+        .thenReturn(Collections.emptyList());
+    // set while building the input datasets, when an incomplete checkpoint is read
+    openLineageContext.getLineageRunStatus().setReadIncompleteCheckpoint(true);
+
+    Optional<Checkpoint> checkpoint =
+        new OpenLineageRunEventBuilder(openLineageContext, openLineageEventHandlerFactory)
+            .buildCheckpoint(mock(SparkListenerSQLExecutionEnd.class), checkpointedQuery());
+
+    assertThat(checkpoint).hasValueSatisfying(c -> assertThat(c.isIncomplete()).isTrue());
+  }
+
+  @Test
+  void testCheckpointColumnLineageIsNotCapturedWhenFacetIsDisabled() {
+    when(config.getFacetsConfig().getEffectiveDisabledFacets())
+        .thenReturn(new String[] {"columnLineage"});
+    when(openLineageEventHandlerFactory.createInputDatasetBuilder(openLineageContext))
+        .thenReturn(Collections.emptyList());
+    openLineageContext.getLineageRunStatus().setReadIncompleteCheckpoint(true);
+
+    try (MockedStatic<ColumnLevelLineageUtils> columnLineage =
+        mockStatic(ColumnLevelLineageUtils.class)) {
+      Optional<Checkpoint> checkpoint =
+          new OpenLineageRunEventBuilder(openLineageContext, openLineageEventHandlerFactory)
+              .buildCheckpoint(mock(SparkListenerSQLExecutionEnd.class), checkpointedQuery());
+
+      columnLineage.verify(
+          () -> ColumnLevelLineageUtils.buildCheckpointColumnLineage(any(), any(), any()), never());
+      assertThat(checkpoint)
+          .hasValueSatisfying(
+              c -> {
+                assertThat(c.getColumnLineage()).isSameAs(CheckpointColumnLineage.empty());
+                assertThat(c.isIncomplete()).as("nothing reads the column lineage").isFalse();
+              });
+    }
+  }
+
+  private static QueryExecution checkpointedQuery() {
+    QueryExecution queryExecution = mock(QueryExecution.class, RETURNS_DEEP_STUBS);
+    when(queryExecution.analyzed().schema()).thenReturn(new StructType());
+    return queryExecution;
   }
 
   @Test

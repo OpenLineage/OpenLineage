@@ -21,6 +21,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
+import io.openlineage.spark.agent.lifecycle.CheckpointExecution;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
@@ -32,19 +33,24 @@ import io.openlineage.spark.api.CheckpointContext;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.UUID;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.executor.TaskMetrics;
+import org.apache.spark.rdd.RDDOperationScope;
+import org.apache.spark.scheduler.JobFailed;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerTaskEnd;
 import org.apache.spark.scheduler.SparkListenerUnpersistRDD;
+import org.apache.spark.scheduler.StageInfo;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -58,6 +64,7 @@ import org.apache.spark.sql.execution.SparkPlanInfo;
 import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
+import org.apache.spark.storage.RDDInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -278,6 +285,101 @@ class OpenLineageSparkListenerTest {
     listener.onUnpersistRDD(new SparkListenerUnpersistRDD(650));
     assertThat(checkpointContext.getCheckpoint(650)).isEmpty();
     assertThat(checkpointContext.isClaimed(650)).isFalse();
+  }
+
+  /**
+   * When the listener falls behind, a checkpoint execution may already be gone once its start event
+   * is handled, so no context is created for it. It must still be handled as a checkpoint once its
+   * end event is - keeping what's been seen of its jobs meanwhile - instead of as a regular query.
+   */
+  @Test
+  void testCheckpointExecutionWithoutQueryExecutionAtStartIsHandledOnEnd() {
+    ContextFactory contextFactory = checkpointLineageContextFactory();
+    ExecutionContext executionContext = mock(ExecutionContext.class);
+    SparkListenerSQLExecutionEnd sqlEnd = mock(SparkListenerSQLExecutionEnd.class);
+    when(sqlEnd.executionId()).thenReturn(70L);
+    when(contextFactory.createSparkSQLExecutionContext(sqlEnd))
+        .thenReturn(Optional.of(executionContext));
+    OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
+    listener.skipInitializationForTests(contextFactory);
+
+    listener.onOtherEvent(checkpointExecutionStart(70L));
+    listener.onJobStart(checkpointMaterializationJobStart(7, 70L, 42));
+    SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
+    when(jobEnd.jobId()).thenReturn(7);
+    when(jobEnd.jobResult()).thenReturn(new JobFailed(new RuntimeException("task failed")));
+    listener.onJobEnd(jobEnd);
+    listener.onOtherEvent(sqlEnd);
+
+    ArgumentCaptor<CheckpointExecution> checkpoint =
+        ArgumentCaptor.forClass(CheckpointExecution.class);
+    verify(executionContext).setCheckpointExecution(checkpoint.capture());
+    verify(executionContext).end(sqlEnd);
+    assertThat(checkpoint.getValue().isLocal()).isTrue();
+    assertThat(checkpoint.getValue().getMaterializedRddId()).contains(42);
+    assertThat(checkpoint.getValue().isFailed()).isTrue();
+  }
+
+  /** Pending checkpoint executions are bounded, in case their end events get dropped. */
+  @Test
+  void testPendingCheckpointExecutionsAreBounded() {
+    ContextFactory contextFactory = checkpointLineageContextFactory();
+    ExecutionContext executionContext = mock(ExecutionContext.class);
+    when(contextFactory.createSparkSQLExecutionContext(any(SparkListenerSQLExecutionEnd.class)))
+        .thenReturn(Optional.of(executionContext));
+    OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
+    listener.skipInitializationForTests(contextFactory);
+
+    for (long executionId = 0; executionId <= 100; executionId++) {
+      listener.onOtherEvent(checkpointExecutionStart(executionId));
+    }
+    SparkListenerSQLExecutionEnd evicted = mock(SparkListenerSQLExecutionEnd.class);
+    when(evicted.executionId()).thenReturn(0L);
+    listener.onOtherEvent(evicted);
+    verify(executionContext, never()).setCheckpointExecution(any());
+
+    SparkListenerSQLExecutionEnd kept = mock(SparkListenerSQLExecutionEnd.class);
+    when(kept.executionId()).thenReturn(100L);
+    listener.onOtherEvent(kept);
+    verify(executionContext).setCheckpointExecution(any());
+  }
+
+  private static ContextFactory checkpointLineageContextFactory() {
+    SparkOpenLineageConfig config = new SparkOpenLineageConfig();
+    config.getCheckpointConfig().setEnabled(true);
+    ContextFactory contextFactory = mock(ContextFactory.class);
+    when(contextFactory.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    when(contextFactory.getConfig()).thenReturn(config);
+    return contextFactory;
+  }
+
+  private static SparkListenerSQLExecutionStart checkpointExecutionStart(long executionId) {
+    SparkListenerSQLExecutionStart sqlStart = mock(SparkListenerSQLExecutionStart.class);
+    when(sqlStart.executionId()).thenReturn(executionId);
+    when(sqlStart.details())
+        .thenReturn(
+            "org.apache.spark.sql.Dataset.localCheckpoint(Dataset.scala:690)\n"
+                + "com.example.Job.main(Job.scala:42)");
+    return sqlStart;
+  }
+
+  private static SparkListenerJobStart checkpointMaterializationJobStart(
+      int jobId, long executionId, int rddId) {
+    Properties properties = new Properties();
+    properties.setProperty("spark.sql.execution.id", String.valueOf(executionId));
+    properties.setProperty(
+        "spark.rdd.scope", new RDDOperationScope("checkpoint", Option.empty(), "1").toJson());
+    RDDInfo rddInfo = mock(RDDInfo.class);
+    when(rddInfo.id()).thenReturn(rddId);
+    StageInfo stage = mock(StageInfo.class);
+    when(stage.stageId()).thenReturn(1);
+    when(stage.rddInfos()).thenReturn(ScalaConversionUtils.fromList(Arrays.asList(rddInfo)));
+    SparkListenerJobStart jobStart = mock(SparkListenerJobStart.class);
+    when(jobStart.jobId()).thenReturn(jobId);
+    when(jobStart.properties()).thenReturn(properties);
+    when(jobStart.stageIds()).thenReturn(ScalaConversionUtils.fromList(Arrays.asList(1)));
+    when(jobStart.stageInfos()).thenReturn(ScalaConversionUtils.fromList(Arrays.asList(stage)));
+    return jobStart;
   }
 
   @Test

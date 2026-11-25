@@ -287,7 +287,10 @@ class OpenLineageRunEventBuilder {
    *
    * <p>The input datasets and the column lineage are built within the datasets timeout, the same as
    * the datasets of a regular event. If the column lineage times out, the checkpoint is returned
-   * without it and marked as incomplete. If the input datasets time out, nothing is returned.
+   * without it and marked as incomplete - as it is when it's built from an incomplete checkpoint,
+   * its column lineage missing what that one's is. If the input datasets time out, nothing is
+   * returned. The column lineage isn't captured at all if the {@code columnLineage} facet is
+   * disabled.
    *
    * @see io.openlineage.spark.api.CheckpointContext
    */
@@ -298,6 +301,10 @@ class OpenLineageRunEventBuilder {
     if (timeouter.isInputsTimedOut()) {
       log.warn("Building input datasets of a checkpoint timed out, its lineage is not captured");
       return Optional.empty();
+    }
+    if (FacetUtils.isFacetDisabled(openLineageContext, "columnLineage")) {
+      // nothing reads the column lineage, so it's neither captured nor reported as incomplete
+      return Optional.of(new Checkpoint(inputDatasets, null, false));
     }
     OpenLineage.SchemaDatasetFacet schemaFacet =
         PlanUtils.schemaFacet(
@@ -315,7 +322,8 @@ class OpenLineageRunEventBuilder {
         new Checkpoint(
             inputDatasets,
             columnLineage.orElse(null),
-            timeouter.isCheckpointColumnLineageTimedOut()));
+            timeouter.isCheckpointColumnLineageTimedOut()
+                || openLineageContext.getLineageRunStatus().isReadIncompleteCheckpoint()));
   }
 
   private List<InputDataset> buildInputDatasets(List<Object> nodes) {

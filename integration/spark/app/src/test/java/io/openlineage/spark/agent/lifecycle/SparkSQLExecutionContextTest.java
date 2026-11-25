@@ -343,12 +343,12 @@ class SparkSQLExecutionContextTest {
   @Test
   void testCheckpointMethodIsResolvedFromOutermostSparkFrame() {
     assertThat(
-            SparkSQLExecutionContext.checkpointMethod(
+            CheckpointExecution.checkpointMethod(
                 "org.apache.spark.sql.Dataset.localCheckpoint(Dataset.scala:690)\n"
                     + "com.example.Job.main(Job.scala:42)"))
         .contains("localCheckpoint");
     assertThat(
-            SparkSQLExecutionContext.checkpointMethod(
+            CheckpointExecution.checkpointMethod(
                 "org.apache.spark.sql.classic.Dataset.checkpoint(Dataset.scala:1842)\n"
                     + "com.example.Job.main(Job.scala:42)"))
         .contains("checkpoint");
@@ -357,31 +357,31 @@ class SparkSQLExecutionContextTest {
   @Test
   void testCheckpointMethodIgnoresOtherCallSites() {
     assertThat(
-            SparkSQLExecutionContext.checkpointMethod(
+            CheckpointExecution.checkpointMethod(
                 "org.apache.spark.sql.DataFrameWriter.saveAsTable(DataFrameWriter.scala:633)\n"
                     + "com.example.Job.checkpoint(Job.scala:42)"))
         .isEmpty();
     assertThat(
-            SparkSQLExecutionContext.checkpointMethod(
+            CheckpointExecution.checkpointMethod(
                 "org.apache.spark.sql.delta.DeltaLog.checkpoint(DeltaLog.scala:100)\n"
                     + "com.example.Job.main(Job.scala:42)"))
         .isEmpty();
-    assertThat(SparkSQLExecutionContext.checkpointMethod("checkpoint at Job.scala:42")).isEmpty();
-    assertThat(SparkSQLExecutionContext.checkpointMethod(null)).isEmpty();
+    assertThat(CheckpointExecution.checkpointMethod("checkpoint at Job.scala:42")).isEmpty();
+    assertThat(CheckpointExecution.checkpointMethod(null)).isEmpty();
   }
 
   @Test
   void testCheckpointMaterializationJobIsDetectedByRddScope() {
-    assertThat(SparkSQLExecutionContext.isCheckpointMaterializationJob(null)).isEmpty();
-    assertThat(SparkSQLExecutionContext.isCheckpointMaterializationJob(new Properties()))
+    assertThat(CheckpointExecution.isCheckpointMaterializationJob(null)).isEmpty();
+    assertThat(CheckpointExecution.isCheckpointMaterializationJob(new Properties()))
         .contains(false);
-    assertThat(SparkSQLExecutionContext.isCheckpointMaterializationJob(scoped("checkpoint")))
+    assertThat(CheckpointExecution.isCheckpointMaterializationJob(scoped("checkpoint")))
         .contains(true);
-    assertThat(SparkSQLExecutionContext.isCheckpointMaterializationJob(scoped("collect")))
+    assertThat(CheckpointExecution.isCheckpointMaterializationJob(scoped("collect")))
         .contains(false);
     Properties malformed = new Properties();
     malformed.setProperty(RDD_SCOPE_PROPERTY, "not json");
-    assertThat(SparkSQLExecutionContext.isCheckpointMaterializationJob(malformed)).contains(false);
+    assertThat(CheckpointExecution.isCheckpointMaterializationJob(malformed)).contains(false);
   }
 
   @Test
@@ -430,6 +430,28 @@ class SparkSQLExecutionContextTest {
 
     context.start(jobStart(43, scoped("checkpoint")));
     assertThat(context.resolveCheckpointRddId()).contains(43);
+  }
+
+  /**
+   * A checkpoint whose materialization job failed can't be read, so its lineage isn't captured -
+   * but a local checkpoint's RDD is still claimed, so that a retry at the same call site isn't
+   * resolved to it.
+   */
+  @Test
+  void testFailedCheckpointIsNotCapturedButItsRddIsClaimed() {
+    enableCheckpointLineage();
+    CheckpointContext checkpointContext = olContext.getCheckpointContext();
+    context.start(checkpointExecutionStart());
+    context.start(jobStart(42, scoped("checkpoint")));
+    SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
+    when(jobEnd.jobResult()).thenReturn(new JobFailed(new RuntimeException("task failed")));
+
+    context.end(jobEnd);
+    context.end(mock(SparkListenerSQLExecutionEnd.class));
+
+    assertThat(checkpointContext.getCheckpoint(42)).isEmpty();
+    assertThat(checkpointContext.isClaimed(42)).isTrue();
+    verify(eventEmitter, times(0)).emit(any());
   }
 
   private static final String RDD_SCOPE_PROPERTY = "spark.rdd.scope";

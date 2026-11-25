@@ -6,6 +6,7 @@ package io.openlineage.spark.agent.lifecycle;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.JobFacets;
@@ -38,7 +39,8 @@ public class OpenLineageRunEventTimeoutExecutor {
   private static final String INCOMPLETE_LINEAGE_MESSSAGE =
       "Incomplete lineage: timeout caught. Inputs missing: %s, Outputs missing: %s, RunFacets missing: %s, JobFacets missing: %s";
   private static final String INCOMPLETE_CHECKPOINT_LINEAGE_MESSAGE =
-      "Incomplete lineage: column lineage of a checkpoint read by this run timed out while being captured";
+      "Incomplete lineage: column lineage of a checkpoint read by this run, or of a checkpoint it "
+          + "was built from, timed out while being captured";
 
   private final TimeoutConfig timeoutConfig;
   private final ExecutorService executor;
@@ -107,11 +109,12 @@ public class OpenLineageRunEventTimeoutExecutor {
   /**
    * Builds the column lineage of a checkpoint within what's left of the datasets budget after its
    * input datasets were built - the same way column lineage of regular events is built along with
-   * their output datasets. Skipped if building the input datasets has timed out already.
+   * their output datasets. Skipped if building the input datasets has timed out already, or used up
+   * the whole budget without timing out - an empty budget would otherwise mean no timeout at all.
    */
   public Optional<CheckpointColumnLineage> timeoutCheckpointColumnLineage(
       Callable<Optional<CheckpointColumnLineage>> callable) {
-    if (inputsTimedOut) {
+    if (inputsTimedOut || isDatasetsBudgetExhausted()) {
       checkpointColumnLineageTimedOut = true;
       return Optional.empty();
     }
@@ -211,6 +214,21 @@ public class OpenLineageRunEventTimeoutExecutor {
     return facetsTimeoutConfigured()
         .map(l -> l - datasetsTimeSpent - runFacetsTimeSpent - jobFacetsTimeSpent)
         .filter(l -> l > 0);
+  }
+
+  /**
+   * Records time spent building datasets, the same as a step finishing in that time without timing
+   * out would. Lets tests use up the budget exactly, which can't be done reliably by timing a step.
+   */
+  @VisibleForTesting
+  void recordDatasetsTimeSpent(long millis) {
+    datasetsTimeSpent += millis;
+  }
+
+  /** Whether a datasets timeout is configured, but its budget is already used up. */
+  private boolean isDatasetsBudgetExhausted() {
+    return (datasetsTimeoutConfigured().isPresent() || facetsTimeoutConfigured().isPresent())
+        && !effectiveDatasetsTimeout().isPresent();
   }
 
   private Optional<Long> effectiveDatasetsTimeout() {

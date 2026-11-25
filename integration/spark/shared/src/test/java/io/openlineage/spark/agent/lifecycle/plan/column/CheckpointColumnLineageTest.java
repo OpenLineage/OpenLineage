@@ -30,14 +30,16 @@ class CheckpointColumnLineageTest {
 
   private static final String NAMESPACE = "db";
   private static final DatasetIdentifier TABLE = new DatasetIdentifier("t", NAMESPACE);
+  private static final String STRING = "string";
+  private static final String UPPER_B = "upper(b)";
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
   OpenLineage.SchemaDatasetFacet schema =
       openLineage.newSchemaDatasetFacet(
           Arrays.asList(
-              openLineage.newSchemaDatasetFacetFieldsBuilder().name("a").type("string").build(),
-              openLineage.newSchemaDatasetFacetFieldsBuilder().name("b").type("string").build()));
+              openLineage.newSchemaDatasetFacetFieldsBuilder().name("a").type(STRING).build(),
+              openLineage.newSchemaDatasetFacetFieldsBuilder().name("b").type(STRING).build()));
 
   @BeforeEach
   void setup() {
@@ -61,7 +63,7 @@ class CheckpointColumnLineageTest {
 
     builder.addOutput(outputA, "a");
     builder.addOutput(outputB, "b");
-    builder.addDependency(outputA, inputB, "upper(b)", TransformationInfo.transformation());
+    builder.addDependency(outputA, inputB, UPPER_B, TransformationInfo.transformation());
     builder.addDependency(outputB, inputB, "b");
     builder.addInput(inputB, TABLE, "b");
     builder.addInput(inputC, TABLE, "c");
@@ -172,5 +174,49 @@ class CheckpointColumnLineageTest {
     assertThat(second.getDatasetDependencyInputs())
         .singleElement()
         .satisfies(input -> assertThat(input.getInput()).isEqualTo(new Input(TABLE, "c")));
+  }
+
+  /**
+   * With case-sensitive analysis, a plan can output fields whose names only differ by case, e.g.
+   * {@code SELECT t.a AS a, upper(t.b) AS A FROM t}. Each must be captured with its own inputs.
+   */
+  @Test
+  void testFieldsDifferingOnlyByCaseKeepTheirOwnInputs() {
+    OpenLineage.SchemaDatasetFacet caseSchema =
+        openLineage.newSchemaDatasetFacet(
+            Arrays.asList(
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("a").type(STRING).build(),
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("A").type(STRING).build()));
+    ColumnLevelLineageBuilder builder = new ColumnLevelLineageBuilder(caseSchema, context);
+    ExprId outputLower = mock(ExprId.class);
+    ExprId outputUpper = mock(ExprId.class);
+    ExprId inputA = mock(ExprId.class);
+    ExprId inputB = mock(ExprId.class);
+    builder.addOutput(outputLower, "a");
+    builder.addOutput(outputUpper, "A");
+    builder.addDependency(outputLower, inputA, "a");
+    builder.addDependency(outputUpper, inputB, UPPER_B, TransformationInfo.transformation());
+    builder.addInput(inputA, TABLE, "a");
+    builder.addInput(inputB, TABLE, "b");
+
+    CheckpointColumnLineage lineage = builder.buildCheckpointColumnLineage();
+
+    assertThat(lineage.getFieldInputs("a"))
+        .singleElement()
+        .satisfies(input -> assertThat(input.getInput()).isEqualTo(new Input(TABLE, "a")));
+    assertThat(lineage.getFieldInputs("A"))
+        .singleElement()
+        .satisfies(input -> assertThat(input.getInput()).isEqualTo(new Input(TABLE, "b")));
+  }
+
+  @Test
+  void testDescriptionSubstitutionReplacesWholeIdentifiersOnly() {
+    assertThat(CheckpointField.substitute("concat(a, 'bar')", "a", UPPER_B))
+        .isEqualTo("concat(upper(b), 'bar')");
+    assertThat(CheckpointField.substitute("`a` + a_b + ba", "a", UPPER_B))
+        .isEqualTo("upper(b) + a_b + ba");
+    assertThat(CheckpointField.substitute("a * 2", "a", "price$usd"))
+        .as("the replacement is taken literally")
+        .isEqualTo("price$usd * 2");
   }
 }

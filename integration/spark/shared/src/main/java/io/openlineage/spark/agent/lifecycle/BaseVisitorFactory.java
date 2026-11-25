@@ -73,7 +73,7 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     List<PartialFunction<LogicalPlan, List<InputDataset>>> inputVisitors = new ArrayList<>();
     // input only: the root of a plan whose output is a LogicalRDD writes nothing, and a LogicalRDD
     // wrapping a checkpointed RDD resolves to the checkpoint's input datasets
-    inputVisitors.add(new LogicalRDDVisitor<>(context, factory));
+    inputVisitors.add(new LogicalRDDVisitor(context, factory));
     inputVisitors.addAll(getCommonVisitors(context, factory));
 
     if (BigQueryUtils.hasBigQueryClasses()) {

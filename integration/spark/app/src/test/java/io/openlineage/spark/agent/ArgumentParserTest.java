@@ -496,6 +496,34 @@ class ArgumentParserTest {
     assertThat(config.getCheckpointConfig().getMaxEntries()).isEqualTo(50);
   }
 
+  /**
+   * A config source setting only some of the checkpoint lineage settings (e.g. {@code SparkConf}
+   * lowering {@code maxEntries}) mustn't reset the ones set by another (e.g. {@code
+   * openlineage.yml} enabling it) to their defaults.
+   */
+  @Test
+  void testCheckpointLineageConfigIsMergedFieldByField() {
+    SparkOpenLineageConfig enabled = new SparkOpenLineageConfig();
+    enabled.getCheckpointConfig().setEnabled(true);
+    SparkOpenLineageConfig limited = new SparkOpenLineageConfig();
+    limited.getCheckpointConfig().setMaxEntries(50);
+
+    SparkOpenLineageConfig.CheckpointConfig merged =
+        enabled.mergeWith(limited).getCheckpointConfig();
+    assertThat(merged.getEnabled()).isTrue();
+    assertThat(merged.getMaxEntries()).isEqualTo(50);
+
+    merged = limited.mergeWith(enabled).getCheckpointConfig();
+    assertThat(merged.getEnabled()).isTrue();
+    assertThat(merged.getMaxEntries()).isEqualTo(50);
+
+    SparkOpenLineageConfig.CheckpointConfig defaults =
+        new SparkOpenLineageConfig().mergeWith(new SparkOpenLineageConfig()).getCheckpointConfig();
+    assertThat(defaults.getEnabled()).isFalse();
+    assertThat(defaults.getMaxEntries())
+        .isEqualTo(SparkOpenLineageConfig.CheckpointConfig.DEFAULT_MAX_ENTRIES);
+  }
+
   @Test
   @SuppressWarnings({"deprecation", "UnstableApiUsage", "ConstantConditions"})
   void testConfigReadFromYamlFile() {

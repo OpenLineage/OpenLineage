@@ -65,7 +65,7 @@ class LogicalRDDVisitorTest {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
     LogicalRDDVisitor visitor =
         new LogicalRDDVisitor(
-            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
+            SparkAgentTestExtension.newContext(session), DatasetFactory.input(context));
     StructType schema =
         new StructType(
             new StructField[] {
@@ -91,7 +91,7 @@ class LogicalRDDVisitorTest {
     when(logicalRDD.schema()).thenReturn(schema);
 
     assertThat(visitor.isDefinedAt(logicalRDD)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(logicalRDD);
+    List<OpenLineage.InputDataset> datasets = visitor.apply(logicalRDD);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", tmpDir.toString())
@@ -114,7 +114,7 @@ class LogicalRDDVisitorTest {
     when(logicalRDD.rdd()).thenReturn(rdd);
 
     List<OpenLineage.InputDataset> datasets =
-        new LogicalRDDVisitor<>(context, DatasetFactory.input(context)).apply(logicalRDD);
+        new LogicalRDDVisitor(context, DatasetFactory.input(context)).apply(logicalRDD);
 
     assertThat(datasets).isEqualTo(inputs);
     assertThat(runStatus.isReadIncompleteCheckpoint()).isTrue();

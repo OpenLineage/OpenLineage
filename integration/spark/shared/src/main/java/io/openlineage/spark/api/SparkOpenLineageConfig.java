@@ -8,6 +8,7 @@ package io.openlineage.spark.api;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import io.openlineage.client.MergeConfig;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
@@ -195,21 +196,42 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     private final Boolean rddEventsDisabled = false;
   }
 
-  @Getter
+  /**
+   * Fields are left unset rather than defaulted, so that config sources (e.g. {@code
+   * openlineage.yml} and {@code SparkConf}) setting only some of them are merged field by field -
+   * the getters apply the defaults.
+   */
   @Setter
   @ToString
-  public static class CheckpointConfig {
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class CheckpointConfig implements MergeConfig<CheckpointConfig> {
     public static final int DEFAULT_MAX_ENTRIES = 1000;
 
     // Disabled by default: capturing lineage across checkpoint() / localCheckpoint() boundaries
     // keeps a bounded, but potentially large, cache of input datasets and column lineage facets
     // in memory for every checkpoint materialized by the application, which can cause OOM
     // exceptions for applications with large schemas or plans. Opt in explicitly if needed.
-    @NonNull private Boolean enabled = false;
+    private Boolean enabled;
 
     // Number of most recent checkpoints whose lineage is kept in memory. Memory usage grows with
     // the width of the checkpointed schemas, so lower it if the cache gets too large.
-    @NonNull private Integer maxEntries = DEFAULT_MAX_ENTRIES;
+    private Integer maxEntries;
+
+    public Boolean getEnabled() {
+      return Boolean.TRUE.equals(enabled);
+    }
+
+    public Integer getMaxEntries() {
+      return maxEntries == null ? DEFAULT_MAX_ENTRIES : maxEntries;
+    }
+
+    @Override
+    public CheckpointConfig mergeWithNonNull(CheckpointConfig other) {
+      return new CheckpointConfig(
+          mergePropertyWith(enabled, other.enabled),
+          mergePropertyWith(maxEntries, other.maxEntries));
+    }
   }
 
   @Override
