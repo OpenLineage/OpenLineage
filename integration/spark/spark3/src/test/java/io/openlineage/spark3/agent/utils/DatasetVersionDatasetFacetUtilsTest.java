@@ -44,6 +44,7 @@ import org.mockito.Mockito;
 import scala.Option;
 
 class DatasetVersionDatasetFacetUtilsTest {
+  private static final String SOME_VERSION = "some-version";
 
   DataSourceV2Relation v2Relation = mock(DataSourceV2Relation.class);
   Identifier identifier = mock(Identifier.class);
@@ -112,9 +113,9 @@ class DatasetVersionDatasetFacetUtilsTest {
     try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
       when(CatalogUtils.getDatasetVersion(
               openLineageContext, tableCatalog, identifier, tableProperties))
-          .thenReturn(Optional.of("some-version"));
+          .thenReturn(Optional.of(SOME_VERSION));
       assertEquals(
-          Optional.of("some-version"),
+          Optional.of(SOME_VERSION),
           DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
               openLineageContext, v2Relation));
     }
@@ -177,9 +178,9 @@ class DatasetVersionDatasetFacetUtilsTest {
     try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
       when(CatalogUtils.getDatasetVersion(
               openLineageContext, tableCatalog, identifier, tableProperties))
-          .thenReturn(Optional.of("some-version"));
+          .thenReturn(Optional.of(SOME_VERSION));
       assertEquals(
-          Optional.of("some-version"),
+          Optional.of(SOME_VERSION),
           DatasetVersionDatasetFacetUtils.extractInputVersionFromDataSourceV2Relation(
               openLineageContext, v2Relation));
       verify(icebergTable).currentSnapshot();
@@ -202,9 +203,9 @@ class DatasetVersionDatasetFacetUtilsTest {
     try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
       when(CatalogUtils.getDatasetVersion(
               openLineageContext, tableCatalog, identifier, tableProperties))
-          .thenReturn(Optional.of("some-version"));
+          .thenReturn(Optional.of(SOME_VERSION));
       assertEquals(
-          Optional.of("some-version"),
+          Optional.of(SOME_VERSION),
           DatasetVersionDatasetFacetUtils.extractInputVersionFromDataSourceV2Relation(
               openLineageContext, v2Relation));
     }
