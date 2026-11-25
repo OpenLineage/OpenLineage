@@ -889,22 +889,40 @@ class DbtArtifactProcessor:
 
     def _polars_input_identities(
         self, inputs: Sequence[ModelNode]
-    ) -> dict[tuple[str | None, str | None, str], tuple[str, str]]:
+    ) -> dict[tuple[str | None, str | None, str], tuple[str, str] | None]:
         """Identities of a model's inputs, keyed by how the compiled SQL names them.
 
         dbt renders a relation with the database of its manifest node, which for dbt-polars can
         differ from the catalog it is stored in, and the SQL may leave the database out. Looking
-        names up here keeps column lineage on the same datasets as the event's inputs.
+        names up here keeps column lineage on the same datasets as the event's inputs. A name
+        that two inputs in different catalogs share maps to ``None``: it cannot be resolved.
         """
-        known: dict[tuple[str | None, str | None, str], tuple[str, str]] = {}
-        ambiguous = set()
+        known: dict[tuple[str | None, str | None, str], tuple[str, str] | None] = {}
         for node in inputs:
             identity = self._node_identity(node)
             for database in (node.metadata_node["database"], None):
                 key = (database, node.metadata_node["schema"], self._node_table(node))
                 if known.setdefault(key, identity) != identity:
-                    ambiguous.add(key)
-        return {key: identity for key, identity in known.items() if key not in ambiguous}
+                    known[key] = None
+        return known
+
+    def _polars_column_origin(
+        self,
+        known: dict[tuple[str | None, str | None, str], tuple[str, str] | None],
+        database: str | None,
+        schema: str | None,
+        table: str,
+    ) -> tuple[str, str]:
+        """The dataset a column of the compiled SQL comes from, preferring the model's inputs."""
+        key = (database, schema, table)
+        if key not in known:
+            return self._dataset_identity(database, schema, table)
+        identity = known[key]
+        if identity is None:
+            raise ValueError(
+                f"'{'.'.join(filter(None, key))}' names several inputs in different dbt-polars catalogs"
+            )
+        return identity
 
     def _dataset_identity(self, database: str | None, schema: str | None, table: str) -> tuple[str, str]:
         """The namespace and name of the table ``database.schema.table`` of a dbt relation."""
@@ -1236,7 +1254,7 @@ class DbtArtifactProcessor:
         elif self.adapter_type == Adapter.POLARS:
             # Datasets get the namespace of their own catalog (see _dataset_identity);
             # this is the default catalog's, empty when it is not supported.
-            self.polars_catalogs = parse_polars_profile(profile)
+            self.polars_catalogs = parse_polars_profile(profile, getattr(self, "project_dir", None))
             return self.polars_catalogs.default_namespace
         elif self.adapter_type == Adapter.SPARK:
             port = ""
@@ -1395,9 +1413,9 @@ class DbtArtifactProcessor:
                             continue
                         origin = column_meta.origin
                         if self.adapter_type == Adapter.POLARS:
-                            field_namespace, field_dataset = known.get(
-                                (origin.database, origin.schema, origin.name)
-                            ) or self._dataset_identity(origin.database, origin.schema, origin.name)
+                            field_namespace, field_dataset = self._polars_column_origin(
+                                known, origin.database, origin.schema, origin.name
+                            )
                         else:
                             field_namespace = namespace
                             field_dataset = self._format_dataset_name(

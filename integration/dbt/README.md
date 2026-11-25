@@ -114,14 +114,23 @@ project. Datasets are named after the physical catalog instead:
 
 | pyiceberg catalog | Namespace                                       | Name                                       |
 |:------------------|:------------------------------------------------|:-------------------------------------------|
-| REST              | catalog `uri`, e.g. `https://catalog.example.com/api/catalog` | `{warehouse}.{schema}.{table}`, or `{schema}.{table}` without a `warehouse` |
-| SQL               | catalog `uri`, e.g. `sqlite:///catalog.db` or `postgresql://host:5432/iceberg` | `{catalog name in the profile}.{schema}.{table}` |
+| REST              | catalog `uri`, e.g. `https://catalog.example.com/api/catalog`, or `{uri}/v1/{prefix}` when the profile sets a `prefix` | `{warehouse}.{schema}.{table}`, or `{schema}.{table}` without a `warehouse` |
+| SQL               | catalog `uri`, e.g. `sqlite:////home/me/project/catalog.db` or `postgresql://host:5433/iceberg` | `{catalog name in the profile}.{schema}.{table}` |
 
-The `uri` is written without user name, password, query string, fragment, SQLAlchemy driver, default HTTP(S)
-port or trailing slash. A REST `warehouse` that is a URL is cleaned the same way. Other catalog options,
-such as `token` or `credential`, are never read. A SQL catalog's own name is part of the dataset name because
-pyiceberg keeps the tables of several catalogs in one database and tells them apart by that name. A relative
-SQLite path is kept as written: dbt-polars resolves it against the project directory.
+The `uri` is written without user name, password, query string, SQLAlchemy driver or default port (HTTP(S),
+PostgreSQL, MySQL), with a lowercase scheme and host and IP addresses in their shortest form. A REST `uri`
+also loses its fragment and trailing slash. A SQL `uri` is read as SQLAlchemy reads it: `#` is part of the
+database, the database is percent-decoded, and for PostgreSQL a `dbname` query parameter overrides it. Its
+server may also be given by `host` and `port` query parameters; a `uri` that does not name exactly one network
+server, at most one port and a database (several hosts, a Unix socket, conflicting values) is not supported. A REST `warehouse` that is a URL
+is cleaned like a REST `uri`, except that the container before `@` in an Azure storage URL (`abfs`, `abfss`,
+`wasb`, `wasbs`) is kept. Other catalog options, such as `token` or `credential`, are never read, and a
+catalog's options are read only once a dataset uses it. A SQL catalog's own name is part of the dataset name because
+pyiceberg keeps the tables of several catalogs in one database and tells them apart by that name. A SQLite
+catalog is named after its database file: a relative path is resolved against the dbt project directory, as
+dbt-polars opens it, and every path is made absolute with symbolic links resolved, so each spelling of the
+same file gets one namespace. A REST `prefix` is part of the namespace because pyiceberg sends every table
+request to `{uri}/v1/{prefix}`.
 
 Each model, source and test uses the namespace of its own catalog, so a project that sets `catalog` on
 some models or sources, or reads across several catalogs, gets one namespace per catalog.
@@ -131,13 +140,17 @@ Limitations:
 * Other dbt-polars catalogs (local files, S3, Azure, Databricks, Fabric, Snowflake), other pyiceberg catalog
   types (Glue, Hive, ...), `py-catalog-impl`, in-memory SQL catalogs and catalogs whose `uri` comes from
   `.pyiceberg.yaml` or `PYICEBERG_*` variables instead of the profile are not supported. Listing them in the
-  profile is fine, but lineage processing fails with an error when a model, source or test uses one, rather
-  than reporting a dataset that could not be identified.
+  profile is fine, but lineage processing fails with an error when a model, seed, snapshot or source uses one,
+  rather than reporting a dataset that could not be identified. A data test writes to its catalog only when
+  it stores its failures (`store_failures` or `store_failures_as` in its config, else `--store-failures` or
+  `DBT_STORE_FAILURES`); otherwise it has no output dataset. With dbt Core v2 telemetry, a dbt-polars node
+  missing from the manifest has no output dataset, since its catalog is unknown.
 * A REST catalog is identified by the `uri` and `warehouse` in the profile; vendor-specific dataset names, such
   as `unitycatalog://` for Unity Catalog's Iceberg REST endpoint, are not derived.
 * Column-level lineage comes from parsing the compiled SQL and was tested with simple projections only. When
-  the parser does not understand a statement, or a column comes from a catalog that cannot be identified, the
-  `columnLineage` facet is left out; table-level lineage is still reported. Python models have no column-level
+  the parser does not understand a statement, a column comes from a catalog that cannot be identified, or
+  the SQL names a table in a way that matches inputs in several catalogs, the `columnLineage` facet is left
+  out; table-level lineage is still reported. Python models have no column-level
   lineage.
 
 ### dbt Core v2
