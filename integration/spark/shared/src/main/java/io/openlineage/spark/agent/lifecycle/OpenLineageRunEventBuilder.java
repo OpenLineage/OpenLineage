@@ -177,6 +177,9 @@ class OpenLineageRunEventBuilder {
         .getDatasetIdentityFacetBuilders()
         .addAll(factory.createDatasetIdentityFacetBuilders(context));
     context.getFileWriteTargetResolvers().addAll(factory.createFileWriteTargetResolvers(context));
+    context
+        .getDatasetIdentifierResolvers()
+        .addAll(factory.createDatasetIdentifierResolvers(context));
   }
 
   /**

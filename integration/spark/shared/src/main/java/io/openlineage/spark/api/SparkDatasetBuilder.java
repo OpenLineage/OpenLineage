@@ -63,8 +63,12 @@ public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
     this.inner = inner;
   }
 
-  /** Sets the dataset's name, namespace and symlinks. */
-  public SparkDatasetBuilder<T> dataset(DatasetIdentifier datasetIdentifier) {
+  /**
+   * Sets the dataset's name, namespace and symlinks, after the vendors' resolvers have renamed it.
+   */
+  public SparkDatasetBuilder<T> dataset(DatasetIdentifier identifier) {
+    // the name vendors give the dataset, such as a Fabric lakehouse table's logical name
+    DatasetIdentifier datasetIdentifier = DatasetIdentifierResolver.resolve(context, identifier);
     if (this.name != null) {
       inner.getFacets().symlinks(null);
     }

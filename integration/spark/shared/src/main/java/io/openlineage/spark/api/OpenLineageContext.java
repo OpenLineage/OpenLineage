@@ -137,6 +137,13 @@ public class OpenLineageContext {
   final List<FileWriteTargetResolver> fileWriteTargetResolvers = new ArrayList<>();
 
   /**
+   * Resolvers that can rename datasets; see {@link DatasetIdentifierResolver}. Filled from the
+   * event handler factories.
+   */
+  @Default @NonNull @Getter
+  final List<DatasetIdentifierResolver> datasetIdentifierResolvers = new ArrayList<>();
+
+  /**
    * A {@link VisitedNodes} instance that tracks visited leaf nodes in a Spark LogicalPlan from
    * which InputDataset information has been extracted. This field is used to prevent duplicate
    * processing of nodes representing the same data source.
