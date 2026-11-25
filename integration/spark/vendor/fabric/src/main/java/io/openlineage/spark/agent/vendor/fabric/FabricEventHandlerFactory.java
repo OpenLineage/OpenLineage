@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent.vendor.fabric;
 
+import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.DatasetIdentifierResolver;
 import io.openlineage.spark.api.DatasetIdentityFacetBuilder;
 import io.openlineage.spark.api.FileWriteTargetResolver;
@@ -18,7 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Adds the {@code fabric_onelake} facet to datasets stored in OneLake, and reports the warehouse
  * table as the output of writes with Microsoft's Spark connector for Fabric. In Fabric sessions, it
- * also names tables reached through their OneLake paths; see {@link OneLakePathResolver}.
+ * also names tables reached through their OneLake paths (see {@link OneLakePathResolver}) and adds
+ * the {@code fabric_spark} run facet to every event.
  */
 @Slf4j
 public class FabricEventHandlerFactory implements OpenLineageEventHandlerFactory {
@@ -52,6 +55,12 @@ public class FabricEventHandlerFactory implements OpenLineageEventHandlerFactory
         .<Collection<DatasetIdentifierResolver>>map(
             session -> Collections.singletonList(new OneLakePathResolver(session)))
         .orElse(Collections.emptyList());
+  }
+
+  @Override
+  public Collection<CustomFacetBuilder<?, ? extends OpenLineage.RunFacet>> createRunFacetBuilders(
+      OpenLineageContext context) {
+    return Collections.singletonList(new FabricSparkRunFacetBuilder(context));
   }
 
   // This runs for every Spark job, so failing to read the settings must not break lineage for
