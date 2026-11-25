@@ -24,6 +24,9 @@ pub struct ContextFrame {
     // The alias table is used to track back a chain of aliases back to the original
     // symbol. Only those symbols are meaningful outside of the processed query.
     aliases: AliasTable,
+    // BigQuery UNNEST aliases name array elements, not physical tables, and ignore case.
+    unnest_aliases: HashMap<String, ColumnAncestors>,
+    is_select_scope: bool,
     pub column_ancestry: HashMap<ColumnMeta, ColumnAncestors>,
     pub dependencies: HashSet<DbTableMeta>,
     // Dependencies written without a schema or database. Only these can name a
@@ -45,6 +48,8 @@ impl ContextFrame {
             table: None,
             column: None,
             aliases: AliasTable::new(),
+            unnest_aliases: HashMap::new(),
+            is_select_scope: false,
             column_ancestry: HashMap::new(),
             dependencies: HashSet::new(),
             bare_dependencies: HashSet::new(),
@@ -197,6 +202,27 @@ impl<'a> Context<'a> {
 
     // --- Column Lineage ---
 
+    pub fn add_unnest_alias(&mut self, alias: String, ancestors: Vec<ColumnMeta>) {
+        self.frames
+            .last_mut()
+            .unwrap()
+            .unnest_aliases
+            .insert(alias.to_ascii_lowercase(), ancestors.into_iter().collect());
+    }
+
+    pub fn unnest_ancestors(&self, alias: &str) -> Option<Vec<ColumnMeta>> {
+        let alias = alias.to_ascii_lowercase();
+        for frame in self.frames.iter().rev() {
+            if let Some(ancestors) = frame.unnest_aliases.get(&alias) {
+                return Some(ancestors.iter().cloned().collect());
+            }
+            if frame.is_select_scope {
+                break;
+            }
+        }
+        None
+    }
+
     pub fn add_column_ancestors(&mut self, column: ColumnMeta, mut ancestors: Vec<ColumnMeta>) {
         if self.frames.last().is_none() {
             return;
@@ -217,6 +243,13 @@ impl<'a> Context<'a> {
     }
 
     // --- Context Manipulators ---
+
+    pub fn start_select_scope(&mut self) {
+        let frame = self.frames.last_mut().unwrap();
+        frame.is_select_scope = true;
+        // UNION branches share a frame, but not their UNNEST aliases.
+        frame.unnest_aliases.clear();
+    }
 
     pub fn push_frame(&mut self) {
         let mut frame = ContextFrame::new();
@@ -490,6 +523,12 @@ impl<'a> Context<'a> {
         let mut removed_circular_deps: HashMap<ColumnMeta, ColumnAncestors> = HashMap::new();
 
         for (key_column_meta, column_ancestors) in old_ancestry.iter() {
+            // An empty ancestor set identifies a known generated column, not a cycle.
+            if column_ancestors.is_empty() {
+                removed_circular_deps
+                    .entry(key_column_meta.clone())
+                    .or_default();
+            }
             for column_meta in column_ancestors {
                 if let Some(origin) = column_meta.origin.clone() {
                     if frame.aliases.is_table_alias(&origin) && origin == from_table {
@@ -608,6 +647,7 @@ impl<'a> Context<'a> {
             for (alias, t) in old.aliases.tables() {
                 frame.aliases.add_table_alias(t.clone(), alias.clone());
             }
+            frame.unnest_aliases.extend(old.unnest_aliases.clone());
         }
     }
 
