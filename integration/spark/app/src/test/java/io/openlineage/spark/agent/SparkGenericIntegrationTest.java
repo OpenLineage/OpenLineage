@@ -19,7 +19,6 @@ import io.openlineage.client.OpenLineage.OutputDatasetOutputFacets;
 import io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet;
 import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.OpenLineage.RunEvent;
-import io.openlineage.spark.agent.lifecycle.UnknownEntryFacetListener;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -120,9 +119,6 @@ class SparkGenericIntegrationTest {
         "applicationLevelCompleteApplication.json");
 
     List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
-
-    // test UnknownEntryFacetListener clears its static list of visited nodes
-    assertThat(UnknownEntryFacetListener.getInstance().getVisitedNodesSize()).isEqualTo(0);
 
     // same runId for Spark application events, and parentRunId for Spark job events
     assertThat(

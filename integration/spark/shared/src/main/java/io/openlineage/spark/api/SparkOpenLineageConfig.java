@@ -32,8 +32,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageConfig> {
-  public static List<String> DISABLED_BY_DEFAULT =
-      ImmutableList.of("spark_unknown", "spark.logicalPlan", "debug");
+  public static List<String> DISABLED_BY_DEFAULT = ImmutableList.of("spark.logicalPlan", "debug");
 
   public static final String DEFAULT_NAMESPACE = "default";
 

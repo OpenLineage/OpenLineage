@@ -205,7 +205,6 @@ class SparkIcebergMetadataJsonTest {
     props.put("spark.openlineage.facets.schema.disabled", "true");
     props.put("spark.openlineage.facets.spark.logicalPlan.disabled", "true");
     props.put("spark.openlineage.facets.spark_properties.disabled", "true");
-    props.put("spark.openlineage.facets.spark_unknown.disabled", "true");
     props.put("spark.openlineage.facets.storage.disabled", "true");
     props.put("spark.openlineage.facets.symlinks.disabled", "true");
     props.put("spark.openlineage.facets.version.disabled", "true");
@@ -292,7 +291,6 @@ class SparkIcebergMetadataJsonTest {
     props.put("spark.openlineage.facets.schema.disabled", "true");
     props.put("spark.openlineage.facets.spark.logicalPlan.disabled", "true");
     props.put("spark.openlineage.facets.spark_properties.disabled", "true");
-    props.put("spark.openlineage.facets.spark_unknown.disabled", "true");
     props.put("spark.openlineage.facets.storage.disabled", "true");
     props.put("spark.openlineage.facets.symlinks.disabled", "true");
     props.put("spark.openlineage.facets.version.disabled", "true");

@@ -339,7 +339,7 @@ class SparkContainerIntegrationTest {
         network, openLineageClientMockContainer, "testFacetsDisable", "spark_facets_disable.py");
 
     // response should not contain any of the below
-    String regex = "^((?!(spark_unknown|spark.logicalPlan|dataSource)).)*$";
+    String regex = "^((?!(spark.logicalPlan|dataSource)).)*$";
 
     mockServerClient.verify(request().withPath("/api/v1/lineage").withBody(new RegexBody(regex)));
   }

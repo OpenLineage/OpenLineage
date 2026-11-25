@@ -18,9 +18,6 @@
                   "key": "openlineage.spark.version"
                 }
               ]
-            },
-            {
-              "name": "openlineage.spark.unknownFacet.time"
             }
           ]
         }
