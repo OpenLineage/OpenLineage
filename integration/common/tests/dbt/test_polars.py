@@ -1,6 +1,8 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 import pytest
+from jinja2 import Environment
+from openlineage.common.provider.dbt.local import LazyJinjaLoadDict
 from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, ModelNode
 
 REST = {
@@ -30,9 +32,9 @@ def processor_for(profile):
     return processor
 
 
-def model(database):
+def model(database, alias="t"):
     return ModelNode(
-        type="model", metadata_node={"database": database, "schema": "s", "alias": "t", "columns": {}}
+        type="model", metadata_node={"database": database, "schema": "s", "alias": alias, "columns": {}}
     )
 
 
@@ -101,6 +103,10 @@ def test_column_lineage_uses_catalog_identity():
         ("sqlite:///file:cat?mode=memory&uri=true", None),
         ("postgresql:///iceberg?host=/var/run/postgresql", None),
         ("postgresql:///iceberg", None),
+        ("postgresql://host1:5432,host2:5432/iceberg", None),
+        ("postgresql://host1,host2/iceberg", None),
+        ("postgresql:///iceberg?host=db&port=5432,5433", None),
+        ("postgresql:///iceberg?host=db&port=5432&port=5433", None),
     ],
 )
 def test_sql_catalog_endpoint(uri, expected):
@@ -117,3 +123,50 @@ def test_configured_catalog_wins_over_database():
     node = model("local")
     node.metadata_node["config"] = {"catalog": "lake"}
     assert processor.node_to_dataset(node).namespace == "https://catalog.example.com/api/catalog"
+
+
+@pytest.mark.parametrize(
+    ("uri", "warehouse", "expected"),
+    [
+        ("https://c.example.com/api", "s3://bucket/wh/", ("https://c.example.com/api", "s3://bucket/wh.s.t")),
+        ("https://c.example.com/api", "lakehouse", ("https://c.example.com/api", "lakehouse.s.t")),
+        ("https://c.example.com:bad/api", "lakehouse", None),
+    ],
+)
+def test_rest_catalog_endpoint(uri, warehouse, expected):
+    processor = processor_for({"type": "polars", "catalogs": [{**REST, "uri": uri, "warehouse": warehouse}]})
+    if expected:
+        assert processor._dataset_identity("lake", "s", "t") == expected
+    else:
+        with pytest.raises(NotImplementedError):
+            processor.node_to_dataset(model("lake"))
+
+
+def test_single_catalog_profile_values_are_rendered_lazily():
+    profile = LazyJinjaLoadDict(
+        {
+            "type": "polars",
+            "catalog_type": "iceberg",
+            "pyiceberg_type": "rest",
+            "schema": "s",
+            "uri": "{{ 'https://c.example.com/api' }}",
+            "warehouse": "{{ 'lakehouse' }}",
+            "token": "{{ unrendered_secret() }}",
+        },
+        jinja_env=Environment(),
+    )
+    assert processor_for(profile)._dataset_identity("default", "s", "t") == (
+        "https://c.example.com/api",
+        "lakehouse.s.t",
+    )
+
+
+def test_column_lineage_follows_the_resolved_inputs():
+    """dbt renders a ref with the manifest database, which may not be the configured catalog."""
+    processor = processor_for({"type": "polars", "catalog": "local", "catalogs": [REST, SQL]})
+    upstream = model("local", alias="a")
+    upstream.metadata_node["config"] = {"catalog": "lake"}
+    for sql in ('select id from "local"."s"."a"', "select id from s.a"):
+        lineage = processor.get_column_lineage("ignored", sql, [upstream])
+        (field,) = lineage.fields["id"].inputFields
+        assert (field.namespace, field.name) == ("https://catalog.example.com/api/catalog", "lakehouse.s.a")

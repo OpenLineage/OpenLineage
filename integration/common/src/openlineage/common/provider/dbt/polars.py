@@ -86,27 +86,28 @@ def parse_polars_profile(profile: dict[str, Any]) -> PolarsCatalogs:
     if entries:
         if not isinstance(entries, list) or not all(isinstance(e, dict) and e.get("name") for e in entries):
             raise NotImplementedError("dbt-polars profile has a 'catalogs' entry without a name")
+        resolved = [_resolve_catalog(e, str(e["name"]), e.get("type")) for e in entries]
     else:
         catalog_type = profile.get("catalog_type")
         if not catalog_type:
             raise NotImplementedError("dbt-polars profile must define either 'catalogs' or 'catalog_type'")
-        entries = [{**profile, "name": default or "default", "type": catalog_type}]
+        # The profile is read in place: it may render Jinja lazily, and only the keys that
+        # are needed are rendered, never secrets such as a token.
+        resolved = [_resolve_catalog(profile, str(default or "default"), catalog_type)]
 
-    catalogs = {str(entry["name"]): _resolve_catalog(entry) for entry in entries}
-    default = str(default or entries[0]["name"])
+    catalogs = {catalog.alias: catalog for catalog in resolved}
+    default = str(default or resolved[0].alias)
     if default not in catalogs:
         raise NotImplementedError(f"dbt-polars default catalog '{default}' is not defined in 'catalogs'")
     return PolarsCatalogs(default=default, catalogs=catalogs)
 
 
-def _resolve_catalog(entry: dict[str, Any]) -> PolarsCatalog:
-    alias = str(entry["name"])
-
+def _resolve_catalog(entry: dict[str, Any], alias: str, catalog_type: Any) -> PolarsCatalog:
     def unsupported(reason: str) -> PolarsCatalog:
         return PolarsCatalog(alias=alias, unsupported_reason=reason)
 
-    if entry.get("type") != "iceberg":
-        return unsupported(f"catalog type '{entry.get('type')}' is not supported, only 'iceberg' is")
+    if catalog_type != "iceberg":
+        return unsupported(f"catalog type '{catalog_type}' is not supported, only 'iceberg' is")
     if entry.get("py-catalog-impl"):
         return unsupported("custom pyiceberg catalog implementations (py-catalog-impl) are not supported")
 
@@ -130,22 +131,34 @@ def _resolve_catalog(entry: dict[str, Any]) -> PolarsCatalog:
         # which the profile does not show.
         return unsupported("the profile does not set the catalog 'uri'")
 
-    if pyiceberg_type == "rest":
-        parts = urlsplit(uri)
-        if parts.scheme.lower() not in _DEFAULT_PORTS or not parts.hostname:
-            return unsupported(f"REST catalog uri is not an http(s) URL: {_strip_credentials(parts)}")
-        warehouse = entry.get("warehouse")
-        # A REST service can host several warehouses, so the warehouse is part of the identity.
-        return PolarsCatalog(
-            alias=alias,
-            namespace=_strip_credentials(parts),
-            catalog=_normalize_warehouse(warehouse) if warehouse else None,
-        )
-    # SQL catalog. pyiceberg's SQL catalog keeps the tables of every catalog in one database
-    # and tells them apart by catalog name, which dbt-polars sets to the catalog's name in
-    # the profile.
+    try:
+        if pyiceberg_type == "rest":
+            parts = urlsplit(uri)
+            if parts.scheme.lower() not in _DEFAULT_PORTS or not parts.hostname:
+                return unsupported("REST catalog uri is not an http(s) URL")
+            _ = parts.port  # raises ValueError when invalid
+            warehouse = entry.get("warehouse")
+            # A REST service can host several warehouses, so the warehouse is part of the identity.
+            return PolarsCatalog(
+                alias=alias,
+                namespace=_strip_credentials(parts),
+                catalog=_normalize_warehouse(warehouse) if warehouse else None,
+            )
+        return _resolve_sql_catalog(alias, uri)
+    except ValueError:
+        return unsupported("the catalog uri is not a valid URL")
+
+
+def _resolve_sql_catalog(alias: str, uri: str) -> PolarsCatalog:
+    # pyiceberg's SQL catalog keeps the tables of every catalog in one database and tells
+    # them apart by catalog name, which dbt-polars sets to the catalog's name in the profile.
+    def unsupported(reason: str) -> PolarsCatalog:
+        return PolarsCatalog(alias=alias, unsupported_reason=reason)
+
     parts = urlsplit(uri)
     query = parse_qs(parts.query)
+    if "," in parts.netloc.rpartition("@")[2]:
+        return unsupported("the SQL catalog uri names several database servers")
     if parts.scheme.lower().startswith("sqlite"):
         database = parts.path[1:]  # sqlite:///relative.db or sqlite:////absolute.db
         if not database or ":memory:" in database or "memory" in query.get("mode", []):
@@ -153,23 +166,25 @@ def _resolve_catalog(entry: dict[str, Any]) -> PolarsCatalog:
     elif not parts.hostname:
         # SQLAlchemy also takes the server from a "host" query parameter, possibly a
         # socket directory or several hosts. Only a single network host is identifiable.
-        hosts = query.get("host", [])
+        hosts, ports = query.get("host", []), query.get("port", [])
         if len(hosts) != 1 or not hosts[0] or hosts[0].startswith("/") or "," in hosts[0]:
             return unsupported("the SQL catalog uri does not name a single database server")
+        if len(ports) > 1 or not all(port.isdigit() for port in ports):
+            return unsupported("the SQL catalog uri has an invalid port")
         host = hosts[0].strip("[]")
         if ":" in host:  # IPv6 literal
             host = f"[{host}]"
-        port = query.get("port", [""])[0]
-        parts = parts._replace(netloc=f"{host}:{port}" if port else host)
-    namespace = _strip_credentials(parts, drop_driver=True)
-    return PolarsCatalog(alias=alias, namespace=namespace, catalog=alias)
+        parts = parts._replace(netloc=f"{host}:{ports[0]}" if ports else host)
+    else:
+        _ = parts.port  # raises ValueError when invalid
+    return PolarsCatalog(alias=alias, namespace=_strip_credentials(parts, drop_driver=True), catalog=alias)
 
 
 def _normalize_warehouse(warehouse: Any) -> str:
     warehouse = str(warehouse).strip()
     if "://" in warehouse:
         # Some REST services take a storage location as warehouse.
-        return _strip_credentials(urlsplit(warehouse))
+        return _strip_credentials(urlsplit(warehouse)).rstrip("/")
     return warehouse
 
 
@@ -185,10 +200,7 @@ def _strip_credentials(parts: SplitResult, drop_driver: bool = False) -> str:
     host = parts.hostname or ""
     if ":" in host:
         host = f"[{host}]"
-    try:
-        port = parts.port
-    except ValueError:
-        port = None
+    port = parts.port
     if port is not None and port != _DEFAULT_PORTS.get(scheme):
         host = f"{host}:{port}"
     path = parts.path

@@ -408,7 +408,8 @@ class DbtLiveProcessor(DbtLocalArtifactProcessor):
         """
         succeeded = event_type == RunState.COMPLETE
         inputs = []
-        for model_input in self._node_inputs(node_id):
+        model_inputs = self._node_inputs(node_id)
+        for model_input in model_inputs:
             input_dataset = self.node_to_dataset(node=model_input, has_facets=True)
             if succeeded:
                 input_dataset.facets.update(  # type: ignore[union-attr]
@@ -426,7 +427,9 @@ class DbtLiveProcessor(DbtLocalArtifactProcessor):
                     or output_node.metadata_node.get("compiled_sql")
                 )
                 if compiled_sql and (
-                    column_lineage := self.get_column_lineage(output_dataset.namespace, compiled_sql)
+                    column_lineage := self.get_column_lineage(
+                        output_dataset.namespace, compiled_sql, model_inputs
+                    )
                 ):
                     output_dataset.facets["columnLineage"] = column_lineage  # type: ignore[index]
             if succeeded:

@@ -544,7 +544,7 @@ def test_node_finished_attaches_column_lineage(unique_id, resource_type, node_st
     output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
 
     assert output_facets["columnLineage"] == ol_event_to_dict(facet)
-    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql)
+    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql, mock.ANY)
 
 
 def test_node_finished_missing_compiled_sql_has_no_column_lineage():
@@ -569,7 +569,7 @@ def test_node_finished_uses_compiled_sql_fallback_for_column_lineage():
     output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
 
     assert output_facets["columnLineage"] == ol_event_to_dict(facet)
-    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql)
+    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql, mock.ANY)
 
 
 def test_node_finished_column_lineage_parse_failure_has_no_column_lineage():
@@ -582,7 +582,7 @@ def test_node_finished_column_lineage_parse_failure_has_no_column_lineage():
     output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
 
     assert "columnLineage" not in output_facets
-    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql)
+    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql, mock.ANY)
 
 
 def test_test_node_finished_has_no_column_lineage():

@@ -406,7 +406,9 @@ class DbtArtifactProcessor:
 
             # Add column lineage if SQL is available
             if sql:
-                column_lineage = self.get_column_lineage(output_dataset.namespace, sql)
+                column_lineage = self.get_column_lineage(
+                    output_dataset.namespace, sql, [input_node for _, input_node in inputs]
+                )
                 if column_lineage:
                     output_dataset.facets["columnLineage"] = column_lineage  # type: ignore
 
@@ -834,15 +836,7 @@ class DbtArtifactProcessor:
         has_facets: bool = False,
     ) -> tuple[str, str, dict, dict]:
         """Resolve physical source identifiers or materialized aliases with dataset facets."""
-        if node.type == "source":
-            table = node.metadata_node.get("identifier") or node.metadata_node["name"]
-        else:
-            table = node.metadata_node["alias"]
-        database = node.metadata_node["database"]
-        if self.adapter_type == Adapter.POLARS:
-            # dbt-polars stores a relation in its configured catalog, else in its database
-            database = (node.metadata_node.get("config") or {}).get("catalog") or database
-        namespace, name = self._dataset_identity(database, node.metadata_node["schema"], table)
+        namespace, name = self._node_identity(node)
         facets: dict[str, DatasetFacet] = {}
         input_facets: dict[str, InputDatasetFacet] = {}
         if symlink := self._create_dataset_symlink(node):
@@ -878,6 +872,39 @@ class DbtArtifactProcessor:
             if dbt_model_facet := self._create_dbt_model_dataset_facet(node):
                 facets["dbt_model"] = dbt_model_facet
         return namespace, name, facets, input_facets
+
+    @staticmethod
+    def _node_table(node: ModelNode) -> str:
+        if node.type == "source":
+            return node.metadata_node.get("identifier") or node.metadata_node["name"]
+        return node.metadata_node["alias"]
+
+    def _node_identity(self, node: ModelNode) -> tuple[str, str]:
+        """The namespace and name of the table behind a dbt node."""
+        database = node.metadata_node["database"]
+        if self.adapter_type == Adapter.POLARS:
+            # dbt-polars stores a relation in its configured catalog, else in its database
+            database = (node.metadata_node.get("config") or {}).get("catalog") or database
+        return self._dataset_identity(database, node.metadata_node["schema"], self._node_table(node))
+
+    def _polars_input_identities(
+        self, inputs: Sequence[ModelNode]
+    ) -> dict[tuple[str | None, str | None, str], tuple[str, str]]:
+        """Identities of a model's inputs, keyed by how the compiled SQL names them.
+
+        dbt renders a relation with the database of its manifest node, which for dbt-polars can
+        differ from the catalog it is stored in, and the SQL may leave the database out. Looking
+        names up here keeps column lineage on the same datasets as the event's inputs.
+        """
+        known: dict[tuple[str | None, str | None, str], tuple[str, str]] = {}
+        ambiguous = set()
+        for node in inputs:
+            identity = self._node_identity(node)
+            for database in (node.metadata_node["database"], None):
+                key = (database, node.metadata_node["schema"], self._node_table(node))
+                if known.setdefault(key, identity) != identity:
+                    ambiguous.add(key)
+        return {key: identity for key, identity in known.items() if key not in ambiguous}
 
     def _dataset_identity(self, database: str | None, schema: str | None, table: str) -> tuple[str, str]:
         """The namespace and name of the table ``database.schema.table`` of a dbt relation."""
@@ -1344,19 +1371,21 @@ class DbtArtifactProcessor:
             return string[:]
 
     def get_column_lineage(
-        self, namespace: str, compiled_sql: str
+        self, namespace: str, compiled_sql: str, inputs: Sequence[ModelNode] = ()
     ) -> column_lineage_dataset.ColumnLineageDatasetFacet | None:
         """Parse SQL and extract column-level lineage information
 
         Args:
             namespace: The namespace for the column lineage
             compiled_sql: The compiled SQL to parse
+            inputs: The model's inputs; dbt-polars datasets are resolved through them
 
         Returns:
             ColumnLineageDatasetFacet if lineage can be parsed, None otherwise
         """
         try:
             parsed = parse_sql([compiled_sql])
+            known = self._polars_input_identities(inputs) if self.adapter_type == Adapter.POLARS else {}
             fields = {}
             if parsed:
                 for cll_item in parsed.column_lineage:
@@ -1366,9 +1395,9 @@ class DbtArtifactProcessor:
                             continue
                         origin = column_meta.origin
                         if self.adapter_type == Adapter.POLARS:
-                            field_namespace, field_dataset = self._dataset_identity(
-                                origin.database, origin.schema, origin.name
-                            )
+                            field_namespace, field_dataset = known.get(
+                                (origin.database, origin.schema, origin.name)
+                            ) or self._dataset_identity(origin.database, origin.schema, origin.name)
                         else:
                             field_namespace = namespace
                             field_dataset = self._format_dataset_name(
