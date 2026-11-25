@@ -235,10 +235,20 @@ class OpenLineageRunEventBuilder {
         timeouter.timeoutJobFacets(
             () -> buildJobFacets(nodes, jobFacetBuilders, context.getJobFacetsBuilder()));
     List<InputDataset> inputDatasets =
-        timeouter.timeoutInputDatasets(() -> buildInputDatasets(nodes));
+        timeouter.timeoutInputDatasets(
+            () ->
+                openLineageContext
+                    .getMeterRegistry()
+                    .timer("openlineage.spark.dataset.input.execution.time")
+                    .record(() -> buildInputDatasets(nodes)));
     openLineageContext.getLineageRunStatus().capturedInputs(inputDatasets.size());
     List<OutputDataset> outputDatasets =
-        timeouter.timeoutOutputDatasets(() -> buildOutputDatasets(nodes));
+        timeouter.timeoutOutputDatasets(
+            () ->
+                openLineageContext
+                    .getMeterRegistry()
+                    .timer("openlineage.spark.dataset.output.execution.time")
+                    .record(() -> buildOutputDatasets(nodes)));
     openLineageContext.getLineageRunStatus().capturedOutputs(outputDatasets.size());
     RunFacets runFacets =
         timeouter.timeoutRunFacets(() -> buildRunFacets(context, nodes), openLineage);
@@ -334,14 +344,8 @@ class OpenLineageRunEventBuilder {
 
   private <D> Function1<LogicalPlan, Collection<D>> visitLogicalPlan(
       PartialFunction<LogicalPlan, Collection<D>> inputVisitor) {
-    return openLineageContext
-        .getMeterRegistry()
-        .timer("openlineage.spark.dataset.input.execution.time")
-        .record(
-            () ->
-                ScalaConversionUtils.toScalaFn(
-                    node ->
-                        inputVisitor.applyOrElse(node, toScalaFn(n -> Collections.emptyList()))));
+    return ScalaConversionUtils.toScalaFn(
+        node -> inputVisitor.applyOrElse(node, toScalaFn(n -> Collections.emptyList())));
   }
 
   private List<OutputDataset> buildOutputDatasets(List<Object> nodes) {
