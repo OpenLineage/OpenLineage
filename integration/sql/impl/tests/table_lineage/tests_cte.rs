@@ -472,3 +472,32 @@ fn first_cte_with_its_own_with_keeps_the_tables_of_its_nested_ctes() {
         assert_eq!(in_tables(sql, dialect), vec!["src"], "{dialect}: {sql}");
     }
 }
+
+// A CTE is visible only to the query it is attached to, so a write target
+// spelled like a CTE still names a table.
+#[test]
+fn write_target_spelled_like_a_cte_is_an_output() {
+    for (sql, dialect) in [
+        (
+            "WITH c AS (SELECT id FROM src) INSERT INTO c SELECT id FROM c",
+            "postgres",
+        ),
+        (
+            "WITH \"c\" AS (SELECT id FROM src) INSERT INTO c SELECT id FROM \"c\"",
+            "snowflake",
+        ),
+        (
+            "WITH c AS (SELECT id FROM src) INSERT INTO c SELECT id FROM c",
+            "snowflake",
+        ),
+    ] {
+        assert_eq!(
+            cte_lineage(sql, dialect),
+            TableLineage {
+                in_tables: tables(vec!["src"]),
+                out_tables: tables(vec!["c"])
+            },
+            "{dialect}: {sql}"
+        );
+    }
+}

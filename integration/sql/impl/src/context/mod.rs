@@ -196,20 +196,6 @@ impl<'a> Context<'a> {
         }
     }
 
-    /// `add_input` for a table reference that `cte_named_by` has already
-    /// ruled out as a CTE, so only a real alias suppresses it.
-    pub fn add_relation_input(&mut self, table: Vec<Ident>) {
-        let name = DbTableMeta::new(
-            table,
-            self.dialect,
-            self.default_schema.clone(),
-            self.default_database.clone(),
-        );
-        if !self.is_relation_alias(&name) {
-            self.inputs.insert(name);
-        }
-    }
-
     pub fn add_non_table_input(
         &mut self,
         table: Vec<Ident>,
@@ -506,24 +492,6 @@ impl<'a> Context<'a> {
         self.resolve_table(name) != name
     }
 
-    /// Whether `name` is an alias for a relation, judged by the innermost
-    /// alias entry for it. Unlike `is_table_alias`, this does not count the
-    /// placeholder entries `With::visit` registers for CTE names, which map
-    /// to an empty table: the alias table matches names without regard to
-    /// quoting, so those entries also catch references that fold to a
-    /// different name than the CTE. Only the first step is checked, because
-    /// an alias of a CTE (`FROM orders AS o`) continues to that CTE's
-    /// placeholder.
-    pub fn is_relation_alias(&self, name: &DbTableMeta) -> bool {
-        self.is_table_alias(name)
-            && self
-                .frames
-                .iter()
-                .rev()
-                .find_map(|frame| frame.aliases.get_table_from_alias(name.qualified_name()))
-                .is_some_and(|table| !table.name.is_empty())
-    }
-
     // --- Synthesize Attributes From Frames ---
     // These methods are used to retrieve information
     // from the narrower scope and allow the visitor
@@ -633,7 +601,17 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn collect_with_table(&mut self, mut old: ContextFrame, from_table: DbTableMeta) {
+    /// Collects the frame of a CTE body or derived table as the columns of
+    /// `from_table`. `names_a_cte` is whether `from_table` is the name of a
+    /// CTE: then a column whose ancestor is `from_table` itself refers to
+    /// that CTE rather than to the body being collected, and is not taken
+    /// as an ancestry of its own.
+    pub fn collect_with_table(
+        &mut self,
+        mut old: ContextFrame,
+        from_table: DbTableMeta,
+        names_a_cte: bool,
+    ) {
         if let Some(frame) = self.frames.last_mut() {
             let old_ancestry = old
                 .column_ancestry
@@ -645,7 +623,7 @@ impl<'a> Context<'a> {
                 .collect::<HashMap<ColumnMeta, ColumnAncestors>>();
 
             let removed_circular_deps =
-                Context::remove_circular_deps(&old_ancestry, frame, from_table);
+                Context::remove_circular_deps(&old_ancestry, from_table, names_a_cte);
 
             if !removed_circular_deps.is_empty() {
                 frame.column_ancestry.extend(old_ancestry);
@@ -660,17 +638,15 @@ impl<'a> Context<'a> {
 
     fn remove_circular_deps(
         old_ancestry: &HashMap<ColumnMeta, ColumnAncestors>,
-        frame: &ContextFrame,
         from_table: DbTableMeta,
+        names_a_cte: bool,
     ) -> HashMap<ColumnMeta, ColumnAncestors> {
         let mut removed_circular_deps: HashMap<ColumnMeta, ColumnAncestors> = HashMap::new();
 
         for (key_column_meta, column_ancestors) in old_ancestry.iter() {
             for column_meta in column_ancestors {
-                if let Some(origin) = column_meta.origin.clone() {
-                    if frame.aliases.is_table_alias(&origin) && origin == from_table {
-                        continue;
-                    }
+                if names_a_cte && column_meta.origin.as_ref() == Some(&from_table) {
+                    continue;
                 }
 
                 removed_circular_deps
@@ -982,7 +958,11 @@ mod tests {
         );
 
         let frame = context.pop_frame().unwrap();
-        context.collect_with_table(frame, DbTableMeta::new_default_dialect("alias".to_string()));
+        context.collect_with_table(
+            frame,
+            DbTableMeta::new_default_dialect("alias".to_string()),
+            false,
+        );
 
         let mut ancestry = Vec::from_iter(context.frames.last().unwrap().column_ancestry.iter());
         ancestry.sort_by(|a, b| a.0.cmp(b.0));
