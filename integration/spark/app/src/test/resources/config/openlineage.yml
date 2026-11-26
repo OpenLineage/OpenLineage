@@ -10,9 +10,9 @@ jobName:
 facets:
   spark:
     logicalPlan:
-      disabled: true
-  spark_unknown:
-    disabled: false
+      disabled: false
+  dataSource:
+    disabled: true
 # The debug facet is disabled implicitly
 #  debug:
 #    disabled: true

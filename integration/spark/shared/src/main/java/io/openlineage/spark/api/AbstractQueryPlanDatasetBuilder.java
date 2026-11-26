@@ -7,8 +7,6 @@ package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.Dataset;
-import io.openlineage.spark.agent.lifecycle.UnknownEntryFacetListener;
-import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.lang.reflect.ParameterizedType;
@@ -42,8 +40,6 @@ import scala.PartialFunction;
 public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, D extends Dataset>
     extends AbstractGenericArgPartialFunction<T, D> {
   protected final OpenLineageContext context;
-  private final UnknownEntryFacetListener unknownEntryFacetListener =
-      UnknownEntryFacetListener.getInstance();
 
   protected final boolean searchDependencies;
 
@@ -96,9 +92,6 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
 
       @Override
       public List<D> apply(LogicalPlan x) {
-        if (!FacetUtils.isFacetDisabled(context, "spark_unknown")) {
-          unknownEntryFacetListener.accept(x);
-        }
         if (context.getVisitedNodes().alreadyVisited((SparkListenerEvent) event, x)) {
           return Collections.emptyList();
         }

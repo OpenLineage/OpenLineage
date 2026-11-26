@@ -196,7 +196,6 @@ class SparkClickHouseIntegrationTest {
         .config("spark.openlineage.transport.type", "http")
         .config(
             "spark.openlineage.transport.url", "http://localhost:" + server.getAddress().getPort())
-        .config("spark.openlineage.facets.spark_unknown.disabled", "true")
         .config("spark.clickhouse.write.format", "json")
         .config("spark.sql.catalog.clickhouse", "com.clickhouse.spark.ClickHouseCatalog")
         .config("spark.sql.catalog.clickhouse.host", clickhouse.getHost())
