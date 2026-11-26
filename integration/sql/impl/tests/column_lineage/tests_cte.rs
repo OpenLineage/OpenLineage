@@ -415,3 +415,29 @@ fn write_target_spelled_like_a_cte_keeps_its_column_lineage() {
         vec!["a <- src.a"]
     );
 }
+
+// Only a column's reference to itself is dropped: a renamed column of a
+// derived table named like its CTE keeps its lineage through the CTE.
+#[test]
+fn derived_table_named_like_its_cte_keeps_a_renamed_column() {
+    assert_eq!(
+        edges(
+            "WITH d AS (SELECT a FROM src) SELECT d.x FROM (SELECT a AS x FROM d) AS d",
+            "postgres"
+        ),
+        vec!["x <- src.a"]
+    );
+}
+
+// A CTE named like the table it reads, as dbt models often are: a renamed
+// column traces to the table's column, and an unchanged one keeps its name.
+#[test]
+fn cte_named_like_the_table_it_reads_keeps_renamed_columns() {
+    assert_eq!(
+        edges(
+            "WITH orders AS (SELECT id, amount AS amt FROM orders) SELECT id, amt FROM orders",
+            "postgres"
+        ),
+        vec!["amt <- orders.amount", "id <- orders.id"]
+    );
+}

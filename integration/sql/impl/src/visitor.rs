@@ -1152,8 +1152,17 @@ impl Visit for Statement {
 
 impl Visit for Table {
     fn visit(&self, context: &mut Context) -> Result<()> {
+        // `TABLE c` reads CTE `c` when one is in scope, as `FROM c` does.
         if let Some(name) = &self.table_name {
-            context.add_input(vec![Ident::new(name.to_string())])
+            let idents = vec![Ident::new(name.to_string())];
+            match context.cte_named_by(&idents) {
+                Some(cte) => {
+                    if context.is_main() {
+                        context.mark_table_as_used(&cte);
+                    }
+                }
+                None => context.add_input(idents),
+            }
         }
         Ok(())
     }

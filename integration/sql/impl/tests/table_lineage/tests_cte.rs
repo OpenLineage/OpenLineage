@@ -501,3 +501,22 @@ fn write_target_spelled_like_a_cte_is_an_output() {
         );
     }
 }
+
+// `TABLE c` reads CTE `c` like `FROM c` does, so `c` is not an input.
+#[test]
+fn table_statement_naming_a_cte_reads_the_cte() {
+    assert_eq!(
+        in_tables(
+            "WITH c AS (SELECT a FROM src) SELECT a FROM c UNION ALL TABLE c",
+            "postgres"
+        ),
+        vec!["src"]
+    );
+    assert_eq!(
+        in_tables(
+            "WITH c AS (SELECT a FROM src) SELECT a FROM other UNION ALL TABLE c",
+            "postgres"
+        ),
+        vec!["other", "src"]
+    );
+}
