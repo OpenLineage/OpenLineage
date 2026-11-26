@@ -8,7 +8,7 @@ from unittest.mock import ANY, call
 import pytest
 from openlineage.client import OpenLineageClient, event_v2
 from openlineage.client.facet import ParentRunFacet
-from openlineage.client.facet_v2 import parent_run
+from openlineage.client.facet_v2 import parent_job, parent_run
 from openlineage.client.run import (
     Dataset,
     DatasetEvent,
@@ -558,3 +558,69 @@ def test_kafka_transport_close(mocker: MockerFixture) -> None:
 
     mock_producer.flush.assert_called_once_with(timeout=10)
     assert transport.producer is None
+
+
+def _parent_job_facet(with_root: bool) -> parent_job.ParentJobFacet:
+    return parent_job.ParentJobFacet(
+        job=parent_job.ParentJobFacetJob(namespace="parent-namespace", name="parent-job"),
+        root=(
+            parent_job.ParentJobFacetRoot(
+                job=parent_job.ParentJobFacetJob(namespace="root-namespace", name="root-job")
+            )
+            if with_root
+            else None
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("with_root", "expected_key"),
+    [(False, "run:parent-namespace/parent-job"), (True, "run:root-namespace/root-job")],
+)
+def test_kafka_transport_emits_run_event_with_parent_job_facet(
+    with_root: bool,
+    expected_key: str,
+    mocker: MockerFixture,
+) -> None:
+    mocker.patch("confluent_kafka.Producer")
+    config = KafkaConfig(config={"bootstrap.servers": "localhost:9092"}, topic="random-topic")
+    transport = KafkaTransport(config)
+    event = event_v2.RunEvent(
+        eventType=event_v2.RunState.START,
+        eventTime="2024-04-10T15:08:01.333999",
+        run=event_v2.Run(runId="ea445b5c-22eb-457a-8007-01c7c52b6e54"),
+        job=event_v2.Job(
+            namespace="test-namespace",
+            name="test-job",
+            facets={"parent": _parent_job_facet(with_root)},
+        ),
+        producer="prod",
+    )
+
+    OpenLineageClient(transport=transport).emit(event)
+
+    transport.producer.produce.assert_called_once_with(
+        topic="random-topic",
+        key=expected_key,
+        value=Serde.to_json(event).encode("utf-8"),
+        on_delivery=ANY,
+    )
+
+
+def test_kafka_transport_parent_run_facet_takes_precedence_over_parent_job_facet(
+    run_event_with_parent_v2: event_v2.RunEvent,
+    mocker: MockerFixture,
+) -> None:
+    mocker.patch("confluent_kafka.Producer")
+    config = KafkaConfig(config={"bootstrap.servers": "localhost:9092"}, topic="random-topic")
+    transport = KafkaTransport(config)
+    run_event_with_parent_v2.job.facets = {"parent": _parent_job_facet(with_root=True)}
+
+    OpenLineageClient(transport=transport).emit(run_event_with_parent_v2)
+
+    transport.producer.produce.assert_called_once_with(
+        topic="random-topic",
+        key="run:parent-namespace/parent-job",
+        value=Serde.to_json(run_event_with_parent_v2).encode("utf-8"),
+        on_delivery=ANY,
+    )

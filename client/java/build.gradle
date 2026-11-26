@@ -17,7 +17,7 @@ plugins {
     id "org.openapi.generator" version "6.6.0"
     id "com.gradleup.shadow" version "9.6.1"
     id "pmd"
-    id "io.freefair.lombok" version "9.8.2"
+    id "io.freefair.lombok" version "9.8.3"
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
 
@@ -54,13 +54,13 @@ repositories {
 
 ext {
     assertjVersion = '3.27.7'
-    jacksonVersion = "2.18.11"
+    jacksonVersion = "2.23.0"
     junit5Version = '5.13.4'
     lombokVersion = '1.18.48'
     mockitoVersion = '5.24.0'
-    micrometerVersion = '1.17.1'
+    micrometerVersion = '1.17.2'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
-    guavaVersion = '33.7.2-jre'
+    guavaVersion = '33.8.0-jre'
 }
 
 configurations {
@@ -68,13 +68,14 @@ configurations {
 }
 
 dependencies {
-    implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
-    implementation "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
-    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
-    implementation "com.fasterxml.jackson.module:jackson-module-blackbird:${jacksonVersion}"
+    implementation platform("com.fasterxml.jackson:jackson-bom:${jacksonVersion}")
+    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "com.fasterxml.jackson.core:jackson-annotations"
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+    implementation "com.fasterxml.jackson.module:jackson-module-blackbird"
     implementation 'org.apache.commons:commons-lang3:3.21.0'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.6.5'
     implementation 'commons-logging:commons-logging:1.4.0'
@@ -82,7 +83,7 @@ dependencies {
     implementation "io.micrometer:micrometer-core:${micrometerVersion}"
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly 'org.apache.kafka:kafka-clients:4.3.2'
+    compileOnly 'org.apache.kafka:kafka-clients:4.4.0'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     compileOnly "io.micrometer:micrometer-registry-statsd:${micrometerVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -198,6 +199,15 @@ publishing {
             artifactId = 'openlineage-java'
 
             from components.java
+
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
 
             artifact sourceJar
             artifact javadocJar

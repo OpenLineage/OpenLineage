@@ -24,6 +24,7 @@
       "ol:core:OutputStatisticsOutputDatasetFacet.json",
       "ol:core:OwnershipDatasetFacet.json",
       "ol:core:OwnershipJobFacet.json",
+      "ol:core:ParentJobFacet.json",
       "ol:core:ParentRunFacet.json",
       "ol:core:ProcessingEngineRunFacet.json",
       "ol:core:SQLJobFacet.json",

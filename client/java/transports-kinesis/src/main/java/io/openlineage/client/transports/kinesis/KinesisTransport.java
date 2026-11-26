@@ -10,6 +10,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.transports.ParentJobKey;
 import io.openlineage.client.transports.Transport;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
@@ -81,20 +82,24 @@ public class KinesisTransport extends Transport {
       For (2) source for `<namespace>` and `<name>` is selected using this order:
       - run.facets.parent.root.job
       - run.facets.parent.job
+      - job.facets.parent.root.job (ParentJobFacet, used when parent run is not known)
+      - job.facets.parent.job (ParentJobFacet, used when parent run is not known)
       - run.job
     */
     final OpenLineage.Run run = runEvent.getRun();
     final OpenLineage.Job job = runEvent.getJob();
     final String defaultResult = "run:" + job.getNamespace() + "/" + job.getName();
+    final String parentJobResult = ParentJobKey.resolve(job);
+    final String fallbackResult = parentJobResult != null ? parentJobResult : defaultResult;
 
     final OpenLineage.RunFacets runFacets = run.getFacets();
     if (runFacets == null) {
-      return defaultResult;
+      return fallbackResult;
     }
 
     final OpenLineage.ParentRunFacet parentFacet = runFacets.getParent();
     if (parentFacet == null) {
-      return defaultResult;
+      return fallbackResult;
     }
 
     final OpenLineage.ParentRunFacetRoot rootParent = parentFacet.getRoot();
@@ -107,7 +112,7 @@ public class KinesisTransport extends Transport {
 
     final OpenLineage.ParentRunFacetJob parentJob = parentFacet.getJob();
     if (parentJob == null) {
-      return defaultResult;
+      return fallbackResult;
     }
     return "run:" + parentJob.getNamespace() + "/" + parentJob.getName();
   }

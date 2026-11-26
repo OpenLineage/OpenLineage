@@ -7,6 +7,9 @@ package io.openlineage.client.utils.jdbc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.DatasetIdentifier.Symlink;
+import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
@@ -108,5 +111,69 @@ class JdbcDatasetUtilsTestForFabricWarehouse {
                 "raw.orders",
                 new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "sqlserver://" + guest);
+  }
+
+  private static final String CONNECTOR_URL =
+      "jdbc:sqlserver://;servername="
+          + HOST
+          + ".z8b.datawarehouse.fabric.microsoft.com;databaseName=wh_primary";
+  private static final String ONELAKE =
+      "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com";
+  private static final String WAREHOUSE_ID = "d75873bd-716b-4378-a37e-864c76fc9b3b";
+
+  @Test
+  void testConnectorOptionsAddTheOneLakeLocation() {
+    // the Fabric connector passes the user's options through to the JDBC read
+    Properties properties = new Properties();
+    properties.setProperty("datawarehouseid", WAREHOUSE_ID);
+
+    DatasetIdentifier identifier =
+        JdbcDatasetUtils.getDatasetIdentifier(CONNECTOR_URL, "raw.orders", properties);
+
+    assertThat(identifier.getSymlinks())
+        .containsExactly(
+            new Symlink(WAREHOUSE_ID + "/Tables/raw/orders", ONELAKE, SymlinkType.LOCATION));
+  }
+
+  @Test
+  void testDatabaseNameOptionNamesTheWarehouseTheIdIsFor() {
+    Properties properties = new Properties();
+    properties.setProperty("DatawarehouseId", WAREHOUSE_ID);
+    properties.setProperty("database_name", "wh_other");
+
+    // the query runs in wh_other, so the ID is wh_other's, not that of the URL's database
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(CONNECTOR_URL, "raw.orders", properties)
+                .getSymlinks())
+        .isEmpty();
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(CONNECTOR_URL, "wh_other.raw.orders", properties)
+                .getSymlinks())
+        .containsExactly(
+            new Symlink(WAREHOUSE_ID + "/Tables/raw/orders", ONELAKE, SymlinkType.LOCATION));
+  }
+
+  @Test
+  void testNoLocationWithoutTheWarehouseId() {
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(CONNECTOR_URL, "raw.orders", new Properties())
+                .getSymlinks())
+        .isEmpty();
+  }
+
+  @Test
+  void testBlankOptionsAreIgnored() {
+    // a blank database_name falls back to the URL's database, and a blank WorkspaceId to the
+    // address's workspace
+    Properties properties = new Properties();
+    properties.setProperty("DatawarehouseId", WAREHOUSE_ID);
+    properties.setProperty("database_name", " ");
+    properties.setProperty("WorkspaceId", "");
+
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(CONNECTOR_URL, "raw.orders", properties)
+                .getSymlinks())
+        .containsExactly(
+            new Symlink(WAREHOUSE_ID + "/Tables/raw/orders", ONELAKE, SymlinkType.LOCATION));
   }
 }

@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 
 class FacetUtilsTest {
   public static final String SPARK_LOGICAL_PLAN_FACET_NAME = "spark.logicalPlan";
-  public static final String SPARK_UNKNOWN_FACET_NAME = "spark_unknown";
   public static final String DEBUG_FACET_NAME = "debug";
 
   OpenLineageContext olc = mock(OpenLineageContext.class, RETURNS_DEEP_STUBS);
@@ -49,16 +48,15 @@ class FacetUtilsTest {
     when(solc.getFacetsConfig()).thenReturn(facetsConfig);
 
     facetsConfig.setDisabledFacets(
-        ImmutableMap.of(SPARK_LOGICAL_PLAN_FACET_NAME, false, SPARK_UNKNOWN_FACET_NAME, true));
+        ImmutableMap.of(SPARK_LOGICAL_PLAN_FACET_NAME, false, DEBUG_FACET_NAME, true));
 
     assertThat(FacetUtils.isFacetDisabled(olc, SPARK_LOGICAL_PLAN_FACET_NAME)).isFalse();
-    assertThat(FacetUtils.isFacetDisabled(olc, SPARK_UNKNOWN_FACET_NAME)).isTrue();
+    assertThat(FacetUtils.isFacetDisabled(olc, DEBUG_FACET_NAME)).isTrue();
   }
 
   @Test
   void testTheDefaults() {
     assertThat(FacetUtils.isFacetDisabled(null, "facetA")).isFalse();
-    assertThat(FacetUtils.isFacetDisabled(null, SPARK_UNKNOWN_FACET_NAME)).isTrue();
     assertThat(FacetUtils.isFacetDisabled(null, SPARK_LOGICAL_PLAN_FACET_NAME)).isTrue();
     assertThat(FacetUtils.isFacetDisabled(null, DEBUG_FACET_NAME)).isTrue();
   }

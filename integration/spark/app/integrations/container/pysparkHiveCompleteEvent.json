@@ -47,26 +47,6 @@
   "run": {
     "facets": {
       "spark.logicalPlan": {},
-      "spark_unknown": {
-        "inputs": [
-          {
-            "description": {},
-            "inputAttributes": [],
-            "outputAttributes": [
-              {
-                "metadata": {},
-                "name": "key",
-                "type": "integer"
-              },
-              {
-                "metadata": {},
-                "name": "value",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      },
       "processing_engine": {
         "version": "${json-unit.any-string}",
         "name": "spark",

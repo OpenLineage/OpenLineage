@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_utils::*;
-use openlineage_sql::{parse_sql, ExtractionError, TableLineage};
+use openlineage_sql::{get_dialect, parse_sql, ExtractionError, TableLineage};
 use sqlparser::dialect::PostgreSqlDialect;
 
 #[test]
@@ -27,29 +27,6 @@ fn parse_simple_cte() {
         TableLineage {
             in_tables: tables(vec!["transactions"]),
             out_tables: tables(vec!["potential_fraud"])
-        }
-    );
-}
-
-#[test]
-fn parse_cte_select_predicate_subquery_table_is_input() {
-    // The statement body reads the CTE while a predicate subquery reads
-    // another table: both the CTE's own input and the predicate table
-    // are inputs of the statement. This is the plain-statement
-    // counterpart of the multi-table insert predicate tests - the
-    // collect_inputs change that stopped dropping a frame's own
-    // dependencies when the frame has CTEs applies to every statement,
-    // not only to multi-table inserts.
-    assert_eq!(
-        test_sql(
-            "WITH c AS (SELECT * FROM a) \
-             SELECT * FROM c WHERE id IN (SELECT id FROM b)"
-        )
-        .unwrap()
-        .table_lineage,
-        TableLineage {
-            in_tables: tables(vec!["a", "b"]),
-            out_tables: tables(vec![])
         }
     );
 }
@@ -220,6 +197,304 @@ fn cte_insert_overwrite() {
     )
 }
 
+fn cte_lineage(sql: &str, dialect: &str) -> TableLineage {
+    test_sql_dialect(sql, dialect).unwrap().table_lineage
+}
+
+#[test]
+fn cte_reference_in_another_case_resolves_in_snowflake() {
+    assert_eq!(
+        cte_lineage(
+            "WITH Orders AS (SELECT id FROM raw.orders) INSERT INTO tgt SELECT id FROM orders",
+            "snowflake",
+        ),
+        TableLineage {
+            in_tables: tables(vec!["raw.orders"]),
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+    assert_eq!(
+        cte_lineage(
+            "WITH C AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM c",
+            "snowflake",
+        ),
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+}
+
+#[test]
+fn cte_reference_in_another_case_resolves_in_postgres() {
+    assert_eq!(
+        cte_lineage(
+            "WITH C AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM c",
+            "postgres",
+        ),
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+    // Unquoted `C` folds to `c`, which is the quoted name exactly.
+    assert_eq!(
+        cte_lineage(
+            "WITH \"c\" AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM C",
+            "postgres",
+        ),
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+}
+
+#[test]
+fn quoted_cte_name_does_not_match_a_differently_folded_reference() {
+    // Quoted "C" keeps its case, and unquoted `c` folds to `c`, so in
+    // Postgres the reference names a real table rather than the CTE.
+    assert_eq!(
+        cte_lineage(
+            "WITH \"C\" AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM c",
+            "postgres",
+        ),
+        TableLineage {
+            in_tables: tables(vec!["c"]),
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+}
+
+#[test]
+fn recursive_cte_referring_to_itself_in_another_case_is_not_an_input() {
+    assert_eq!(
+        cte_lineage(
+            "WITH RECURSIVE Nums AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM nums WHERE n < 5) \
+             INSERT INTO tgt SELECT n FROM nums",
+            "postgres",
+        ),
+        TableLineage {
+            in_tables: vec![],
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+}
+
+#[test]
+fn bigquery_matches_cte_names_without_regard_to_case_even_when_quoted() {
+    assert_eq!(
+        cte_lineage(
+            "INSERT INTO tgt WITH Orders AS (SELECT id FROM src) SELECT id FROM `orders`",
+            "bigquery",
+        ),
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+}
+
+fn in_tables(sql: &str, dialect: &str) -> Vec<String> {
+    let mut names: Vec<String> = cte_lineage(sql, dialect)
+        .in_tables
+        .iter()
+        .map(|t| t.qualified_name())
+        .collect();
+    names.sort();
+    names
+}
+
+#[test]
+fn reference_with_the_spelling_of_a_differently_folded_cte_is_a_table() {
+    // `"c"` stays c and unquoted `c` folds to C in Snowflake; Postgres is the
+    // mirror image. Neither reference names the CTE, so it is a real table.
+    assert_eq!(
+        in_tables(
+            "WITH \"c\" AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM c",
+            "snowflake"
+        ),
+        vec!["c"]
+    );
+    assert_eq!(
+        in_tables(
+            "WITH \"C\" AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM C",
+            "postgres"
+        ),
+        vec!["C"]
+    );
+}
+
+#[test]
+fn ctes_with_one_spelling_and_different_quoting_stay_distinct() {
+    assert_eq!(
+        in_tables(
+            "WITH \"C\" AS (SELECT id FROM src_upper), C AS (SELECT id FROM src_lower) \
+             INSERT INTO tgt SELECT id FROM \"C\"",
+            "postgres"
+        ),
+        vec!["src_upper"]
+    );
+    assert_eq!(
+        in_tables(
+            "WITH C AS (SELECT id FROM src_lower), \"C\" AS (SELECT id FROM src_upper) \
+             INSERT INTO tgt SELECT id FROM c",
+            "postgres"
+        ),
+        vec!["src_lower"]
+    );
+    assert_eq!(
+        in_tables(
+            "WITH \"orders\" AS (SELECT id FROM t1), orders AS (SELECT id FROM t2) \
+             INSERT INTO tgt SELECT id FROM \"orders\"",
+            "snowflake"
+        ),
+        vec!["t1"]
+    );
+}
+
+#[test]
+fn reference_resolves_to_the_cte_it_names_across_nested_scopes() {
+    // The inner unquoted C folds to c; "C" names only the outer CTE.
+    assert_eq!(
+        in_tables(
+            "WITH \"C\" AS (SELECT id FROM outer_src) INSERT INTO tgt \
+             SELECT id FROM (WITH C AS (SELECT id FROM inner_src) SELECT id FROM \"C\") sub",
+            "postgres"
+        ),
+        vec!["outer_src"]
+    );
+}
+
+#[test]
+fn sqlite_matches_cte_names_without_regard_to_case_even_when_quoted() {
+    assert_eq!(
+        in_tables(
+            "WITH \"orders\" AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM orders",
+            "sqlite"
+        ),
+        vec!["src"]
+    );
+    assert_eq!(
+        in_tables(
+            "WITH Orders AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM \"orders\"",
+            "sqlite"
+        ),
+        vec!["src"]
+    );
+}
+
+#[test]
+fn ctes_folding_to_one_name_resolve_the_same_way_every_time() {
+    // Snowflake rejects two CTEs that fold to one name; the parser should at
+    // least answer deterministically, with the later definition.
+    for _ in 0..20 {
+        assert_eq!(
+            in_tables(
+                "WITH tab1 AS (SELECT id FROM s1), TAB1 AS (SELECT id FROM s2) \
+                 INSERT INTO tgt SELECT id FROM Tab1",
+                "snowflake"
+            ),
+            vec!["s2"]
+        );
+    }
+}
+
+fn in_tables_with_default_schema(sql: &str, dialect: &str, schema: &str) -> Vec<String> {
+    let mut names: Vec<String> = parse_sql(sql, get_dialect(dialect), Some(schema.to_string()))
+        .unwrap()
+        .table_lineage
+        .in_tables
+        .iter()
+        .map(|t| t.qualified_name())
+        .collect();
+    names.sort();
+    names
+}
+
+#[test]
+fn cte_reference_and_a_table_in_the_default_schema_stay_distinct() {
+    // A CTE reference keeps its spelling as a dependency, so under a default
+    // schema `ORDERS` does not become the same table as `public.orders`.
+    assert_eq!(
+        in_tables_with_default_schema(
+            "WITH RECURSIVE orders AS \
+             (SELECT * FROM public.orders UNION ALL SELECT * FROM ORDERS) \
+             INSERT INTO target SELECT * FROM orders",
+            "postgres",
+            "public"
+        ),
+        vec!["public.orders"]
+    );
+    assert_eq!(
+        in_tables_with_default_schema(
+            "WITH Orders AS (SELECT id FROM src), \
+             j AS (SELECT o.id FROM orders AS o JOIN raw.Orders AS r ON o.id = r.id) \
+             INSERT INTO tgt SELECT id FROM j",
+            "postgres",
+            "raw"
+        ),
+        vec!["raw.Orders", "raw.src"]
+    );
+}
+
+#[test]
+fn cte_nested_under_the_same_folded_name_keeps_its_tables() {
+    assert_eq!(
+        in_tables(
+            "WITH x AS (SELECT 1 AS id), \
+             C AS (WITH c AS (SELECT id FROM src) SELECT id FROM c) \
+             INSERT INTO tgt SELECT id FROM C",
+            "snowflake"
+        ),
+        vec!["src"]
+    );
+}
+
+#[test]
+fn first_cte_with_its_own_with_keeps_the_tables_of_its_nested_ctes() {
+    for (sql, dialect) in [
+        (
+            "WITH c AS (WITH d AS (SELECT id FROM src) SELECT id FROM d) SELECT id FROM c",
+            "postgres",
+        ),
+        (
+            "WITH Outr AS (WITH Innr AS (SELECT id FROM src) SELECT id FROM innr) \
+             INSERT INTO tgt SELECT id FROM outr",
+            "snowflake",
+        ),
+        (
+            "WITH C AS (WITH c AS (SELECT id FROM src) SELECT id FROM c) \
+             INSERT INTO tgt SELECT id FROM c",
+            "snowflake",
+        ),
+    ] {
+        assert_eq!(in_tables(sql, dialect), vec!["src"], "{dialect}: {sql}");
+    }
+}
+
+#[test]
+fn parse_cte_select_predicate_subquery_table_is_input() {
+    // The statement body reads the CTE while a predicate subquery reads
+    // another table: both the CTE's own input and the predicate table
+    // are inputs of the statement. This is the plain-statement
+    // counterpart of the multi-table insert predicate tests - the
+    // collect_inputs change that stopped dropping a frame's own
+    // dependencies when the frame has CTEs applies to every statement,
+    // not only to multi-table inserts.
+    assert_eq!(
+        test_sql(
+            "WITH c AS (SELECT * FROM a) \
+             SELECT * FROM c WHERE id IN (SELECT id FROM b)"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "b"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
 #[test]
 fn nested_with_cte_inputs_are_collected() {
     // A CTE defined in a nested WITH subquery contributes its own inputs,
@@ -240,7 +515,6 @@ fn nested_with_cte_inputs_are_collected() {
         }
     );
 }
-
 #[test]
 fn nested_with_in_projection_subquery_inputs_are_collected() {
     // The same collection through a scalar subquery in the projection:
@@ -262,7 +536,6 @@ fn nested_with_in_projection_subquery_inputs_are_collected() {
         }
     );
 }
-
 #[test]
 fn predicate_subquery_with_nested_with_inputs_are_collected() {
     // A table joined inside a predicate subquery whose FROM is a derived
@@ -282,7 +555,6 @@ fn predicate_subquery_with_nested_with_inputs_are_collected() {
         }
     );
 }
-
 #[test]
 fn join_back_to_cte_adds_no_cte_input() {
     // Joining back to the statement's CTE after a nested WITH subquery
@@ -303,7 +575,6 @@ fn join_back_to_cte_adds_no_cte_input() {
         }
     );
 }
-
 #[test]
 fn nested_with_reading_outer_cte_in_predicate_subquery() {
     // The nested WITH's CTE reads the outer CTE: the reference resolves
@@ -322,7 +593,6 @@ fn nested_with_reading_outer_cte_in_predicate_subquery() {
         }
     );
 }
-
 #[test]
 fn nested_with_reading_outer_cte_in_derived_table() {
     // Same through a derived table: the only real table read anywhere
@@ -340,7 +610,6 @@ fn nested_with_reading_outer_cte_in_derived_table() {
         }
     );
 }
-
 #[test]
 fn cte_in_derived_table_does_not_capture_join_table() {
     // The CTE t exists only inside the derived table. The t joined in
@@ -359,7 +628,6 @@ fn cte_in_derived_table_does_not_capture_join_table() {
         }
     );
 }
-
 #[test]
 fn cte_in_derived_table_does_not_capture_predicate_table() {
     // Same scoping through an INSERT source: the t read by the WHERE
@@ -378,7 +646,6 @@ fn cte_in_derived_table_does_not_capture_predicate_table() {
         }
     );
 }
-
 #[test]
 fn inner_cte_does_not_shadow_outer_cte() {
     // The inner WITH redefines c over b; the outer query's own c still
@@ -398,7 +665,6 @@ fn inner_cte_does_not_shadow_outer_cte() {
         }
     );
 }
-
 #[test]
 fn cte_defined_in_cte_body_does_not_capture_join_table() {
     // d exists only inside c's body. The d joined in the outer query
@@ -416,7 +682,6 @@ fn cte_defined_in_cte_body_does_not_capture_join_table() {
         }
     );
 }
-
 #[test]
 fn cte_does_not_leak_into_later_statement_after_use_warehouse() {
     // A Snowflake script starting with USE WAREHOUSE: the CTE defined
@@ -439,7 +704,6 @@ fn cte_does_not_leak_into_later_statement_after_use_warehouse() {
         }
     );
 }
-
 #[test]
 fn cte_does_not_leak_into_later_statement_without_use() {
     // The same script without the leading USE.
@@ -459,7 +723,6 @@ fn cte_does_not_leak_into_later_statement_without_use() {
         }
     );
 }
-
 #[test]
 fn cte_does_not_leak_into_later_statement_after_use_db_schema() {
     // With USE db.sch the same holds, and the defaults apply to the
@@ -481,7 +744,6 @@ fn cte_does_not_leak_into_later_statement_after_use_db_schema() {
         }
     );
 }
-
 #[test]
 fn qualified_join_matching_cte_name_is_an_input() {
     // Only a bare reference can name a CTE: sch.c is a real table even
@@ -500,7 +762,6 @@ fn qualified_join_matching_cte_name_is_an_input() {
         }
     );
 }
-
 #[test]
 fn subquery_cte_alias_does_not_hide_real_table_in_second_exists() {
     assert_eq!(
@@ -516,7 +777,6 @@ fn subquery_cte_alias_does_not_hide_real_table_in_second_exists() {
         }
     );
 }
-
 #[test]
 fn subquery_cte_alias_does_not_hide_joined_real_table() {
     assert_eq!(
@@ -532,7 +792,6 @@ fn subquery_cte_alias_does_not_hide_joined_real_table() {
         }
     );
 }
-
 #[test]
 fn subquery_cte_alias_does_not_hide_select_into_target() {
     assert_eq!(
@@ -547,7 +806,6 @@ fn subquery_cte_alias_does_not_hide_select_into_target() {
         }
     );
 }
-
 #[test]
 fn unused_outer_cte_not_marked_used_through_nested_cte_body() {
     assert_eq!(
@@ -564,7 +822,6 @@ fn unused_outer_cte_not_marked_used_through_nested_cte_body() {
         }
     );
 }
-
 #[test]
 fn recursive_cte_self_reference_through_nested_with_is_not_an_input() {
     assert_eq!(
@@ -581,7 +838,6 @@ fn recursive_cte_self_reference_through_nested_with_is_not_an_input() {
         }
     );
 }
-
 #[test]
 fn inner_with_does_not_promote_cte_body_to_main() {
     assert_eq!(
@@ -598,7 +854,6 @@ fn inner_with_does_not_promote_cte_body_to_main() {
         }
     );
 }
-
 #[test]
 fn parenthesized_with_branch_does_not_capture_later_branch_table() {
     assert_eq!(
@@ -611,7 +866,6 @@ fn parenthesized_with_branch_does_not_capture_later_branch_table() {
         }
     );
 }
-
 #[test]
 fn parenthesized_with_branch_shadowing_outer_cte_keeps_both_inputs() {
     assert_eq!(
@@ -627,7 +881,6 @@ fn parenthesized_with_branch_shadowing_outer_cte_keeps_both_inputs() {
         }
     );
 }
-
 #[test]
 fn used_outer_cte_through_nested_cte_body_collects_inputs() {
     assert_eq!(
@@ -644,7 +897,6 @@ fn used_outer_cte_through_nested_cte_body_collects_inputs() {
         }
     );
 }
-
 #[test]
 fn quoted_cte_referenced_with_quotes_keeps_inputs() {
     // A CTE defined and referenced with quoted names: the reference is
@@ -665,7 +917,6 @@ fn quoted_cte_referenced_with_quotes_keeps_inputs() {
         );
     }
 }
-
 #[test]
 fn quoted_cte_referenced_from_insert_source_and_join() {
     assert_eq!(
@@ -693,7 +944,6 @@ fn quoted_cte_referenced_from_insert_source_and_join() {
         }
     );
 }
-
 #[test]
 fn cte_referenced_with_different_unquoted_case_keeps_inputs() {
     // Unquoted identifiers fold case (upper in Snowflake, lower in
@@ -739,7 +989,6 @@ fn cte_referenced_with_different_unquoted_case_keeps_inputs() {
         }
     );
 }
-
 #[test]
 fn quoted_cte_with_different_quoted_case_is_a_real_table() {
     // Quoted identifiers are case-sensitive: "c" does not name the CTE
@@ -764,7 +1013,6 @@ fn quoted_cte_with_different_quoted_case_is_a_real_table() {
         }
     );
 }
-
 #[test]
 fn quoted_and_unquoted_ctes_with_folding_names_coexist() {
     // In Snowflake, "mycte" (quoted, stored as written) and MyCte
@@ -792,7 +1040,6 @@ fn quoted_and_unquoted_ctes_with_folding_names_coexist() {
         }
     );
 }
-
 #[test]
 fn cte_stored_form_keying_through_set_op_and_predicate() {
     // The same stored-form resolution through a set-operation arm and
@@ -824,7 +1071,6 @@ fn cte_stored_form_keying_through_set_op_and_predicate() {
         }
     );
 }
-
 #[test]
 fn sibling_cte_reading_quoted_table_matching_another_ctes_fold() {
     // CTE `other` reads the real quoted table "mycte"; the sibling CTE
@@ -849,15 +1095,20 @@ fn sibling_cte_reading_quoted_table_matching_another_ctes_fold() {
         }
     );
 }
-
 #[test]
 fn quoted_reference_matching_unquoted_cte_spelling_is_not_the_cte() {
-    // PINNED (alias-table limitation, disclosed on the PR): in
-    // Snowflake, "mycte" is not the CTE mycte (stored MYCTE), and the
-    // CTE lookup now correctly misses - t1 is not collected. The
-    // reference should then be a real table input, but add_input's
-    // alias check compares bare qualified names, so it still resolves
-    // the reference to the CTE's empty-table alias and drops it.
+    // In Snowflake, "mycte" is not the CTE mycte (stored MYCTE): the
+    // CTE lookup misses - t1 is not collected - and the reference is
+    // the real table it names, collected as an input. (This pinned
+    // the old alias-table limitation, disclosed on the PR, until
+    // #5178 made non-CTE references ignore the CTE placeholder
+    // aliases; the expectation now states the fixed behavior.)
+    let mut quoted_mycte = table("mycte");
+    quoted_mycte.quote_style = Some(openlineage_sql::QuoteStyle {
+        database: None,
+        schema: None,
+        name: Some('"'),
+    });
     assert_eq!(
         test_sql_dialect(
             "WITH mycte AS (SELECT * FROM t1) SELECT * FROM \"mycte\"",
@@ -866,18 +1117,17 @@ fn quoted_reference_matching_unquoted_cte_spelling_is_not_the_cte() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: tables(vec![]),
+            in_tables: vec![quoted_mycte],
             out_tables: tables(vec![])
         }
     );
 }
-
 #[test]
 fn unquoted_reference_matching_quoted_cte_spelling_is_not_the_cte() {
-    // PINNED (same alias-table limitation as above, mirrored): mycte
-    // folds to MYCTE in Snowflake, which is not the quoted CTE
-    // "mycte"; the lookup correctly misses, but the alias check drops
-    // the real table input the same way.
+    // Mirrored: mycte folds to MYCTE in Snowflake, which is not the
+    // quoted CTE "mycte"; the lookup misses and the reference is
+    // collected as the real table it names (see the test above for
+    // the history of this expectation).
     assert_eq!(
         test_sql_dialect(
             "WITH \"mycte\" AS (SELECT * FROM t1) SELECT * FROM mycte",
@@ -886,25 +1136,22 @@ fn unquoted_reference_matching_quoted_cte_spelling_is_not_the_cte() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: tables(vec![]),
+            in_tables: tables(vec!["mycte"]),
             out_tables: tables(vec![])
         }
     );
 }
-
 #[test]
 fn delimited_case_insensitive_cte_references_resolve() {
-    // In SQL Server, SQLite and the Spark/Hive/MySQL family, delimited
-    // identifiers stay case-insensitive, so a delimited reference in
-    // different case names the same CTE.
+    // In SQL Server and SQLite, delimited identifiers stay
+    // case-insensitive, so a delimited reference in different case
+    // names the same CTE. (MySQL is not here: under the folding
+    // rules #5178 settled on, it compares names exactly, as it does
+    // table aliases under its default configuration.)
     for (sql, dialect) in [
         (
             "WITH [MyCte] AS (SELECT * FROM a) SELECT * FROM [mycte]",
             "mssql",
-        ),
-        (
-            "WITH `MyCte` AS (SELECT * FROM a) SELECT * FROM `mycte`",
-            "mysql",
         ),
         (
             "WITH \"MyCte\" AS (SELECT * FROM a) SELECT * FROM \"mycte\"",
@@ -934,7 +1181,6 @@ fn delimited_case_insensitive_cte_references_resolve() {
         }
     );
 }
-
 #[test]
 fn recursive_cte_with_delimited_case_differing_self_reference() {
     // SQL Server lets any CTE refer to itself; a delimited
@@ -954,7 +1200,6 @@ fn recursive_cte_with_delimited_case_differing_self_reference() {
         }
     );
 }
-
 #[test]
 fn quoted_reference_equal_to_unquoted_fold_resolves() {
     // A quoted reference whose spelling is exactly the stored form of
@@ -982,4 +1227,59 @@ fn quoted_reference_equal_to_unquoted_fold_resolves() {
             }
         );
     }
+}
+
+#[test]
+fn non_recursive_cte_in_derived_table_reads_table_with_its_own_name() {
+    // The WITH sits inside the derived table's scope: the CTE body
+    // reads the real table `orders` (a non-recursive CTE's own name
+    // is not in scope in its body), and that input must survive the
+    // subquery's CTE resolution.
+    assert_eq!(
+        test_sql_dialect(
+            "SELECT * FROM (WITH orders AS (SELECT * FROM orders) SELECT * FROM orders) x",
+            "postgres",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["orders"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn non_recursive_cte_in_insert_source_reads_table_with_its_own_name() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO target WITH orders AS (SELECT * FROM orders) SELECT * FROM orders",
+            "postgres",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["orders"]),
+            out_tables: tables(vec!["target"])
+        }
+    );
+}
+
+#[test]
+fn inner_cte_reading_outer_cte_with_its_own_name_keeps_outer_inputs() {
+    // The inner CTE's body reads `orders`, which there names the
+    // OUTER CTE: the outer CTE is used, so its input `raw` is kept.
+    assert_eq!(
+        test_sql_dialect(
+            "WITH orders AS (SELECT * FROM raw) \
+             SELECT * FROM (WITH orders AS (SELECT * FROM orders) SELECT * FROM orders) x",
+            "postgres",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["raw"]),
+            out_tables: tables(vec![])
+        }
+    );
 }

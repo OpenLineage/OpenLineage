@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 import attr
 from openlineage.client import event_v2
-from openlineage.client.facet_v2 import parent_run
+from openlineage.client.facet_v2 import parent_job, parent_run
 from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
@@ -104,6 +104,8 @@ class KafkaTransport(Transport):
         For (2) source for `<namespace>` and `<name>` is selected using this order:
         - run.facets.parent.root.job
         - run.facets.parent.job
+        - job.facets.parent.root.job (ParentJobFacet, used when parent run is not known)
+        - job.facets.parent.job (ParentJobFacet, used when parent run is not known)
         - run.job
         """
 
@@ -112,7 +114,12 @@ class KafkaTransport(Transport):
         run_facets: dict[str, Any] = event.run.facets or {}
         parent_run_facet: ParentRunFacet | parent_run.ParentRunFacet | None = run_facets.get("parent")
         if not parent_run_facet:
-            return run_default_result
+            job_facets: dict[str, Any] = event.job.facets or {}
+            parent_job_facet = job_facets.get("parent")
+            if not isinstance(parent_job_facet, parent_job.ParentJobFacet):
+                return run_default_result
+            namespace, name = self._get_run_message_key_args_from_parent_run_facet_v2(parent_job_facet)
+            return f"run:{namespace}/{name}"
 
         parent_job_namespace: str | None = None
         parent_job_name: str | None = None
@@ -142,7 +149,7 @@ class KafkaTransport(Transport):
 
     def _get_run_message_key_args_from_parent_run_facet_v2(
         self,
-        parent_run_facet: parent_run.ParentRunFacet,
+        parent_run_facet: parent_run.ParentRunFacet | parent_job.ParentJobFacet,
     ) -> tuple[str, str]:
         if parent_run_facet.root:
             root_job_namespace: str = parent_run_facet.root.job.namespace

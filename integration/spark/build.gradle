@@ -41,6 +41,7 @@ dependencies {
     implementation(project(path: ":snowflake"))
     implementation(project(path: ":iceberg"))
     implementation(project(path: ":gcp"))
+    implementation(project(path: ":fabric"))
 }
 
 task sourceJar(type: Jar) {
@@ -176,6 +177,7 @@ shadowJar {
         exclude(project(path: ":snowflake"))
         exclude(project(path: ":iceberg"))
         exclude(project(path: ":gcp"))
+        exclude(project(path: ":fabric"))
     }
 
     dependencies {

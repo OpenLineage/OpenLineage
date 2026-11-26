@@ -13,6 +13,9 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.MockClock;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
@@ -35,6 +38,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import lombok.SneakyThrows;
@@ -317,6 +321,64 @@ class OpenLineageRunEventBuilderTest {
 
     assertThatThrownBy(() -> builder.buildRun(runEventContext))
         .isInstanceOf(StackOverflowError.class);
+  }
+
+  @Test
+  void testBuildRunRecordsInputAndOutputDatasetExecutionTime() {
+    when(circuitBreakerConfig.getTimeout()).thenReturn(Optional.empty());
+    MockClock clock = new MockClock();
+    SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry(SimpleConfig.DEFAULT, clock);
+    OpenLineageContext timedContext =
+        OpenLineageContext.builder()
+            .sparkSession(session)
+            .sparkContext(session.sparkContext())
+            .openLineage(openLineage)
+            .meterRegistry(meterRegistry)
+            .openLineageConfig(config)
+            .build();
+    PartialFunction<Object, List<InputDataset>> timedInputBuilder =
+        new PartialFunction<Object, List<InputDataset>>() {
+          @Override
+          public List<InputDataset> apply(Object v1) {
+            clock.add(Duration.ofMillis(50));
+            return Collections.emptyList();
+          }
+
+          @Override
+          public boolean isDefinedAt(Object x) {
+            return true;
+          }
+        };
+    PartialFunction<Object, List<OutputDataset>> timedOutputBuilder =
+        new PartialFunction<Object, List<OutputDataset>>() {
+          @Override
+          public List<OutputDataset> apply(Object v1) {
+            clock.add(Duration.ofMillis(30));
+            return Collections.emptyList();
+          }
+
+          @Override
+          public boolean isDefinedAt(Object x) {
+            return true;
+          }
+        };
+    when(openLineageEventHandlerFactory.createInputDatasetBuilder(timedContext))
+        .thenReturn(Collections.singletonList(timedInputBuilder));
+    when(openLineageEventHandlerFactory.createOutputDatasetBuilder(timedContext))
+        .thenReturn(Collections.singletonList(timedOutputBuilder));
+
+    new OpenLineageRunEventBuilder(timedContext, openLineageEventHandlerFactory)
+        .buildRun(runEventContext);
+
+    Timer inputTimer = meterRegistry.find("openlineage.spark.dataset.input.execution.time").timer();
+    Timer outputTimer =
+        meterRegistry.find("openlineage.spark.dataset.output.execution.time").timer();
+    assertThat(inputTimer).isNotNull();
+    assertThat(inputTimer.count()).isEqualTo(1L);
+    assertThat(inputTimer.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(50.0);
+    assertThat(outputTimer).isNotNull();
+    assertThat(outputTimer.count()).isEqualTo(1L);
+    assertThat(outputTimer.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(30.0);
   }
 
   @SneakyThrows

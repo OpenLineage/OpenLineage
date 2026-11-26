@@ -56,7 +56,7 @@ from openlineage.common.provider.dbt.otel_records import (
     nanos_to_iso,
     parse_record,
 )
-from openlineage.common.provider.dbt.processor import ModelNode
+from openlineage.common.provider.dbt.processor import Adapter, ModelNode
 from openlineage.common.provider.dbt.utils import (
     PARSE_TIMEOUT_ENV,
     TEMP_DIR_ENV,
@@ -669,8 +669,9 @@ class DbtOtelProcessor(DbtLiveProcessor):
         if self._is_ephemeral(node):
             return None
         if self._has_manifest_entry(node.unique_id):
-            return self._get_model_node(node.unique_id)
-        if not node.identifier:
+            return self._get_output_node(node.unique_id)
+        if not node.identifier or self.adapter_type == Adapter.POLARS:
+            # Telemetry has no config: a dbt-polars node's catalog (config.catalog) is unknown.
             return None
         return ModelNode(
             type="model",

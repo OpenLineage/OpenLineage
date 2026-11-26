@@ -7,7 +7,6 @@ package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.FabricWarehouseUtils;
 import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.sql.ColumnLineage;
@@ -16,13 +15,16 @@ import io.openlineage.sql.DbTableMeta;
 import io.openlineage.sql.ExtractionError;
 import io.openlineage.sql.OpenLineageSql;
 import io.openlineage.sql.SqlMeta;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions$;
@@ -31,6 +33,8 @@ import org.apache.spark.sql.types.StructType;
 
 @Slf4j
 public class JdbcSparkUtils {
+  // SQL Server's [brackets], ANSI "double quotes" and MySQL's `backticks`
+  private static final Pattern QUOTED_NAME = Pattern.compile("[\\[\\]\"`]");
 
   public static <D extends OpenLineage.Dataset> List<D> getDatasets(
       DatasetFactory<D> datasetFactory, SqlMeta meta, JDBCRelation relation) {
@@ -52,32 +56,10 @@ public class JdbcSparkUtils {
    * @return dataset identifier, before namespace resolution
    */
   public static DatasetIdentifier getDatasetIdentifier(JDBCOptions jdbcOptions, DbTableMeta table) {
-    DatasetIdentifier identifier =
-        JdbcDatasetUtils.getDatasetIdentifier(
-            jdbcOptions.url(), table.qualifiedName(), jdbcOptions.asConnectionProperties());
-    // Microsoft's Spark connector for Fabric passes the user's options (such as the warehouse ID)
-    // through to the JDBC read, so they can be read here
-    return FabricWarehouseUtils.withOneLakeLocation(
-        identifier,
-        queryWarehouse(jdbcOptions),
-        option(jdbcOptions, FabricWarehouseUtils.WORKSPACE_ID_OPTION),
-        option(jdbcOptions, FabricWarehouseUtils.DATAWAREHOUSE_ID_OPTION));
-  }
-
-  // The warehouse a query runs in, which the DatawarehouseId option belongs to: the connector's
-  // database_name option, or else the database in the JDBC URL. A query can also read tables from
-  // other warehouses in the workspace, and those tables must not get this warehouse's location.
-  private static Optional<String> queryWarehouse(JDBCOptions jdbcOptions) {
-    Optional<String> databaseName = option(jdbcOptions, FabricWarehouseUtils.DATABASE_NAME_OPTION);
-    if (databaseName.isPresent()) {
-      return databaseName;
-    }
-    return JdbcDatasetUtils.getDatabase(jdbcOptions.url(), jdbcOptions.asConnectionProperties());
-  }
-
-  private static Optional<String> option(JDBCOptions jdbcOptions, String key) {
-    // parameters() ignores upper and lower case in option names
-    return ScalaConversionUtils.asJavaOptional(jdbcOptions.parameters().get(key));
+    // Connectors built on JDBC, such as Microsoft's Spark connector for Fabric, pass their own
+    // options in the connection properties, so the client's extractors can use them
+    return JdbcDatasetUtils.getDatasetIdentifier(
+        jdbcOptions.url(), nameParts(table), jdbcOptions.asConnectionProperties());
   }
 
   public static Optional<SqlMeta> extractQueryFromSpark(JDBCRelation relation) {
@@ -95,7 +77,7 @@ public class JdbcSparkUtils {
     // `schema_name.table_name`
     // https://spark.apache.org/docs/3.5.6/sql-data-sources-jdbc.html#data-source-option
     if (dbtable.isPresent() && dbtableIsJustATableName(dbtable.get())) {
-      DbTableMeta origin = new DbTableMeta(null, null, dbtable.get());
+      DbTableMeta origin = tableName(dbtable.get(), relation.jdbcOptions().url());
       return Optional.of(
           new SqlMeta(
               Collections.singletonList(origin),
@@ -170,6 +152,41 @@ public class JdbcSparkUtils {
 
   private static boolean dbtableIsASubquery(String dbtable) {
     return dbtable.startsWith("(");
+  }
+
+  /**
+   * The table a {@code dbtable} option names, when it's just a table name.
+   *
+   * <p>A quoted name, such as {@code [raw].[orders]} or {@code "raw"."orders"}, goes through the
+   * SQL parser, as tables in a query do, so the quotes are removed and the table gets the same name
+   * however it was read. A plain name is used as written. So is a quoted one when the parser isn't
+   * available or can't read it.
+   */
+  private static DbTableMeta tableName(String dbtable, String url) {
+    if (QUOTED_NAME.matcher(dbtable).find()) {
+      Optional<DbTableMeta> parsed =
+          parse("select * from " + dbtable, extractDialectFromJdbcUrl(url))
+              .filter(meta -> meta.errors().isEmpty() && meta.inTables().size() == 1)
+              .map(meta -> meta.inTables().get(0));
+      if (parsed.isPresent()) {
+        return parsed.get();
+      }
+    }
+    return new DbTableMeta(null, null, dbtable);
+  }
+
+  /**
+   * The parts of a table's name: database, schema and table, whichever are known. A table the
+   * parser read is passed as its parts, so a quoted part containing a dot, such as {@code
+   * [my.orders]}, stays one part. A plain name that wasn't parsed is split on dots.
+   */
+  private static List<String> nameParts(DbTableMeta table) {
+    if (table.database() == null && table.schema() == null) {
+      return new ArrayList<>(Arrays.asList(table.name().split("\\.")));
+    }
+    return Stream.of(table.database(), table.schema(), table.name())
+        .filter(Objects::nonNull)
+        .collect(Collectors.toCollection(ArrayList::new));
   }
 
   private static boolean dbtableIsJustATableName(String dbtable) {

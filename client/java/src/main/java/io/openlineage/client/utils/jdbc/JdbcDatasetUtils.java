@@ -9,7 +9,6 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -58,24 +57,6 @@ public class JdbcDatasetUtils {
     return getDatasetIdentifier(jdbcUrl, parts, properties);
   }
 
-  /**
-   * Get the database named in a JDBC URL or its properties, such as SQL Server's {@code
-   * databaseName}.
-   *
-   * @param jdbcUrl url to database
-   * @param properties JDBC properties
-   * @return the database, or empty if none is named or the URL can't be read
-   */
-  public static Optional<String> getDatabase(String jdbcUrl, Properties properties) {
-    String uri = jdbcUrl.replaceAll("^(?i)jdbc:", "");
-    try {
-      return getExtractor(uri).extract(uri, properties).getDatabase();
-    } catch (URISyntaxException e) {
-      log.debug("Failed to parse jdbc url", e);
-      return Optional.empty();
-    }
-  }
-
   @SneakyThrows
   public static DatasetIdentifier getDatasetIdentifier(
       String jdbcUrl, List<String> parts, Properties properties) {
@@ -84,7 +65,10 @@ public class JdbcDatasetUtils {
     try {
       JdbcExtractor extractor = getExtractor(uri);
       JdbcLocation location = extractor.extract(uri, properties);
-      return new DatasetIdentifier(location.toName(parts), location.toNamespace());
+      return extractor.enrich(
+          new DatasetIdentifier(location.toName(parts), location.toNamespace()),
+          location,
+          properties);
     } catch (URISyntaxException e) {
       log.debug("Failed to parse jdbc url", e);
       return new DatasetIdentifier(

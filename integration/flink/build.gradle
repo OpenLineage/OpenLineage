@@ -232,6 +232,8 @@ shadowJar {
     relocate 'org.apache.commons.lang3', 'io.openlineage.flink.shaded.org.apache.commons.lang3'
     relocate "org.HdrHistogram", "io.openlineage.flink.shaded.org.hdrhistogram"
     relocate "org.LatencyUtils", "io.openlineage.flink.shaded.org.latencyutils"
+    // relocate META-INF/services files along with the classes they name
+    mergeServiceFiles()
     // jackson-core 2.18+ ships FastDoubleParser as Java 21/22 multi-release classes that the
     // shadow plugin's ASM cannot relocate; the Java 8 base classes remain and are fully functional.
     exclude 'META-INF/versions/21/**'
@@ -259,6 +261,24 @@ shadowJar {
 
 assemble {
     dependsOn shadowJar
+}
+
+def verifyShadowJarServices = tasks.register("verifyShadowJarServices") {
+    group = "verification"
+    description = "Check that the shadow jar keeps no Jackson service files that name classes it relocated"
+    dependsOn shadowJar
+    doLast {
+        def unrelocated = zipTree(shadowJar.archiveFile).matching {
+            include 'META-INF/services/com.fasterxml.jackson.*'
+        }.files*.name
+        if (!unrelocated.isEmpty()) {
+            throw new GradleException("shadowJar keeps unrelocated Jackson service files: ${unrelocated}")
+        }
+    }
+}
+
+tasks.named("check").configure {
+    dependsOn(verifyShadowJarServices)
 }
 
 spotlessJava {

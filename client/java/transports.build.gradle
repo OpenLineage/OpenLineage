@@ -39,8 +39,9 @@ ext {
 
 dependencies {
     compileOnly(rootProject)
-    compileOnly("com.fasterxml.jackson.core:jackson-core:${jacksonVersion}")
-    compileOnly("com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}")
+    compileOnly(platform("com.fasterxml.jackson:jackson-bom:${jacksonVersion}"))
+    compileOnly("com.fasterxml.jackson.core:jackson-core")
+    compileOnly("com.fasterxml.jackson.core:jackson-annotations")
     compileOnly("org.slf4j:slf4j-api:1.7.36")
 
     annotationProcessor ("org.projectlombok:lombok:${lombokVersion}")
