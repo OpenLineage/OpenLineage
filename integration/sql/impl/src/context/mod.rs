@@ -9,9 +9,56 @@ use crate::dialect::CanonicalDialect;
 use crate::lineage::*;
 use alias_table::AliasTable;
 use sqlparser::ast::Ident;
-use sqlparser::dialect::SnowflakeDialect;
+use sqlparser::dialect::{
+    BigQueryDialect, DatabricksDialect, Dialect, DuckDbDialect, HiveDialect, MsSqlDialect,
+    MySqlDialect, PostgreSqlDialect, RedshiftSqlDialect, SQLiteDialect, SnowflakeDialect,
+};
 
 type ColumnAncestors = HashSet<ColumnMeta>;
+
+/// The stored form of an identifier under the active dialect: a quoted
+/// identifier is stored exactly as written, while an unquoted one is
+/// folded - to lower case by Postgres and Redshift, to upper case by
+/// Snowflake and the SQL standard. Redshift folds even quoted identifiers
+/// to lower case unless the session enables
+/// `enable_case_sensitive_identifier`, which the parser is not told, so
+/// every Redshift identifier canonicalizes to lower case.
+fn canonical_ident(value: &str, quoted: bool, dialect: &dyn Dialect) -> String {
+    if dialect.is::<RedshiftSqlDialect>() {
+        value.to_ascii_lowercase()
+    } else if quoted {
+        value.to_string()
+    } else if dialect.is::<PostgreSqlDialect>() {
+        value.to_ascii_lowercase()
+    } else {
+        value.to_ascii_uppercase()
+    }
+}
+
+/// The name an identifier denotes under the dialect, as a string that is
+/// equal for two identifiers exactly when they name the same relation. CTEs
+/// are keyed by it, so `orders` finds CTE `Orders` in Snowflake (both
+/// ORDERS) and unquoted `C` finds CTE `"c"` in Postgres (both c), while
+/// Postgres `"C"` and `C` stay two names and two CTEs.
+///
+/// BigQuery, Databricks, Hive, DuckDB, SQL Server and SQLite compare names
+/// without regard to case, quoted or not. MySQL compares them exactly, as
+/// it does table aliases on Unix under its default configuration.
+fn ident_key(ident: &Ident, dialect: &dyn Dialect) -> String {
+    if dialect.is::<MySqlDialect>() {
+        return ident.value.clone();
+    }
+    if dialect.is::<BigQueryDialect>()
+        || dialect.is::<DatabricksDialect>()
+        || dialect.is::<HiveDialect>()
+        || dialect.is::<DuckDbDialect>()
+        || dialect.is::<MsSqlDialect>()
+        || dialect.is::<SQLiteDialect>()
+    {
+        return ident.value.to_ascii_lowercase();
+    }
+    canonical_ident(&ident.value, ident.quote_style.is_some(), dialect)
+}
 
 #[derive(Debug)]
 pub struct ContextFrame {
@@ -29,12 +76,21 @@ pub struct ContextFrame {
     // Dependencies written without a schema or database. Only these can name a
     // CTE: defaults make `orders` and `public.orders` the same `DbTableMeta`.
     pub bare_dependencies: HashSet<DbTableMeta>,
+    // Keyed by `ident_key` of the CTE's name.
     pub cte_dependencies: HashMap<String, CteDependency>,
+    // Recursive CTEs whose body is being visited, keyed like
+    // `cte_dependencies`, so a self-reference resolves to the CTE's name.
+    // Kept apart from `cte_dependencies` so a nested CTE of the same name
+    // cannot replace the entry.
+    recursive_ctes: HashMap<String, Ident>,
     pub is_main_body: bool,
 }
 
 #[derive(Debug, Clone)]
 pub struct CteDependency {
+    // The CTE's name as written in its WITH clause, quote style included,
+    // which decides how references to it fold.
+    pub name: Ident,
     pub is_used: bool,
     pub deps: HashSet<DbTableMeta>,
 }
@@ -49,6 +105,7 @@ impl ContextFrame {
             dependencies: HashSet::new(),
             bare_dependencies: HashSet::new(),
             cte_dependencies: HashMap::new(),
+            recursive_ctes: HashMap::new(),
             is_main_body: true,
         }
     }
@@ -85,6 +142,12 @@ pub struct Context<'a> {
     dialect: &'a dyn CanonicalDialect,
     // Used to generate unique names for unaliased columns created from compound expressions
     column_id: u32,
+    // For each SELECT being visited, innermost last: the names its own FROM
+    // clause introduces, keyed by `ident_key`, with the relation each one
+    // stands for. An alias stands for itself, so the alias table resolves it;
+    // an unaliased table stands for its full name (`orders` for
+    // `FROM raw.orders`).
+    correlation_names: Vec<HashMap<String, Vec<Ident>>>,
 }
 
 impl<'a> Context<'a> {
@@ -98,6 +161,7 @@ impl<'a> Context<'a> {
             default_database: None,
             dialect: &SnowflakeDialect,
             column_id: 0,
+            correlation_names: Vec::new(),
         }
     }
 
@@ -114,6 +178,7 @@ impl<'a> Context<'a> {
             default_database,
             dialect,
             column_id: 0,
+            correlation_names: Vec::new(),
         }
     }
 
@@ -127,6 +192,20 @@ impl<'a> Context<'a> {
             self.default_database.clone(),
         );
         if !self.is_table_alias(&name) {
+            self.inputs.insert(name);
+        }
+    }
+
+    /// `add_input` for a table reference that `cte_named_by` has already
+    /// ruled out as a CTE, so only a real alias suppresses it.
+    pub fn add_relation_input(&mut self, table: Vec<Ident>) {
+        let name = DbTableMeta::new(
+            table,
+            self.dialect,
+            self.default_schema.clone(),
+            self.default_database.clone(),
+        );
+        if !self.is_relation_alias(&name) {
             self.inputs.insert(name);
         }
     }
@@ -277,26 +356,105 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn has_alias(&self, table: String) -> bool {
-        for frame in self.frames.iter().rev() {
-            if frame.cte_dependencies.contains_key(&table) {
-                return true;
-            }
-        }
-
-        false
+    /// The name, as defined, of the CTE in scope that the table reference
+    /// `name` points at, or None when it names a real table.
+    ///
+    /// Only a reference written without a schema or database can name a CTE,
+    /// so `schema.c` never matches CTE `c`. The comparison follows the
+    /// dialect's identifier folding (see `ident_key`), so `orders` names CTE
+    /// `Orders` in Snowflake. Callers use the returned name in place of the
+    /// reference, so the reference and the CTE's own columns share one table
+    /// name downstream.
+    pub fn cte_named_by(&self, name: &[Ident]) -> Option<Ident> {
+        let [reference] = name else {
+            return None;
+        };
+        let key = ident_key(reference, self.dialect().as_base());
+        self.frames.iter().rev().find_map(|frame| {
+            frame
+                .recursive_ctes
+                .get(&key)
+                .or_else(|| frame.cte_dependencies.get(&key).map(|cte| &cte.name))
+                .cloned()
+        })
     }
 
-    /// Marks the CTE referenced as `table` as used, so its dependencies are
-    /// collected as inputs.
-    ///
-    /// CTEs are keyed by their bare alias, so the lookup uses the reference
-    /// exactly as written (the same key as [`Context::has_alias`]) rather than
-    /// a name qualified with the default schema/database. A qualified
-    /// reference such as `schema.c` therefore never matches CTE `c`.
-    pub fn mark_table_as_used(&mut self, table: String) {
+    /// Makes a recursive CTE's own name resolvable inside its body, so a
+    /// self-reference in another case resolves like one in the CTE's own
+    /// case. `adjust_cte_dependencies` removes it once the body has been
+    /// visited.
+    pub fn declare_recursive_cte(&mut self, cte_name: Ident) {
+        let key = ident_key(&cte_name, self.dialect().as_base());
+        if let Some(frame) = self.frames.last_mut() {
+            frame.recursive_ctes.insert(key, cte_name);
+        }
+    }
+
+    /// Opens the scope of a SELECT with the names its FROM clause
+    /// introduces, each an alias or an unaliased table's last name part,
+    /// with the relation it stands for. Closed by `pop_correlation_names`.
+    pub fn push_correlation_names(&mut self, names: Vec<(Ident, Vec<Ident>)>) {
+        let dialect = self.dialect.as_base();
+        self.correlation_names.push(
+            names
+                .into_iter()
+                .map(|(name, relation)| (ident_key(&name, dialect), relation))
+                .collect(),
+        );
+    }
+
+    pub fn pop_correlation_names(&mut self) {
+        self.correlation_names.pop();
+    }
+
+    /// The relation a column qualifier names through the FROM clause of the
+    /// SELECT being visited, compared under the dialect's folding, or None
+    /// when that FROM clause does not introduce it. Enclosing SELECTs are
+    /// not consulted, so a qualifier in a nested query that names an outer
+    /// FROM item is resolved as it is on `main`.
+    pub fn correlation_named_by(&self, qualifier: &[Ident]) -> Option<Vec<Ident>> {
+        let [name] = qualifier else {
+            return None;
+        };
+        let key = ident_key(name, self.dialect().as_base());
+        self.correlation_names.last()?.get(&key).cloned()
+    }
+
+    /// Like `correlation_named_by`, but for the FROM clauses of the
+    /// enclosing SELECTs, innermost first. Used only to keep a CTE from
+    /// capturing a qualifier that may name one of those FROM items.
+    pub fn enclosing_correlation_named_by(&self, qualifier: &[Ident]) -> Option<&Vec<Ident>> {
+        let [name] = qualifier else {
+            return None;
+        };
+        let key = ident_key(name, self.dialect().as_base());
+        self.correlation_names
+            .iter()
+            .rev()
+            .skip(1)
+            .find_map(|scope| scope.get(&key))
+    }
+
+    /// `name` with a reference to a CTE in scope replaced by the CTE's name
+    /// as defined; any other name is returned unchanged.
+    pub fn resolve_cte_reference(&self, name: Vec<Ident>) -> Vec<Ident> {
+        match self.cte_named_by(&name) {
+            Some(cte) => vec![cte],
+            None => name,
+        }
+    }
+
+    /// Marks the CTE named `table` as used, so its dependencies are
+    /// collected as inputs. `table` is the CTE's name as defined, as
+    /// returned by [`Context::cte_named_by`], so the innermost CTE under its
+    /// key is the one that lookup found.
+    pub fn mark_table_as_used(&mut self, table: &Ident) {
+        let key = ident_key(table, self.dialect().as_base());
         for frame in self.frames.iter_mut().rev() {
-            if let Some(cte) = frame.cte_dependencies.get_mut(&table) {
+            if frame.recursive_ctes.contains_key(&key) {
+                return;
+            }
+            if let Some(cte) = frame.cte_dependencies.get_mut(&key) {
                 cte.is_used = true;
                 return;
             }
@@ -346,6 +504,24 @@ impl<'a> Context<'a> {
 
     pub fn is_table_alias(&self, name: &DbTableMeta) -> bool {
         self.resolve_table(name) != name
+    }
+
+    /// Whether `name` is an alias for a relation, judged by the innermost
+    /// alias entry for it. Unlike `is_table_alias`, this does not count the
+    /// placeholder entries `With::visit` registers for CTE names, which map
+    /// to an empty table: the alias table matches names without regard to
+    /// quoting, so those entries also catch references that fold to a
+    /// different name than the CTE. Only the first step is checked, because
+    /// an alias of a CTE (`FROM orders AS o`) continues to that CTE's
+    /// placeholder.
+    pub fn is_relation_alias(&self, name: &DbTableMeta) -> bool {
+        self.is_table_alias(name)
+            && self
+                .frames
+                .iter()
+                .rev()
+                .find_map(|frame| frame.aliases.get_table_from_alias(name.qualified_name()))
+                .is_some_and(|table| !table.name.is_empty())
     }
 
     // --- Synthesize Attributes From Frames ---
@@ -507,7 +683,11 @@ impl<'a> Context<'a> {
         removed_circular_deps
     }
 
-    pub fn collect_lower_nested_dependencies(&mut self, cte_name: String) {
+    /// Replaces the dependencies of a CTE whose body has its own WITH by the
+    /// tables of the nested CTEs it uses. They are left as resolved
+    /// dependencies, so `adjust_cte_dependencies` keeps them, and the nested
+    /// CTEs, whose scope has ended, are dropped.
+    pub fn collect_lower_nested_dependencies(&mut self) {
         if let Some(frame) = self.frames.last_mut() {
             let deps_in_one_level_below: Vec<CteDependency> = frame
                 .cte_dependencies
@@ -530,15 +710,7 @@ impl<'a> Context<'a> {
             }
 
             frame.cte_dependencies = HashMap::new();
-            frame.cte_dependencies.insert(
-                cte_name,
-                CteDependency {
-                    is_used: false,
-                    deps: resolved_dependencies,
-                },
-            );
-
-            frame.dependencies = HashSet::new();
+            frame.dependencies = resolved_dependencies;
             frame.bare_dependencies = HashSet::new();
         }
     }
@@ -547,7 +719,9 @@ impl<'a> Context<'a> {
     /// whether the CTE's own name is in scope inside its body: true for
     /// `WITH RECURSIVE`, and in dialects such as Snowflake where any CTE may
     /// refer to itself. Otherwise a reference to that name is the real table.
-    pub fn adjust_cte_dependencies(&mut self, cte_name: String, recursive: bool) {
+    pub fn adjust_cte_dependencies(&mut self, cte_name: Ident, recursive: bool) {
+        let dialect = self.dialect().as_base();
+        let cte_key = ident_key(&cte_name, dialect);
         // filter upper level deps
         let size = self.frames.iter().clone().len();
 
@@ -558,6 +732,12 @@ impl<'a> Context<'a> {
 
         let mut resolved_dependencies = HashSet::new();
 
+        // A used CTE nested in the body under the same key is replaced by
+        // this one below, so its tables are carried over.
+        if let Some(nested) = cte_dependencies.get(&cte_key).filter(|cte| cte.is_used) {
+            resolved_dependencies.extend(nested.deps.clone());
+        }
+
         for dependency in dependencies {
             // CTEs are keyed by their bare alias, so only a reference written
             // without a schema or database can point at one; `raw.orders` and
@@ -567,16 +747,26 @@ impl<'a> Context<'a> {
                 continue;
             }
 
-            if cte_name.clone() == dependency.name {
-                if !recursive {
-                    resolved_dependencies.insert(dependency.clone());
-                }
+            // The dependency's name as written, so it folds like the CTE's.
+            let reference = Ident {
+                value: dependency.name.clone(),
+                quote_style: dependency.quote_style.as_ref().and_then(|style| style.name),
+                span: cte_name.span,
+            };
+
+            let reference_key = ident_key(&reference, dialect);
+
+            // A CTE nested in the body shadows the CTE's own name, so
+            // `C AS (WITH c AS (...) SELECT id FROM c)` reads the nested `c`.
+            if let Some(cte) = cte_dependencies.get(&reference_key) {
+                resolved_dependencies.extend(cte.deps.clone());
                 continue;
             }
 
-            if cte_dependencies.contains_key(&dependency.name) {
-                resolved_dependencies
-                    .extend(cte_dependencies.get(&dependency.name).unwrap().clone().deps);
+            if reference_key == cte_key {
+                if !recursive {
+                    resolved_dependencies.insert(dependency.clone());
+                }
                 continue;
             }
 
@@ -584,9 +774,11 @@ impl<'a> Context<'a> {
         }
 
         if let Some(frame) = self.frames.last_mut() {
+            frame.recursive_ctes.remove(&cte_key);
             frame.cte_dependencies.insert(
-                cte_name.clone(),
+                cte_key,
                 CteDependency {
+                    name: cte_name,
                     is_used: false,
                     deps: resolved_dependencies,
                 },

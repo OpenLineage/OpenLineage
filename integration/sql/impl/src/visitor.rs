@@ -1,7 +1,7 @@
 // Copyright 2018-2026 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::context::Context;
+use crate::context::{Context, ContextFrame};
 use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
@@ -9,8 +9,9 @@ use sqlparser::ast::{
     AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
     Function, FunctionArg, FunctionArgExpr, FunctionArgumentClause, FunctionArguments, Ident, Join,
     JoinConstraint, JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select,
-    SelectItem, SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
-    UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
+    SelectItem, SetExpr, Statement, Subscript, Table, TableAlias, TableFactor, TableFunctionArgs,
+    TableObject, TableWithJoins, UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec,
+    WindowType, With,
 };
 use sqlparser::dialect::{
     DatabricksDialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
@@ -30,6 +31,9 @@ impl Visit for With {
             || dialect.is::<MsSqlDialect>()
             || dialect.is::<SQLiteDialect>();
         for (i, cte) in self.cte_tables.iter().enumerate() {
+            if recursive {
+                context.declare_recursive_cte(cte.alias.name.clone());
+            }
             context.add_table_alias(
                 DbTableMeta::new_default_dialect("".to_string()),
                 vec![cte.alias.name.clone()],
@@ -48,10 +52,10 @@ impl Visit for With {
             }
 
             if i == 0 {
-                context.collect_lower_nested_dependencies(cte.alias.name.clone().value);
+                context.collect_lower_nested_dependencies();
             }
 
-            context.adjust_cte_dependencies(cte.alias.name.clone().value, recursive);
+            context.adjust_cte_dependencies(cte.alias.name.clone(), recursive);
         }
         Ok(())
     }
@@ -70,8 +74,18 @@ impl Visit for TableFactor {
                     None => return Ok(()), // Exit if couldn't parse identifier function
                 };
 
+                // A reference to a CTE in scope is replaced by the CTE's name
+                // as defined, which may differ in case (`orders` for CTE
+                // `Orders` in Snowflake).
+                let effective_idents = convert_to_idents(&effective_name);
+                let cte = context.cte_named_by(&effective_idents);
+                let idents = match &cte {
+                    Some(cte) => vec![cte.clone()],
+                    None => effective_idents.clone(),
+                };
+
                 let table = DbTableMeta::new(
-                    convert_to_idents(&effective_name),
+                    idents.clone(),
                     context.dialect(),
                     context.default_schema().clone(),
                     context.default_database().clone(),
@@ -80,16 +94,19 @@ impl Visit for TableFactor {
                     context.add_table_alias(table, vec![alias.name.clone()]);
                 }
 
+                // A dependency keeps the name as written: `adjust_cte_dependencies`
+                // matches it to a CTE by folded key, and the CTE's spelling would
+                // make `ORDERS` and `public.orders` one table under a default
+                // schema.
                 if !context.is_main() {
-                    context.add_table_dependency(convert_to_idents(&effective_name));
+                    context.add_table_dependency(effective_idents);
                 }
 
-                if context.is_main() && !context.has_alias(effective_name.to_string()) {
-                    context.add_input(convert_to_idents(&effective_name));
-                }
-
-                if context.is_main() && context.has_alias(effective_name.to_string()) {
-                    context.mark_table_as_used(effective_name.to_string());
+                if context.is_main() {
+                    match cte {
+                        Some(cte) => context.mark_table_as_used(&cte),
+                        None => context.add_relation_input(idents),
+                    }
                 }
 
                 Ok(())
@@ -100,7 +117,7 @@ impl Visit for TableFactor {
                     if let Some(pivot_alias) = alias {
                         context.add_table_alias(
                             DbTableMeta::new(
-                                ident.clone(),
+                                context.resolve_cte_reference(ident),
                                 context.dialect(),
                                 context.default_schema().clone(),
                                 context.default_database().clone(),
@@ -177,7 +194,7 @@ impl Visit for TableFactor {
                     if let Some(unpivot_alias) = alias {
                         context.add_table_alias(
                             DbTableMeta::new(
-                                ident.clone(),
+                                context.resolve_cte_reference(ident),
                                 context.dialect(),
                                 context.default_schema().clone(),
                                 context.default_database().clone(),
@@ -255,8 +272,39 @@ impl Visit for Expr {
                 if context_set {
                     let descendant = context.column_context().as_ref().unwrap().name.clone();
                     let ancestor = ids.last().unwrap().value.clone();
+                    let qualifier: Vec<Ident> = ids.iter().take(ids.len() - 1).cloned().collect();
+                    // The qualifier binds to a name this SELECT's FROM clause
+                    // introduces before it can bind to a CTE, compared under
+                    // the dialect's folding: `orders.x` is `t.x` in
+                    // `FROM t AS ORDERS`, and `raw.orders.id` in
+                    // `FROM raw.orders`, even with CTE `Orders` in scope.
+                    // A name an enclosing SELECT's FROM clause introduces
+                    // keeps the qualifier as written, unless that FROM item
+                    // is the CTE itself.
+                    let relation = match context.correlation_named_by(&qualifier) {
+                        Some(relation) => relation,
+                        None => match context.cte_named_by(&qualifier) {
+                            Some(cte) => {
+                                let as_written = DbTableMeta::new(
+                                    qualifier.clone(),
+                                    context.dialect(),
+                                    context.default_schema().clone(),
+                                    context.default_database().clone(),
+                                );
+                                let outer = context.enclosing_correlation_named_by(&qualifier);
+                                if context.is_relation_alias(&as_written)
+                                    || outer.is_some_and(|relation| relation[..] != [cte.clone()])
+                                {
+                                    qualifier
+                                } else {
+                                    vec![cte]
+                                }
+                            }
+                            None => qualifier,
+                        },
+                    };
                     let table = DbTableMeta::new(
-                        ids.iter().take(ids.len() - 1).cloned().collect(),
+                        relation,
                         context.dialect(),
                         context.default_schema().clone(),
                         context.default_database().clone(),
@@ -585,84 +633,41 @@ impl Visit for Select {
         // If we're selecting from a single table, that table becomes the default
         if self.from.len() == 1 {
             let t = self.from.first().unwrap();
-            if let TableFactor::Table { name, alias, .. } = &t.relation {
-                let table = DbTableMeta::new(
-                    convert_to_idents(name),
-                    context.dialect(),
-                    context.default_schema().clone(),
-                    context.default_database().clone(),
-                );
-                if let Some(alias) = alias {
-                    context.add_table_alias(table.clone(), vec![alias.clone().name]);
+            if let TableFactor::Table { alias, .. } = &t.relation {
+                if let Some(ident) = get_table_name_from_table_factor(&t.relation, &*context) {
+                    let table = DbTableMeta::new(
+                        context.resolve_cte_reference(ident),
+                        context.dialect(),
+                        context.default_schema().clone(),
+                        context.default_database().clone(),
+                    );
+                    if let Some(alias) = alias {
+                        context.add_table_alias(table.clone(), vec![alias.clone().name]);
+                    }
+                    context.set_table_context(Some(table));
                 }
-                context.set_table_context(Some(table));
             }
         }
 
-        context.push_frame();
-
-        for table in &self.from {
-            context.push_frame();
-            table.relation.visit(context)?;
-            let frame = context.pop_frame().unwrap();
-            context.collect_aliases(&frame);
-            context.collect(frame);
-
-            for join in &table.joins {
-                context.push_frame();
-                join.visit(context)?;
-                let frame = context.pop_frame().unwrap();
-                context.collect_aliases(&frame);
-                context.collect(frame);
-            }
-        }
-
-        let tables_frame = context.pop_frame().unwrap();
-        context.collect_aliases(&tables_frame);
-
-        for projection in &self.projection {
-            match projection {
-                SelectItem::UnnamedExpr(expr) => {
-                    match expr {
-                        Expr::Identifier(id) => context
-                            .set_column_context(Some(ColumnMeta::new(id.value.clone(), None))),
-                        Expr::CompoundIdentifier(ids) => context.set_column_context(Some(
-                            ColumnMeta::new(ids.last().unwrap().value.clone(), None),
-                        )),
-                        _ => context.set_unnamed_column_context(),
-                    };
-                    expr.visit(context)?;
-                }
-                SelectItem::ExprWithAlias { expr, alias } => {
-                    context.set_column_context(Some(ColumnMeta::new(alias.value.clone(), None)));
-                    expr.visit(context)?;
-                }
-                _ => {}
-            }
-        }
-
-        context.set_column_context(None);
-
-        if let Some(selection) = &self.selection {
-            context.push_frame();
-            selection.visit(context)?;
-            let frame = context.pop_frame().unwrap();
-            context.collect_aliases(&frame);
-        }
-
-        if let Some(having) = &self.having {
-            context.push_frame();
-            having.visit(context)?;
-            let frame = context.pop_frame().unwrap();
-            context.collect_aliases(&frame);
-        }
-
-        if let Some(qualify) = &self.qualify {
-            context.push_frame();
-            qualify.visit(context)?;
-            let frame = context.pop_frame().unwrap();
-            context.collect_aliases(&frame);
-        }
+        // The names this SELECT's FROM clause introduces, in scope until the
+        // end of the SELECT, even when visiting it fails. A nested query
+        // opens its own scope, so it never binds to these.
+        let names = self
+            .from
+            .iter()
+            .flat_map(|table| {
+                std::iter::once(&table.relation)
+                    .chain(table.joins.iter().map(|join| &join.relation))
+            })
+            .flat_map(|relation| correlation_names(relation, context))
+            .collect();
+        context.push_correlation_names(names);
+        let visited = visit_from(&self.from, context).and_then(|tables_frame| {
+            visit_select_clauses(self, context)?;
+            Ok(tables_frame)
+        });
+        context.pop_correlation_names();
+        let tables_frame = visited?;
 
         if let Some(into) = &self.into {
             // MySQL SELECT INTO assigns variables rather than creating tables.
@@ -689,6 +694,128 @@ impl Visit for Select {
 
         Ok(())
     }
+}
+
+/// Visits the FROM items of a SELECT and returns the frame holding their
+/// tables.
+fn visit_from(from: &[TableWithJoins], context: &mut Context) -> Result<ContextFrame> {
+    context.push_frame();
+
+    for table in from {
+        context.push_frame();
+        table.relation.visit(context)?;
+        let frame = context.pop_frame().unwrap();
+        context.collect_aliases(&frame);
+        context.collect(frame);
+
+        for join in &table.joins {
+            context.push_frame();
+            join.visit(context)?;
+            let frame = context.pop_frame().unwrap();
+            context.collect_aliases(&frame);
+            context.collect(frame);
+        }
+    }
+
+    let tables_frame = context.pop_frame().unwrap();
+    context.collect_aliases(&tables_frame);
+    Ok(tables_frame)
+}
+
+/// The names a FROM item introduces for column qualifiers, each with the
+/// relation it stands for. An alias stands for itself and hides whatever
+/// it renames; an unaliased table stands for its full name (CTE references
+/// resolved) under its last name part; an unaliased parenthesized join
+/// introduces the names of its members, and an unaliased PIVOT or UNPIVOT
+/// those of the table it wraps.
+fn correlation_names(relation: &TableFactor, context: &Context) -> Vec<(Ident, Vec<Ident>)> {
+    if let Some(alias) = table_factor_alias(relation) {
+        return vec![(alias.name.clone(), vec![alias.name.clone()])];
+    }
+    match relation {
+        TableFactor::Table { .. } => get_table_name_from_table_factor(relation, context)
+            .map(|name| context.resolve_cte_reference(name))
+            .and_then(|name| Some((name.last()?.clone(), name)))
+            .into_iter()
+            .collect(),
+        TableFactor::NestedJoin {
+            table_with_joins, ..
+        } => std::iter::once(&table_with_joins.relation)
+            .chain(table_with_joins.joins.iter().map(|join| &join.relation))
+            .flat_map(|member| correlation_names(member, context))
+            .collect(),
+        TableFactor::Pivot { table, .. } | TableFactor::Unpivot { table, .. } => {
+            correlation_names(table, context)
+        }
+        _ => vec![],
+    }
+}
+
+fn table_factor_alias(relation: &TableFactor) -> Option<&TableAlias> {
+    match relation {
+        TableFactor::Table { alias, .. }
+        | TableFactor::Derived { alias, .. }
+        | TableFactor::TableFunction { alias, .. }
+        | TableFactor::Function { alias, .. }
+        | TableFactor::UNNEST { alias, .. }
+        | TableFactor::JsonTable { alias, .. }
+        | TableFactor::OpenJsonTable { alias, .. }
+        | TableFactor::NestedJoin { alias, .. }
+        | TableFactor::Pivot { alias, .. }
+        | TableFactor::Unpivot { alias, .. }
+        | TableFactor::MatchRecognize { alias, .. }
+        | TableFactor::XmlTable { alias, .. } => alias.as_ref(),
+        _ => None,
+    }
+}
+
+fn visit_select_clauses(select: &Select, context: &mut Context) -> Result<()> {
+    for projection in &select.projection {
+        match projection {
+            SelectItem::UnnamedExpr(expr) => {
+                match expr {
+                    Expr::Identifier(id) => {
+                        context.set_column_context(Some(ColumnMeta::new(id.value.clone(), None)))
+                    }
+                    Expr::CompoundIdentifier(ids) => context.set_column_context(Some(
+                        ColumnMeta::new(ids.last().unwrap().value.clone(), None),
+                    )),
+                    _ => context.set_unnamed_column_context(),
+                };
+                expr.visit(context)?;
+            }
+            SelectItem::ExprWithAlias { expr, alias } => {
+                context.set_column_context(Some(ColumnMeta::new(alias.value.clone(), None)));
+                expr.visit(context)?;
+            }
+            _ => {}
+        }
+    }
+
+    context.set_column_context(None);
+
+    if let Some(selection) = &select.selection {
+        context.push_frame();
+        selection.visit(context)?;
+        let frame = context.pop_frame().unwrap();
+        context.collect_aliases(&frame);
+    }
+
+    if let Some(having) = &select.having {
+        context.push_frame();
+        having.visit(context)?;
+        let frame = context.pop_frame().unwrap();
+        context.collect_aliases(&frame);
+    }
+
+    if let Some(qualify) = &select.qualify {
+        context.push_frame();
+        qualify.visit(context)?;
+        let frame = context.pop_frame().unwrap();
+        context.collect_aliases(&frame);
+    }
+
+    Ok(())
 }
 
 impl Visit for SetExpr {
