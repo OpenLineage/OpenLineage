@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-1/IcebergScanReportInputDatasetFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-0-2/IcebergScanReportInputDatasetFacet.json",
   "$defs": {
     "IcebergScanReportInputDatasetFacet": {
       "allOf": [
@@ -12,7 +12,7 @@
           "properties": {
             "snapshotId": {
               "description": "Snapshot ID of the iceberg table",
-              "type": "number"
+              "type": "integer"
             },
             "filterDescription": {
               "description": "Filter used to scan the iceberg table",
@@ -20,7 +20,7 @@
             },
             "schemaId": {
               "description": "Schema ID of the iceberg table",
-              "type": "number"
+              "type": "integer"
             },
             "projectedFieldNames": {
               "description": "List of field names that are projected from the iceberg table",
@@ -34,67 +34,67 @@
               "properties": {
                 "totalPlanningDuration": {
                   "description": "Duration of the scan in MILLISECONDS",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "resultDataFiles": {
                   "description": "List of data files that are read during the scan",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "resultDeleteFiles": {
                   "description": "List of delete files that are read during the scan",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "totalDataManifests": {
                   "description": "Total number of manifests that are scanned during the scan",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "totalDeleteManifests": {
                   "description": "Total number of delete manifests that are scanned during the scan",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "scannedDataManifests": {
                   "description": "Number of data manifests that are scanned during the scan",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "skippedDataManifests": {
                   "description": "Number of data manifests that are skipped during the scan",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "totalFileSizeInBytes": {
                   "description": "Total file size in bytes that are read during the scan",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "totalDeleteFileSizeInBytes": {
                   "description": "Total delete file size in bytes that are read during the scan",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "skippedDataFiles": {
                   "description": "Number of data files that are skipped during the scan",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "skippedDeleteFiles": {
                   "description": "Number of delete files that are skipped during the scan",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "scannedDeleteManifests": {
                   "description": "Number of delete manifests that are scanned during the scan",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "skippedDeleteManifests": {
                   "description": "Number of delete manifests that are skipped during the scan",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "indexedDeleteFiles": {
                   "description": "Number of delete files that are indexed during the scan",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "equalityDeleteFiles": {
                   "description": "Number of delete files that are equality indexed during the scan",
-                  "type": "number"
+                  "type": "integer"
                 },
                 "positionalDeleteFiles": {
                   "description": "Number of delete files that are positional indexed during the scan",
-                  "type": "number"
+                  "type": "integer"
                 }
               }
             },

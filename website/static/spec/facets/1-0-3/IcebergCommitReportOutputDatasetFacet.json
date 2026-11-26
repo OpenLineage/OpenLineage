@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-3/IcebergCommitReportOutputDatasetFacet.json",
+  "$defs": {
+    "IcebergCommitReportOutputDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/OutputDatasetFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "snapshotId": {
+              "description": "Snapshot ID of the iceberg table",
+              "type": "integer"
+            },
+            "sequenceNumber": {
+              "description": "Sequence number of the iceberg table",
+              "type": "integer"
+            },
+            "operation": {
+              "description": "Operation that was performed on the iceberg table",
+              "type": "string"
+            },
+            "commitMetrics": {
+              "type": "object",
+              "properties": {
+                "totalDuration": {
+                  "description": "Duration of the commit in MILLISECONDS",
+                  "type": "integer"
+                },
+                "attempts": {
+                  "description": "Number of attempts made to commit the iceberg table",
+                  "type": "integer"
+                },
+                "addedDataFiles": {
+                  "description": "Number of data files that are added during the commit",
+                  "type": "integer"
+                },
+                "removedDataFiles": {
+                  "description": "Number of data files that are removed during the commit",
+                  "type": "integer"
+                },
+                "totalDataFiles": {
+                  "description": "Total number of data files that are present in the iceberg table",
+                  "type": "integer"
+                },
+                "addedDeleteFiles": {
+                  "description": "Number of delete files that are added during the commit",
+                  "type": "integer"
+                },
+                "addedEqualityDeleteFiles": {
+                  "description": "Number of added equality delete files",
+                  "type": "integer"
+                },
+                "addedPositionalDeleteFiles": {
+                  "description": "Number of added positional delete files",
+                  "type": "integer"
+                },
+                "addedDVs": {
+                  "description": "Number of added DVs",
+                  "type": "integer"
+                },
+                "removedDeleteFiles": {
+                  "description": "Number of delete files that are removed during the commit",
+                  "type": "integer"
+                },
+                "removedEqualityDeleteFiles": {
+                  "description": "Number of removed equality delete files",
+                  "type": "integer"
+                },
+                "removedPositionalDeleteFiles": {
+                  "description": "Number of removed positional delete files",
+                  "type": "integer"
+                },
+                "removedDVs": {
+                  "description": "Number of removed DVs",
+                  "type": "integer"
+                },
+                "totalDeleteFiles": {
+                  "description": "Total number of temporary delete files that are present in the iceberg table",
+                  "type": "integer"
+                },
+                "addedRecords": {
+                  "description": "Number of records that are added during the commit",
+                  "type": "integer"
+                },
+                "removedRecords": {
+                  "description": "Number of records that are removed during the commit",
+                  "type": "integer"
+                },
+                "totalRecords": {
+                  "description": "Number of records that are present in the iceberg table",
+                  "type": "integer"
+                },
+                "addedFilesSizeInBytes": {
+                  "description": "Number of files size in bytes that are added during the commit",
+                  "type": "integer"
+                },
+                "removedFilesSizeInBytes": {
+                  "description": "Number of files size in bytes that are removed during the commit",
+                  "type": "integer"
+                },
+                "totalFilesSizeInBytes": {
+                  "description": "Number of files size in bytes in the iceberg table",
+                  "type": "integer"
+                },
+                "addedPositionalDeletes": {
+                  "description": "Number of positional deletes that are added during the commit",
+                  "type": "integer"
+                },
+                "removedPositionalDeletes": {
+                  "description": "Number of positional deletes that are removed during the commit",
+                  "type": "integer"
+                },
+                "totalPositionalDeletes": {
+                  "description": "Number of positional deletes that are present in the iceberg table",
+                  "type": "integer"
+                },
+                "addedEqualityDeletes": {
+                  "description": "Number of equality deletes that are added during the commit",
+                  "type": "integer"
+                },
+                "removedEqualityDeletes": {
+                  "description": "Number of equality deletes that are removed during the commit",
+                  "type": "integer"
+                },
+                "totalEqualityDeletes": {
+                  "description": "Number of equality deletes that are present in the iceberg table",
+                  "type": "integer"
+                }
+              }
+            },
+            "metadata": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "icebergCommitReport": {
+      "$ref": "#/$defs/IcebergCommitReportOutputDatasetFacet"
+    }
+  }
+}
