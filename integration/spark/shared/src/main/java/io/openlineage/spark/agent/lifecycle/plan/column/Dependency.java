@@ -52,7 +52,7 @@ class Dependency {
               dependency.getTransformationInfo(),
               (a, b) -> a.replace(dependency.outputExpression, b));
 
-      if (merged.equals(transformationInfo)) {
+      if (merged.equals(dependency.getTransformationInfo())) {
         // exactly the same dependency would work
         return dependency;
       } else {

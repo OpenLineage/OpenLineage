@@ -15,6 +15,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields;
 import io.openlineage.client.dataset.DatasetConfig;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -108,6 +109,45 @@ class ColumnLevelLineageBuilderTest {
     assertEquals("input2", inputs.get(0).getName());
     assertEquals(di1, inputs.get(1).getDatasetIdentifier());
     assertEquals(di2, inputs.get(0).getDatasetIdentifier());
+  }
+
+  @Test
+  void testNestedDependencyKeepsTransformation() {
+    // an aggregated column that reaches its input through an attribute passed on unchanged, like
+    // a column of the second child of a UNION below an Aggregate
+    DatasetIdentifier di = new DatasetIdentifier("t", DB);
+    builder.addOutput(rootExprId, "a");
+    builder.addDependency(rootExprId, childExprId, "", TransformationInfo.aggregation());
+    builder.addDependency(childExprId, grandChildExprId1, "", TransformationInfo.identity());
+    builder.addInput(grandChildExprId1, di, INPUT_A);
+
+    List<TransformedInput> inputs = builder.getInputsUsedFor("a");
+
+    assertEquals(1, inputs.size());
+    assertEquals(
+        TransformationInfo.Subtypes.AGGREGATION,
+        inputs.get(0).getTransformationInfo().getSubType());
+  }
+
+  @Test
+  void testNestedDatasetDependencyKeepsTransformation() {
+    DatasetIdentifier di = new DatasetIdentifier("t", DB);
+    builder.addDatasetDependency(childExprId, "");
+    builder.addDependency(
+        childExprId,
+        grandChildExprId1,
+        "",
+        TransformationInfo.indirect(TransformationInfo.Subtypes.GROUP_BY));
+    builder.addDependency(grandChildExprId1, grandChildExprId2, "", TransformationInfo.identity());
+    builder.addInput(grandChildExprId2, di, INPUT_A);
+
+    List<OpenLineage.InputField> datasetDependencies = builder.buildDatasetDependencies(true).get();
+
+    assertEquals(1, datasetDependencies.size());
+    assertEquals(INPUT_A, datasetDependencies.get(0).getField());
+    assertEquals(1, datasetDependencies.get(0).getTransformations().size());
+    assertEquals("INDIRECT", datasetDependencies.get(0).getTransformations().get(0).getType());
+    assertEquals("GROUP_BY", datasetDependencies.get(0).getTransformations().get(0).getSubtype());
   }
 
   @Test
