@@ -1152,15 +1152,14 @@ impl Visit for Statement {
 
 impl Visit for Table {
     fn visit(&self, context: &mut Context) -> Result<()> {
-        // `TABLE c` reads CTE `c` when one is in scope, as `FROM c` does.
+        // `TABLE c` reads CTE `c` when one is in scope, as `FROM c` does: in
+        // the main body it marks the CTE as used, and in another CTE's body it
+        // records a dependency that `adjust_cte_dependencies` resolves.
         if let Some(name) = &self.table_name {
             let idents = vec![Ident::new(name.to_string())];
             match context.cte_named_by(&idents) {
-                Some(cte) => {
-                    if context.is_main() {
-                        context.mark_table_as_used(&cte);
-                    }
-                }
+                Some(cte) if context.is_main() => context.mark_table_as_used(&cte),
+                Some(_) => context.add_table_dependency(idents),
                 None => context.add_input(idents),
             }
         }

@@ -490,6 +490,10 @@ fn write_target_spelled_like_a_cte_is_an_output() {
             "WITH c AS (SELECT id FROM src) INSERT INTO c SELECT id FROM c",
             "snowflake",
         ),
+        (
+            "WITH c AS (SELECT id FROM src) DELETE FROM c WHERE id IN (SELECT id FROM c)",
+            "postgres",
+        ),
     ] {
         assert_eq!(
             cte_lineage(sql, dialect),
