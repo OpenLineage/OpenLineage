@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/OpenLineage/openlineage/integration/facets/PrefectDeploymentRunFacet.json",
+  "$id": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/integration/prefect/src/openlineage_prefect/prefect_adapter/facets/PrefectDeploymentRunFacet.json",
   "$defs": {
     "PrefectDeploymentRunFacet": {
       "allOf": [
@@ -39,7 +39,7 @@
   },
   "type": "object",
   "properties": {
-    "PrefectDeploymentRunFacet": {
+    "prefectDeployment": {
       "$ref": "#/$defs/PrefectDeploymentRunFacet"
     }
   }

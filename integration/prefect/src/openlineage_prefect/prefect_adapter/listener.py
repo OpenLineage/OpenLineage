@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import re
+from collections import OrderedDict
 from datetime import datetime
 
 import httpx
@@ -20,6 +21,7 @@ from openlineage_prefect.prefect_adapter.adapter import (
     TaskInfo,
 )
 from prefect.client.orchestration import get_client
+from prefect.client.schemas.filters import ArtifactFilter, ArtifactFilterTaskRunId
 from prefect.events.clients import get_events_subscriber
 from prefect.events.filters import EventFilter, EventNameFilter
 from prefect.events.schemas.events import Event
@@ -34,7 +36,7 @@ FLOW_NAME_ERR_MSG = "FLOW_NAME_TYPE must be either 'flow' or 'flow-run'."
 FLOW_NAME_TYPE: str = os.environ.get("FLOW_NAME_TYPE", "flow")
 if FLOW_NAME_TYPE not in ("flow", "flow-run"):
     raise ValueError(FLOW_NAME_ERR_MSG)
-STATUS_CODE_OK: int = 200
+MAX_CACHED_FLOW_RUNS = 128
 
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -48,7 +50,7 @@ class PrefectOpenLineageListener:
     ):
         self.client = client or get_client()
         self.ol_adapter = ol_adapter or PrefectOpenLineageAdapter()
-        self.related_deployment_info: dict = {}
+        self.related_deployment_info: OrderedDict[str, DeploymentInfo] = OrderedDict()
         self.cached_flow_info: dict = {}
         self.filter_criteria = EventFilter(
             event=EventNameFilter(
@@ -59,6 +61,18 @@ class PrefectOpenLineageListener:
                 ]
             ),
         )
+
+    def _cache_related_deployment_info(self, flow_run_id: str, deployment_info: DeploymentInfo) -> None:
+        self.related_deployment_info[flow_run_id] = deployment_info
+        self.related_deployment_info.move_to_end(flow_run_id)
+        while len(self.related_deployment_info) > MAX_CACHED_FLOW_RUNS:
+            evicted_flow_run_id, _ = self.related_deployment_info.popitem(last=False)
+            self.cached_flow_info.pop(evicted_flow_run_id, None)
+
+    def _get_related_deployment_info(self, flow_run_id: str) -> DeploymentInfo:
+        deployment_info = self.related_deployment_info[flow_run_id]
+        self.related_deployment_info.move_to_end(flow_run_id)
+        return deployment_info
 
     def build_run_id(
         self, execution_time: datetime, run_name: str, namespace: str, prefect_run_id: str
@@ -102,7 +116,8 @@ class PrefectOpenLineageListener:
                 namespace=JOB_NAMESPACE,
                 flow_run=flow_run,
             )
-        ns = (deployment.job_variables or {}).get("env", {}).get("OPENLINEAGE_NAMESPACE", JOB_NAMESPACE)
+        env = (deployment.job_variables or {}).get("env") or {}
+        ns = env.get("OPENLINEAGE_NAMESPACE") or JOB_NAMESPACE
         return DeploymentInfo(
             id=str(deployment.id),
             created=deployment.created,
@@ -143,28 +158,15 @@ class PrefectOpenLineageListener:
             return None
 
     def process_artifact_description(self, artifact) -> str | None:
-        if artifact["description"] and "ol-dataset" in artifact["description"]:
-            try:
-                dataset_type = artifact["description"].split("_")[-1].lower()
-                if dataset_type not in ("input", "output"):
-                    logger.warning("Invalid dataset_type in artifact description.")
-            except (AttributeError, TypeError, ValueError):
-                logger.warning("Invalid dataset_type in artifact description.", exc_info=True)
-                try:
-                    dataset_type = artifact["description"].split("-")[-1].lower()
-                    if dataset_type not in ("input", "output"):
-                        logger.warning(
-                            "Invalid dataset_type in artifact description after trying both separators."
-                        )
-                except (AttributeError, TypeError, ValueError):
-                    logger.warning(
-                        "Invalid dataset_type in artifact description after trying both separators.",
-                        exc_info=True,
-                    )
-                    dataset_type = None
-        else:
-            dataset_type = None
-        return dataset_type
+        desc = artifact.get("description")
+        if not isinstance(desc, str) or "ol-dataset" not in desc:
+            return None
+        for sep in ("_", "-"):
+            candidate = desc.rsplit(sep, 1)[-1].lower()
+            if candidate in ("input", "output"):
+                return candidate
+        logger.warning("Invalid dataset_type in artifact description.")
+        return None
 
     async def get_artifacts_by_task_run(self, run_id: str) -> list[dict]:
         """
@@ -172,22 +174,24 @@ class PrefectOpenLineageListener:
         a list of dictionaries containing the URI, table, and dataset type
         for each artifact.
         """
-        payload = {"artifacts": {"task_run_id": {"any_": [run_id]}}}
-        response = await self.client._client.post("/artifacts/filter", json=payload)  # NOQA: SLF001
-        if response.status_code != STATUS_CODE_OK:
-            logger.warning("Failed to retrieve artifacts for task run %s", run_id)
+        try:
+            artifacts = await self.client.read_artifacts(
+                artifact_filter=ArtifactFilter(task_run_id=ArtifactFilterTaskRunId(any_=[run_id]))
+            )
+        except (httpx.HTTPError, json.JSONDecodeError):
+            logger.warning("Failed to retrieve artifacts for task run %s", run_id, exc_info=True)
             return []
         dataset_info = []
-        artifacts = response.json()
         for artifact in artifacts:
-            dataset_type = self.process_artifact_description(artifact)
+            artifact_data = artifact.model_dump(mode="json")
+            dataset_type = self.process_artifact_description(artifact_data)
             if dataset_type is None:
                 logger.warning(
                     "Failed to retrieve dataset_type from artifact description for task run %s", run_id
                 )
                 continue
             try:
-                data_list = json.loads(artifact["data"])
+                data_list = json.loads(artifact_data["data"])
                 if len(data_list) > 1:
                     logger.warning(
                         "Artifact data contains multiple entries for task run %s. "
@@ -226,7 +230,11 @@ class PrefectOpenLineageListener:
                         parent_name = self.get_base_name(parent_run.name)
                     elif TASK_NAME_TYPE == "full":
                         parent_name = parent_run.name
-                    parent_deployment_info = await self.get_deployment_info(parent_run.flow_run_id)
+                    try:
+                        parent_deployment_info = self._get_related_deployment_info(parent_run.flow_run_id)
+                    except KeyError:
+                        parent_deployment_info = await self.get_deployment_info(parent_run.flow_run_id)
+                        self._cache_related_deployment_info(parent_run.flow_run_id, parent_deployment_info)
                     parent_runs.append(
                         {
                             "name": parent_name,
@@ -255,10 +263,10 @@ class PrefectOpenLineageListener:
                     if event_state in [RunState.FAIL, RunState.ABORT]
                     else ""
                 )
-                event_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
+                event_time = event.occurred
                 if event_state != RunState.START:
                     try:
-                        related_deployment_info = self.related_deployment_info[flow_run_id]
+                        related_deployment_info = self._get_related_deployment_info(flow_run_id)
                     except KeyError:
                         related_deployment_info = await self.get_deployment_info(flow_run_id)
                     try:
@@ -267,7 +275,7 @@ class PrefectOpenLineageListener:
                         flow_info = await self.get_flow_info(related_deployment_info.flow_run)
                 else:
                     related_deployment_info = await self.get_deployment_info(flow_run_id)
-                    self.related_deployment_info[flow_run_id] = related_deployment_info
+                    self._cache_related_deployment_info(flow_run_id, related_deployment_info)
                     flow_info = await self.get_flow_info(related_deployment_info.flow_run)
                     self.cached_flow_info[flow_run_id] = flow_info
 
@@ -275,7 +283,7 @@ class PrefectOpenLineageListener:
                     ol_flow_run_id: str = self.build_run_id(
                         flow_info.start_time,
                         flow_info.name,
-                        self.related_deployment_info[flow_run_id].namespace,
+                        related_deployment_info.namespace,
                         flow_run_id,
                     )
                 except AttributeError:
@@ -289,7 +297,7 @@ class PrefectOpenLineageListener:
                 flow_info = dataclasses.replace(
                     flow_info,
                     event_time=event_time,
-                    namespace=self.related_deployment_info[flow_run_id].namespace,
+                    namespace=related_deployment_info.namespace,
                     state_msg=prefect_state_msg,
                 )
 
@@ -307,7 +315,7 @@ class PrefectOpenLineageListener:
 
     def process_task_run_event(self, event: Event, event_state: RunState):
         event_time = event.occurred
-        expected_start_time = event.payload["task_run"]["expected_start_time"]
+        expected_start_time = (event.payload.get("task_run") or {}).get("expected_start_time")
         prefect_task_run_id = event.resource.id.split(".")[-1]
         try:
             raw_start_time = event.payload.get("task_run", {}).get("start_time")
@@ -371,23 +379,15 @@ class PrefectOpenLineageListener:
             )
             return
 
-        if event_state != RunState.START:
-            # Check cache and fetch related deployment info if not cached
-            try:
-                related_deployment_info = self.related_deployment_info[flow_run_id]
-            except KeyError:
-                related_deployment_info = await self.get_deployment_info(flow_run_id)
-                self.related_deployment_info[flow_run_id] = related_deployment_info
-        else:
-            related_deployment_info = await self.get_deployment_info(flow_run_id)
-            self.related_deployment_info[flow_run_id] = related_deployment_info
+        related_deployment_info = await self.get_deployment_info(flow_run_id)
+        self._cache_related_deployment_info(flow_run_id, related_deployment_info)
 
         # Skip task runs without a start time
         try:
             ol_task_run_id: str = self.build_run_id(
                 task_run_data["start_time"],
                 task_run_data["task_name"],
-                self.related_deployment_info[flow_run_id].namespace,
+                related_deployment_info.namespace,
                 task_run_data["prefect_task_run_id"],
             )
         except AttributeError:
@@ -404,27 +404,31 @@ class PrefectOpenLineageListener:
         parent_runs = await self.get_parent_runs(event.payload, task_run_data["prefect_task_run_id"])
 
         # Get flow run info for ParentRunFacet
-        flow_info = await self.get_flow_info(self.related_deployment_info[flow_run_id].flow_run)
+        try:
+            flow_info = self.cached_flow_info[flow_run_id]
+        except KeyError:
+            flow_info = await self.get_flow_info(related_deployment_info.flow_run)
+            self.cached_flow_info[flow_run_id] = flow_info
 
         ol_flow_run_id = ""
         try:
             ol_flow_run_id = self.build_run_id(
                 flow_info.start_time,
                 flow_info.name,
-                self.related_deployment_info[flow_run_id].namespace,
+                related_deployment_info.namespace,
                 flow_run_id,
             )
         except AttributeError:
             logger.info(
                 "Failed to build OpenLineage run id for Flow %s. \
                 ParentRunFacet will not be included.",
-                self.related_deployment_info[flow_run_id].flow_run,
+                related_deployment_info.flow_run,
             )
         task_info = TaskInfo(
             run_id=ol_task_run_id,
             event_time=task_run_data["event_time"],
             name=task_run_data["task_name"],
-            namespace=self.related_deployment_info[flow_run_id].namespace,
+            namespace=related_deployment_info.namespace,
             event_type=event_state,
             expected_start_time=task_run_data["expected_start_time"],
             job_deps=parent_runs,
@@ -436,7 +440,7 @@ class PrefectOpenLineageListener:
             task_info=task_info,
             flow_run_id=ol_flow_run_id,
             flow_name=flow_info.name,
-            deployment=self.related_deployment_info[flow_run_id],
+            deployment=related_deployment_info,
             datasets=dataset_info,
         )
 

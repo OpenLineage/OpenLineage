@@ -7,8 +7,9 @@ from datetime import datetime
 
 from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import (
-    Dataset,
+    InputDataset,
     Job,
+    OutputDataset,
     Run,
     RunEvent,
     RunState,
@@ -54,7 +55,7 @@ class TaskInfo:
     name: str
     namespace: str
     event_type: RunState
-    expected_start_time: str
+    expected_start_time: str | None = None
     prefect_version: str | None = None
     job_deps: list | None = None
     state_msg: str | None = None
@@ -83,14 +84,15 @@ class PrefectOpenLineageAdapter:
         run_facets = {
             "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                 version=prefect_version if prefect_version else "unknown", name="Prefect"
-            ),
-            "errorMessage": error_message_run.ErrorMessageRunFacet(
+            )
+        }
+
+        if flow_info.state_msg and event_type in [RunState.FAIL, RunState.ABORT]:
+            run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
                 message=flow_info.state_msg,
                 programmingLanguage="Python",
             )
-            if flow_info.state_msg
-            else None,
-        }
+
         if deployment and all([deployment.id, deployment.created, deployment.updated, deployment.name]):
             run_facets["prefectDeployment"] = PrefectDeploymentRunFacet(
                 deployment_id=deployment.id,
@@ -142,29 +144,34 @@ class PrefectOpenLineageAdapter:
         state_msg = task_info.state_msg if task_info.state_msg else ""
 
         run_facets = {
-            "nominalTime": nominal_time_run.NominalTimeRunFacet(nominalStartTime=expected_start_time),
             "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                 version=prefect_version, name="Prefect"
-            ),
-            "parent": parent_run.ParentRunFacet(
-                run=Run(runId=flow_run_id),
-                job=Job(namespace=namespace, name=flow_name),
             )
-            if flow_run_id
-            else None,
-            "errorMessage": error_message_run.ErrorMessageRunFacet(
-                message=state_msg,
-                programmingLanguage="Python",
-            )
-            if state_msg
-            else None,
         }
+
+        if expected_start_time:
+            run_facets["nominalTime"] = nominal_time_run.NominalTimeRunFacet(
+                nominalStartTime=expected_start_time
+            )
+
         if deployment and all([deployment.id, deployment.created, deployment.updated, deployment.name]):
             run_facets["prefectDeployment"] = PrefectDeploymentRunFacet(
                 deployment_id=deployment.id,
                 created=deployment.created.isoformat(),
                 updated=deployment.updated.isoformat(),
                 name=deployment.name,
+            )
+
+        if state_msg:
+            run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
+                message=state_msg,
+                programmingLanguage="Python",
+            )
+
+        if flow_run_id and flow_name:
+            run_facets["parent"] = parent_run.ParentRunFacet(
+                run=Run(runId=flow_run_id),
+                job=Job(namespace=namespace, name=flow_name),
             )
 
         if job_deps:
@@ -185,10 +192,11 @@ class PrefectOpenLineageAdapter:
         }
 
         inputs = [
-            Dataset(namespace=dataset["uri"], name=dataset["table"]) for dataset in input_datasets or []
+            InputDataset(namespace=dataset["uri"], name=dataset["table"]) for dataset in input_datasets or []
         ]
         outputs = [
-            Dataset(namespace=dataset["uri"], name=dataset["table"]) for dataset in output_datasets or []
+            OutputDataset(namespace=dataset["uri"], name=dataset["table"])
+            for dataset in output_datasets or []
         ]
 
         run_event = RunEvent(

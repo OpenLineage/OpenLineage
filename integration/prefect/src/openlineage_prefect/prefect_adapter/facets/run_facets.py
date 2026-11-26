@@ -7,18 +7,11 @@ from openlineage.client.facet_v2 import RunFacet
 
 @attr.define
 class PrefectDeploymentRunFacet(RunFacet):
-    deploymentId: str  # NOQA: N815
+    deploymentId: str = attr.field(alias="deployment_id")  # NOQA: N815
     created: str
     updated: str
     name: str
 
-    def __init__(self, deployment_id, created, updated, name):
-        super().__init__()
-        self.deploymentId = deployment_id
-        self.created = created
-        self.updated = updated
-        self.name = name
-
     @staticmethod
     def _get_schema() -> str:
-        return "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/integration/prefect/src/openlineage_prefect/prefect_adapter/facets/PrefectDeploymentRunFacet.json"
+        return "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/integration/prefect/src/openlineage_prefect/prefect_adapter/facets/PrefectDeploymentRunFacet.json#/$defs/PrefectDeploymentRunFacet"

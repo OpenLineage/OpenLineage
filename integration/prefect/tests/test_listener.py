@@ -11,6 +11,7 @@ import json
 import logging
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import UUID
 
 import httpx
 import pytest
@@ -209,17 +210,11 @@ async def test_get_prefect_version_logs_error(listener, mock_prefect_client, cap
 
 
 def test_process_artifact_description_logs_errors(listener, caplog):
-    """Test that malformed artifact descriptions include exception details in logs."""
-
-    class InvalidDescription(str):
-        def split(self):
-            raise ValueError
+    """Test that malformed artifact descriptions are logged."""
 
     caplog.set_level(logging.WARNING)
 
-    dataset_type = listener.process_artifact_description(
-        {"description": InvalidDescription("ol-dataset_input")}
-    )
+    dataset_type = listener.process_artifact_description({"description": "ol-dataset_invalid"})
 
     assert dataset_type is None
     assert "Invalid dataset_type in artifact description" in caplog.text
@@ -247,21 +242,17 @@ async def test_get_deployment_info_uses_default_namespace(listener, mock_prefect
 @pytest.mark.asyncio
 async def test_get_artifacts_by_task_run_success(listener, mock_prefect_client):
     """Test successful artifact retrieval and parsing."""
-    artifact = [
-        {
-            "key": "artifact-123",
-            "description": "ol-dataset_input",
-            "data": json.dumps([{"database_uri": "postgres://localhost", "table": "users"}]),
-        },
-    ]
+    task_run_id = "123e4567-e89b-12d3-a456-426614174000"
+    artifact = MagicMock()
+    artifact.model_dump.return_value = {
+        "key": "artifact-123",
+        "description": "ol-dataset_input",
+        "data": json.dumps([{"database_uri": "postgres://localhost", "table": "users"}]),
+    }
 
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = artifact
+    mock_prefect_client.read_artifacts.return_value = [artifact]
 
-    mock_prefect_client._client.post.return_value = mock_response  # NOQA: SLF001
-
-    result = await listener.get_artifacts_by_task_run("task-run-123")
+    result = await listener.get_artifacts_by_task_run(task_run_id)
 
     assert result == [
         {
@@ -270,42 +261,32 @@ async def test_get_artifacts_by_task_run_success(listener, mock_prefect_client):
             "dataset_type": "input",
         }
     ]
-    mock_prefect_client._client.post.assert_awaited_once_with(  # NOQA: SLF001
-        "/artifacts/filter",
-        json={"artifacts": {"task_run_id": {"any_": ["task-run-123"]}}},
-    )
+    mock_prefect_client.read_artifacts.assert_awaited_once()
+    artifact_filter = mock_prefect_client.read_artifacts.await_args.kwargs["artifact_filter"]
+    assert artifact_filter.task_run_id.any_ == [UUID(task_run_id)]
 
 
 @pytest.mark.asyncio
 async def test_get_artifacts_by_task_run_filters_ol_datasets(listener, mock_prefect_client):
     """Test that non-openlineage artifacts are filtered out."""
-    artifacts = [
-        {
-            "description": "regular artifact",
-            "data": json.dumps([{"database_uri": "postgres://localhost", "table": "users"}]),
-        },
-    ]
+    artifact = MagicMock()
+    artifact.model_dump.return_value = {
+        "description": "regular artifact",
+        "data": json.dumps([{"database_uri": "postgres://localhost", "table": "users"}]),
+    }
+    mock_prefect_client.read_artifacts.return_value = [artifact]
 
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = artifacts
-
-    mock_prefect_client._client.post.return_value = mock_response  # NOQA: SLF001
-
-    result = await listener.get_artifacts_by_task_run("task-run-123")
+    result = await listener.get_artifacts_by_task_run("123e4567-e89b-12d3-a456-426614174000")
 
     assert result == []
 
 
 @pytest.mark.asyncio
 async def test_get_artifacts_by_task_run_no_artifacts(listener, mock_prefect_client):
-    """Test handling when no artifacts are found."""
-    mock_response = MagicMock()
-    mock_response.status_code = 404
+    """Test handling when the Prefect API request fails."""
+    mock_prefect_client.read_artifacts.side_effect = httpx.ConnectError("API error")
 
-    mock_prefect_client._client.post.return_value = mock_response  # NOQA: SLF001
-
-    result = await listener.get_artifacts_by_task_run("task-run-123")
+    result = await listener.get_artifacts_by_task_run("123e4567-e89b-12d3-a456-426614174000")
 
     assert result == []
 
@@ -313,13 +294,9 @@ async def test_get_artifacts_by_task_run_no_artifacts(listener, mock_prefect_cli
 @pytest.mark.asyncio
 async def test_get_artifacts_by_task_run_empty_list(listener, mock_prefect_client):
     """Test handling when artifacts list is empty."""
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = []
+    mock_prefect_client.read_artifacts.return_value = []
 
-    mock_prefect_client._client.post.return_value = mock_response  # NOQA: SLF001
-
-    result = await listener.get_artifacts_by_task_run("task-run-123")
+    result = await listener.get_artifacts_by_task_run("123e4567-e89b-12d3-a456-426614174000")
 
     assert result == []
 
@@ -520,3 +497,22 @@ def test_listener_initialization(listener, mock_prefect_client, mock_adapter):
     """Test listener initialization with custom client and adapter."""
     assert listener.client == mock_prefect_client
     assert listener.ol_adapter == mock_adapter
+
+
+def test_related_deployment_info_cache_is_bounded_lru(listener):
+    with patch("openlineage_prefect.prefect_adapter.listener.MAX_CACHED_FLOW_RUNS", 2):
+        for flow_run_id in ("flow-1", "flow-2"):
+            listener._cache_related_deployment_info(  # NOQA: SLF001
+                flow_run_id,
+                DeploymentInfo(namespace="default", flow_run=None),
+            )
+            listener.cached_flow_info[flow_run_id] = MagicMock()
+
+        listener._get_related_deployment_info("flow-1")  # NOQA: SLF001
+        listener._cache_related_deployment_info(  # NOQA: SLF001
+            "flow-3",
+            DeploymentInfo(namespace="default", flow_run=None),
+        )
+
+    assert list(listener.related_deployment_info) == ["flow-1", "flow-3"]
+    assert "flow-2" not in listener.cached_flow_info

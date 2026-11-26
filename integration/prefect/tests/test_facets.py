@@ -7,6 +7,13 @@ Unit tests for facets module.
 Tests cover custom Prefect deployment facet definition and properties.
 """
 
+import json
+from pathlib import Path
+from urllib.parse import urldefrag
+
+import pytest
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import ValidationError
 from openlineage.client.facet_v2 import BaseFacet
 from openlineage.client.serde import Serde
 from prefect_adapter.facets.run_facets import PrefectDeploymentRunFacet
@@ -89,6 +96,43 @@ def test_prefect_deployment_run_facet_schema_url():
     schema = Serde.to_dict(facet)["_schemaURL"]
     assert schema.startswith("https://")
     assert "openlineage" in schema.lower()
+
+
+def test_prefect_deployment_run_facet_schema_reference_and_required_fields():
+    schema_path = (
+        Path(__file__).parents[1]
+        / "src"
+        / "openlineage_prefect"
+        / "prefect_adapter"
+        / "facets"
+        / "PrefectDeploymentRunFacet.json"
+    )
+    schema = json.loads(schema_path.read_text())
+    facet = PrefectDeploymentRunFacet(
+        deployment_id="dep-123",
+        created="2026-07-05T08:05:01.001Z",
+        updated="2026-07-05T08:06:02.100Z",
+        name="test_deploy",
+    )
+    schema_url = Serde.to_dict(facet)["_schemaURL"]
+    schema_id, fragment = urldefrag(schema_url)
+
+    assert schema_id == schema["$id"]
+    assert fragment == "/$defs/PrefectDeploymentRunFacet"
+    assert schema["properties"]["prefectDeployment"]["$ref"] == "#/$defs/PrefectDeploymentRunFacet"
+
+    facet_properties = schema["$defs"]["PrefectDeploymentRunFacet"]["allOf"][1]
+    validator = Draft202012Validator(facet_properties)
+    validator.validate(
+        {
+            "deploymentId": "dep-123",
+            "created": "2026-07-05T08:05:01.001Z",
+            "updated": "2026-07-05T08:06:02.100Z",
+            "name": "test_deploy",
+        }
+    )
+    with pytest.raises(ValidationError):
+        validator.validate({"deploymentId": "dep-123", "created": "2026-07-05T08:05:01.001Z"})
 
 
 def test_prefect_deployment_run_facet_producer_url():
