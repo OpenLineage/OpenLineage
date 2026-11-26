@@ -375,3 +375,69 @@ fn lateral_inside_a_parenthesized_join_is_not_captured_by_an_outer_from_item() {
         edges(inner, "postgres")
     );
 }
+
+// A derived table named like a CTE, whose body reads that CTE: its columns
+// trace through the CTE rather than to themselves.
+#[test]
+fn derived_table_named_like_the_cte_it_reads_traces_through_the_cte() {
+    for dialect in ["postgres", "snowflake"] {
+        assert_eq!(
+            edges(
+                "WITH d AS (SELECT a FROM src) SELECT d.a FROM (SELECT a FROM d) AS d",
+                dialect
+            ),
+            vec!["a <- src.a"],
+            "{dialect}"
+        );
+    }
+}
+
+// Two CTEs of one name, the second reading the first, as the earlier test
+// `test_cte_with_cycles` checks with column lists; here in another case.
+#[test]
+fn cte_redefined_in_another_case_traces_through_the_first_definition() {
+    assert_eq!(
+        edges(
+            "WITH c AS (SELECT a FROM src), C AS (SELECT a FROM c) SELECT a FROM C",
+            "postgres"
+        ),
+        vec!["a <- src.a"]
+    );
+}
+
+#[test]
+fn write_target_spelled_like_a_cte_keeps_its_column_lineage() {
+    assert_eq!(
+        edges(
+            "WITH c AS (SELECT a FROM src) INSERT INTO c (a) SELECT a FROM c",
+            "postgres"
+        ),
+        vec!["a <- src.a"]
+    );
+}
+
+// Only a column's reference to itself is dropped: a renamed column of a
+// derived table named like its CTE keeps its lineage through the CTE.
+#[test]
+fn derived_table_named_like_its_cte_keeps_a_renamed_column() {
+    assert_eq!(
+        edges(
+            "WITH d AS (SELECT a FROM src) SELECT d.x FROM (SELECT a AS x FROM d) AS d",
+            "postgres"
+        ),
+        vec!["x <- src.a"]
+    );
+}
+
+// A CTE named like the table it reads, as dbt models often are: a renamed
+// column traces to the table's column, and an unchanged one keeps its name.
+#[test]
+fn cte_named_like_the_table_it_reads_keeps_renamed_columns() {
+    assert_eq!(
+        edges(
+            "WITH orders AS (SELECT id, amount AS amt FROM orders) SELECT id, amt FROM orders",
+            "postgres"
+        ),
+        vec!["amt <- orders.amount", "id <- orders.id"]
+    );
+}

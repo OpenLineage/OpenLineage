@@ -34,10 +34,6 @@ impl Visit for With {
             if recursive {
                 context.declare_recursive_cte(cte.alias.name.clone());
             }
-            context.add_table_alias(
-                DbTableMeta::new_default_dialect("".to_string()),
-                vec![cte.alias.name.clone()],
-            );
             context.push_frame();
             cte.query.visit(context)?;
             let frame = context.pop_frame();
@@ -48,7 +44,7 @@ impl Visit for With {
                     context.default_schema().clone(),
                     context.default_database().clone(),
                 );
-                context.collect_with_table(f, table);
+                context.collect_with_table(f, table, true);
             }
 
             if i == 0 {
@@ -105,7 +101,7 @@ impl Visit for TableFactor {
                 if context.is_main() {
                     match cte {
                         Some(cte) => context.mark_table_as_used(&cte),
-                        None => context.add_relation_input(idents),
+                        None => context.add_input(idents),
                     }
                 }
 
@@ -145,7 +141,10 @@ impl Visit for TableFactor {
                         context.default_schema().clone(),
                         context.default_database().clone(),
                     );
-                    context.collect_with_table(frame, table);
+                    let names_a_cte = context
+                        .cte_named_by(std::slice::from_ref(&alias.name))
+                        .is_some();
+                    context.collect_with_table(frame, table, names_a_cte);
                 } else {
                     context.collect(frame);
                 }
@@ -292,7 +291,7 @@ impl Visit for Expr {
                                     context.default_database().clone(),
                                 );
                                 let outer = context.enclosing_correlation_named_by(&qualifier);
-                                if context.is_relation_alias(&as_written)
+                                if context.is_table_alias(&as_written)
                                     || outer.is_some_and(|relation| relation[..] != [cte.clone()])
                                 {
                                     qualifier
@@ -1153,8 +1152,16 @@ impl Visit for Statement {
 
 impl Visit for Table {
     fn visit(&self, context: &mut Context) -> Result<()> {
+        // `TABLE c` reads CTE `c` when one is in scope, as `FROM c` does: in
+        // the main body it marks the CTE as used, and in another CTE's body it
+        // records a dependency that `adjust_cte_dependencies` resolves.
         if let Some(name) = &self.table_name {
-            context.add_input(vec![Ident::new(name.to_string())])
+            let idents = vec![Ident::new(name.to_string())];
+            match context.cte_named_by(&idents) {
+                Some(cte) if context.is_main() => context.mark_table_as_used(&cte),
+                Some(_) => context.add_table_dependency(idents),
+                None => context.add_input(idents),
+            }
         }
         Ok(())
     }
