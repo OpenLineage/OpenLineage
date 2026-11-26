@@ -16,6 +16,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.Aggre
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.CreateTableAsSelectVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.DataSourceV2RelationVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.DistinctVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.EvalPythonVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.ExpandVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.FilterVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.GenerateVisitor;
@@ -36,6 +37,7 @@ class VisitorFactory {
         Arrays.asList(
             new ProjectVisitor(),
             new GenerateVisitor(),
+            new EvalPythonVisitor(),
             new ExpandVisitor(),
             new CreateTableAsSelectVisitor(),
             new ReplaceTableAsSelectVisitor(),
