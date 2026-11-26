@@ -26,7 +26,7 @@ from openlineage.common.provider.dbt.facets import (
     ParentRunMetadata,
 )
 from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
-from openlineage.common.provider.dbt.processor import ModelNode, expected_from_test_config
+from openlineage.common.provider.dbt.processor import Adapter, ModelNode, expected_from_test_config
 from openlineage.common.provider.dbt.utils import (
     __version__ as openlineage_version,
 )
@@ -374,6 +374,32 @@ class DbtLiveProcessor(DbtLocalArtifactProcessor):
         catalog_node = get_from_nullable_chain(self.catalog, ["nodes", node_id])
         return ModelNode(type=node_type, metadata_node=manifest_node, catalog_node=catalog_node)
 
+    def _get_output_node(self, node_id: str) -> ModelNode | None:
+        """The relation a node writes, or ``None`` when it writes none.
+
+        A dbt-polars data test writes a relation only when it stores its failures. Its
+        manifest ``database`` is the default catalog, which may not be one lineage supports,
+        so it must not be resolved when nothing is written there.
+        """
+        node = self._get_model_node(node_id)
+        if node is not None and self._is_polars_test_without_relation(node_id, node.metadata_node):
+            return None
+        return node
+
+    def _is_polars_test_without_relation(self, node_id: str, metadata: dict) -> bool:
+        if self.adapter_type != Adapter.POLARS or not node_id.startswith("test."):
+            return False
+        config = metadata.get("config") or {}
+        if store_failures_as := config.get("store_failures_as"):
+            return store_failures_as == "ephemeral"
+        if config.get("store_failures") is not None:
+            return not config["store_failures"]
+        # Neither is configured: dbt's should_store_failures() falls back to the global flag.
+        return not (
+            "--store-failures" in self.dbt_command_line
+            or os.environ.get("DBT_STORE_FAILURES", "").lower() in ("1", "true", "yes")
+        )
+
     @handle_keyerror
     def _get_node_tags(self, node_id: str) -> list[str]:
         """
@@ -408,7 +434,8 @@ class DbtLiveProcessor(DbtLocalArtifactProcessor):
         """
         succeeded = event_type == RunState.COMPLETE
         inputs = []
-        for model_input in self._node_inputs(node_id):
+        model_inputs = self._node_inputs(node_id)
+        for model_input in model_inputs:
             input_dataset = self.node_to_dataset(node=model_input, has_facets=True)
             if succeeded:
                 input_dataset.facets.update(  # type: ignore[union-attr]
@@ -426,7 +453,9 @@ class DbtLiveProcessor(DbtLocalArtifactProcessor):
                     or output_node.metadata_node.get("compiled_sql")
                 )
                 if compiled_sql and (
-                    column_lineage := self.get_column_lineage(output_dataset.namespace, compiled_sql)
+                    column_lineage := self.get_column_lineage(
+                        output_dataset.namespace, compiled_sql, model_inputs
+                    )
                 ):
                     output_dataset.facets["columnLineage"] = column_lineage  # type: ignore[index]
             if succeeded:

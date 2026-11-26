@@ -52,6 +52,7 @@ type JobFacets struct {
 	JobTypeJobFacet            *JobTypeJobFacet            `json:"jobType,omitempty"`
 	LineageJobFacet            *LineageJobFacet            `json:"lineage,omitempty"`
 	OwnershipJobFacet          *OwnershipJobFacet          `json:"ownership,omitempty"`
+	ParentJobFacet             *ParentJobFacet             `json:"parent,omitempty"`
 	SQLJobFacet                *SQLJobFacet                `json:"sql,omitempty"`
 	SourceCodeJobFacet         *SourceCodeJobFacet         `json:"sourceCode,omitempty"`
 	SourceCodeLocationJobFacet *SourceCodeLocationJobFacet `json:"sourceCodeLocation,omitempty"`
@@ -65,6 +66,7 @@ type RunFacets struct {
 	ExecutionParametersRunFacet  *ExecutionParametersRunFacet  `json:"executionParameters,omitempty"`
 	ExternalQueryRunFacet        *ExternalQueryRunFacet        `json:"externalQuery,omitempty"`
 	ExtractionErrorRunFacet      *ExtractionErrorRunFacet      `json:"extractionError,omitempty"`
+	FabricSparkRunFacet          *FabricSparkRunFacet          `json:"fabric_spark,omitempty"`
 	GcpComposerRunFacet          *GcpComposerRunFacet          `json:"gcp_composer_run,omitempty"`
 	GcpDataprocRunFacet          *GcpDataprocRunFacet          `json:"gcp_dataproc,omitempty"`
 	JobDependenciesRunFacet      *JobDependenciesRunFacet      `json:"jobDependencies,omitempty"`
@@ -1163,6 +1165,42 @@ func (f *OwnershipJobFacet) WithOwners(owners []OwnershipJobFacetOwner) *Ownersh
 	return f
 }
 
+var _ JobFacet = (*ParentJobFacet)(nil)
+
+// Apply sets this ParentJobFacet facet in the JobFacets container.
+func (f *ParentJobFacet) Apply(facets **JobFacets) {
+	if *facets == nil {
+		*facets = &JobFacets{}
+	}
+	(*facets).ParentJobFacet = f
+}
+
+// NewParentJobFacet creates a new ParentJobFacet facet.
+func NewParentJobFacet(
+	producer string,
+	job ParentJobFacetJob,
+) *ParentJobFacet {
+	return &ParentJobFacet{
+		Producer:  producer,
+		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/ParentJobFacet.json",
+		Job:       job,
+	}
+}
+
+// WithDeleted sets the Deleted field on this ParentJobFacet.
+func (f *ParentJobFacet) WithDeleted(deleted bool) *ParentJobFacet {
+	f.Deleted = &deleted
+
+	return f
+}
+
+// WithRoot sets the Root field on this ParentJobFacet.
+func (f *ParentJobFacet) WithRoot(root *ParentJobFacetRoot) *ParentJobFacet {
+	f.Root = root
+
+	return f
+}
+
 var _ JobFacet = (*SQLJobFacet)(nil)
 
 // Apply sets this SQLJobFacet facet in the JobFacets container.
@@ -1583,6 +1621,61 @@ func NewExtractionErrorRunFacet(
 		FailedTasks: failedTasks,
 		TotalTasks:  totalTasks,
 	}
+}
+
+var _ RunFacet = (*FabricSparkRunFacet)(nil)
+
+// Apply sets this FabricSparkRunFacet facet in the RunFacets container.
+func (f *FabricSparkRunFacet) Apply(facets **RunFacets) {
+	if *facets == nil {
+		*facets = &RunFacets{}
+	}
+	(*facets).FabricSparkRunFacet = f
+}
+
+// NewFabricSparkRunFacet creates a new FabricSparkRunFacet facet.
+func NewFabricSparkRunFacet(
+	producer string,
+) *FabricSparkRunFacet {
+	return &FabricSparkRunFacet{
+		Producer:  producer,
+		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/FabricSparkRunFacet.json",
+	}
+}
+
+// WithItemID sets the ItemID field on this FabricSparkRunFacet.
+func (f *FabricSparkRunFacet) WithItemID(itemID string) *FabricSparkRunFacet {
+	f.ItemID = &itemID
+
+	return f
+}
+
+// WithItemType sets the ItemType field on this FabricSparkRunFacet.
+func (f *FabricSparkRunFacet) WithItemType(itemType string) *FabricSparkRunFacet {
+	f.ItemType = &itemType
+
+	return f
+}
+
+// WithJobInstanceID sets the JobInstanceID field on this FabricSparkRunFacet.
+func (f *FabricSparkRunFacet) WithJobInstanceID(jobInstanceID string) *FabricSparkRunFacet {
+	f.JobInstanceID = &jobInstanceID
+
+	return f
+}
+
+// WithLivyID sets the LivyID field on this FabricSparkRunFacet.
+func (f *FabricSparkRunFacet) WithLivyID(livyID string) *FabricSparkRunFacet {
+	f.LivyID = &livyID
+
+	return f
+}
+
+// WithWorkspaceID sets the WorkspaceID field on this FabricSparkRunFacet.
+func (f *FabricSparkRunFacet) WithWorkspaceID(workspaceID string) *FabricSparkRunFacet {
+	f.WorkspaceID = &workspaceID
+
+	return f
 }
 
 var _ RunFacet = (*GcpComposerRunFacet)(nil)

@@ -411,7 +411,7 @@ class DbtStructuredLogsProcessor(DbtLiveProcessor):
                 self.node_to_dataset(node=model_input, has_facets=True)
                 for model_input in self._get_model_inputs(node_unique_id)
             ]
-            if node := self._get_model_node(node_unique_id):
+            if node := self._get_output_node(node_unique_id):
                 outputs = [self.node_to_output_dataset(node=node, has_facets=True)]
 
         if extraction_error := self._get_extraction_error_facet(node_unique_id):
@@ -501,7 +501,7 @@ class DbtStructuredLogsProcessor(DbtLiveProcessor):
         outputs: list = []
         if resource_type != "unit_test":
             inputs, outputs = self._node_end_datasets(
-                node_unique_id, self._get_model_node(node_unique_id), event_type
+                node_unique_id, self._get_output_node(node_unique_id), event_type
             )
 
         if resource_type == "test":

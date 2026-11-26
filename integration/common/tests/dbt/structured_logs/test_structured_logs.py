@@ -13,6 +13,7 @@ import pytest
 import yaml
 from openlineage.client.facet_v2 import column_lineage_dataset
 from openlineage.common.provider.dbt.facets import ParentRunMetadata
+from openlineage.common.provider.dbt.polars import parse_polars_profile
 from openlineage.common.provider.dbt.processor import Adapter
 from openlineage.common.provider.dbt.structured_logs import (
     DbtStructuredLogsProcessor,
@@ -518,6 +519,78 @@ def test_test_node_finished_has_no_external_query():
     assert "externalQuery" not in ol_event_to_dict(event)["run"]["facets"]
 
 
+def polars_processor_with_unsupported_default_catalog():
+    """The test node inherits the default catalog, a local one; the tested model is in an Iceberg one."""
+    processor = node_finished_processor(adapter_type=Adapter.POLARS)
+    processor.polars_catalogs = parse_polars_profile(
+        {
+            "catalog": "REPORTING",
+            "catalogs": [
+                {"name": "REPORTING", "type": "local"},
+                {"name": "lake", "type": "iceberg", "uri": "https://catalog.example.com/api"},
+            ],
+        }
+    )
+    processor.compiled_manifest["nodes"]["model.jaffle_shop.orders"]["config"] = {"catalog": "lake"}
+    return processor
+
+
+def test_polars_relative_sqlite_catalog_is_resolved_against_the_project_dir():
+    processor = node_finished_processor(adapter_type=Adapter.POLARS)
+    processor.extract_dataset_namespace(
+        {"type": "polars", "catalogs": [{"name": "local", "type": "iceberg", "uri": "sqlite:///catalog.db"}]}
+    )
+    namespace = processor.dataset_namespace
+    assert namespace.startswith("sqlite:///")
+    assert namespace.endswith(f"{Path(CURRENT_DIR).resolve().as_posix()}/catalog.db")
+
+
+@pytest.mark.parametrize("event_type", ["start", "finished"])
+def test_polars_test_node_without_stored_failures_has_no_output(event_type):
+    processor = polars_processor_with_unsupported_default_catalog()
+    finished = node_finished_event(
+        unique_id="test.jaffle_shop.not_null_orders_id", resource_type="test", node_status="pass"
+    )
+    if event_type == "start":
+        processor.node_id_to_ol_run_id["test.jaffle_shop.not_null_orders_id"] = DUMMY_UUID_4
+        event = processor._parse_node_start_event(
+            {**finished, "info": {"name": "NodeStart", "ts": "2024-01-01T00:00:00.000000Z"}}
+        )
+    else:
+        event = processor.parse_node_finished_event(finished)
+
+    event = ol_event_to_dict(event)
+    assert event["outputs"] == []
+    assert [(i["namespace"], i["name"]) for i in event["inputs"]] == [
+        ("https://catalog.example.com/api", "TEST_GENERAL.orders")
+    ]
+
+
+@pytest.mark.parametrize(
+    "config, command_line, env",
+    [
+        ({"store_failures": True}, [], {}),
+        ({"store_failures_as": "table"}, [], {}),
+        # neither is configured, so dbt falls back to the global flag
+        ({"store_failures": None, "store_failures_as": None}, ["--store-failures"], {}),
+        ({"store_failures": None, "store_failures_as": None}, [], {"DBT_STORE_FAILURES": "true"}),
+    ],
+    ids=["config", "as_table", "cli_flag", "env_var"],
+)
+def test_polars_test_node_storing_failures_uses_its_catalog(config, command_line, env, monkeypatch):
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+    processor = polars_processor_with_unsupported_default_catalog()
+    processor.dbt_command_line = ["dbt", "build", *command_line]
+    processor.compiled_manifest["nodes"]["test.jaffle_shop.not_null_orders_id"]["config"] = config
+    with pytest.raises(NotImplementedError, match="catalog 'REPORTING'"):
+        processor.parse_node_finished_event(
+            node_finished_event(
+                unique_id="test.jaffle_shop.not_null_orders_id", resource_type="test", node_status="pass"
+            )
+        )
+
+
 @pytest.mark.parametrize(
     "unique_id, resource_type, node_status",
     [
@@ -544,7 +617,7 @@ def test_node_finished_attaches_column_lineage(unique_id, resource_type, node_st
     output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
 
     assert output_facets["columnLineage"] == ol_event_to_dict(facet)
-    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql)
+    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql, mock.ANY)
 
 
 def test_node_finished_missing_compiled_sql_has_no_column_lineage():
@@ -569,7 +642,7 @@ def test_node_finished_uses_compiled_sql_fallback_for_column_lineage():
     output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
 
     assert output_facets["columnLineage"] == ol_event_to_dict(facet)
-    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql)
+    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql, mock.ANY)
 
 
 def test_node_finished_column_lineage_parse_failure_has_no_column_lineage():
@@ -582,7 +655,7 @@ def test_node_finished_column_lineage_parse_failure_has_no_column_lineage():
     output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
 
     assert "columnLineage" not in output_facets
-    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql)
+    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql, mock.ANY)
 
 
 def test_test_node_finished_has_no_column_lineage():

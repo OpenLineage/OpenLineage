@@ -59,8 +59,7 @@ class ArgumentParserTest {
   void testDefaults() {
     config = ArgumentParser.parse(new SparkConf());
     assertThat(config.getFacetsConfig().getDisabledFacets())
-        .containsAllEntriesOf(
-            ImmutableMap.of("spark_unknown", true, "spark.logicalPlan", true, "debug", true));
+        .containsAllEntriesOf(ImmutableMap.of("spark.logicalPlan", true, "debug", true));
     assertThat(config.getTransportConfig()).isInstanceOf(ConsoleConfig.class);
   }
 
@@ -501,7 +500,7 @@ class ArgumentParserTest {
     assertThat(config.getJobName().getAppendDatasetName()).isFalse();
     assertThat(config.getFacetsConfig().getDisabledFacets())
         .containsAllEntriesOf(
-            ImmutableMap.of("spark_unknown", false, "spark.logicalPlan", true, "debug", true));
+            ImmutableMap.of("spark.logicalPlan", false, "dataSource", true, "debug", true));
     assertThat(config.getJobConfig().getTags())
         .contains(new TagField("key", "value"), new TagField("tag2"));
     assertThat(config.getRunConfig().getTags())

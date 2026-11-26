@@ -18,6 +18,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.util.DatasetReducerUtils;
 import io.openlineage.spark.api.ColumnLineageConfig;
+import io.openlineage.spark.api.DatasetIdentifierResolver;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.sql.ColumnMeta;
@@ -84,7 +85,9 @@ public class ColumnLevelLineageBuilder {
         .get(exprId)
         .add(
             new Input(
-                DatasetReducerUtils.trimDatasetIdentifier(context, datasetIdentifier),
+                // named like the input datasets, which SparkDatasetBuilder resolves the same way
+                DatasetReducerUtils.trimDatasetIdentifier(
+                    context, DatasetIdentifierResolver.resolve(context, datasetIdentifier)),
                 attributeName));
   }
 

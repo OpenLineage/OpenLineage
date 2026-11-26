@@ -24,6 +24,9 @@ project(":iceberg").projectDir = file("./vendor/iceberg")
 include 'gcp'
 project(":gcp").projectDir = file("./vendor/gcp")
 
+include 'fabric'
+project(":fabric").projectDir = file("./vendor/fabric")
+
 buildCache {
     local {
         directory = new File(rootDir, 'build-cache')

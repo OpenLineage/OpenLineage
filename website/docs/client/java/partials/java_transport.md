@@ -682,6 +682,7 @@ This transport requires the artifact `org.apache.kafka:kafka-clients:3.1.0` (or 
   Default values for `messageKey` are:
   - `run:{rootJob.namespace}/{rootJob.name}` - for RunEvent with parent facet containing link to `root` job
   - `run:{parentJob.namespace}/{parentJob.name}` - for RunEvent with parent facet
+  - `run:{rootJob.namespace}/{rootJob.name}` or `run:{parentJob.namespace}/{parentJob.name}` - for RunEvent with a `ParentJobFacet` on its job (and no `ParentRunFacet`), where the parent run is not known
   - `run:{job.namespace}/{job.name}` - for RunEvent
   - `job:{job.namespace}/{job.name}` - for JobEvent
   - `dataset:{dataset.namespace}/{dataset.name}` - for DatasetEvent
@@ -779,6 +780,7 @@ hierarchy, like `Airflow task -> Spark application`.
 Default values are:
 - `run:{rootJob.namespace}/{rootJob.name}` - for RunEvent with parent facet containing link to `root` job
 - `run:{parentJob.namespace}/{parentJob.name}/{parentRun.id}` - for RunEvent with parent facet
+- `run:{rootJob.namespace}/{rootJob.name}` or `run:{parentJob.namespace}/{parentJob.name}` - for RunEvent with a `ParentJobFacet` on its job (and no `ParentRunFacet`), where the parent run is not known
 - `run:{job.namespace}/{job.name}/{run.id}` - for RunEvent
 - `job:{job.namespace}/{job.name}` - for JobEvent
 - `dataset:{dataset.namespace}/{dataset.name}` - for DatasetEvent

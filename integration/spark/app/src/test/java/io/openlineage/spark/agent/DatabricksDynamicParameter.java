@@ -27,13 +27,40 @@ public enum DatabricksDynamicParameter implements DynamicParameter {
   /** The Spark version as provided by Gradle. This case is not using the openlineage prefix. */
   SparkVersion("spark.version", null, "3.5.6"),
 
+  /**
+   * The Scala binary version as provided by Gradle. This case is not using the openlineage prefix.
+   */
+  ScalaVersion("scala.binary.version", null, "2.12"),
+
   // DEVELOPMENT PARAMETERS
 
   /**
    * The ID of the cluster to use. If specified, the tests will use this existing cluster instead of
-   * creating a new one.
+   * looking up the pre-created test cluster for the Databricks runtime.
    */
   ClusterId("development.clusterId", ""),
+
+  /**
+   * When set to {@code true} and {@link #ClusterId} is set, the cluster is started (or restarted)
+   * after the OpenLineage jar is uploaded, so that the init script loads the fresh jar. Requires
+   * only the CAN_RESTART permission on the cluster. A cluster found by name is always restarted.
+   */
+  RestartExistingCluster("development.restartExistingCluster", "false"),
+
+  /**
+   * When set to {@code true} and {@link #ClusterId} is not set, a new cluster is created for the
+   * tests and terminated afterwards, instead of using a pre-created one. Requires cluster creation
+   * rights.
+   */
+  CreateCluster("development.createCluster", "false"),
+
+  /**
+   * When set to {@code true} and no test cluster for the runtime is found, a CI test cluster
+   * ({@code openlineage-test-cluster_<runtime>}) is created with the current principal as its
+   * single user, and kept after the tests, so that later runs find it. If one is found, it is used
+   * as usual. Requires cluster creation rights; meant for setting up the CI clusters once.
+   */
+  CreateTestCluster("development.createTestCluster", "false"),
 
   /**
    * When set to {@code true}, prevents the EMR cluster from terminating after tests complete. This

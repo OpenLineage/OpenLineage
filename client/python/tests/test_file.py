@@ -55,9 +55,10 @@ def assert_test_events(log_line: list[dict[str, Any]], test_event: list[dict[str
     assert log_line["producer"] == test_event["producer"]
 
 
-def test_client_with_file_transport_append_emits() -> None:
+@pytest.mark.parametrize("debug_mode", [False, True])
+def test_client_with_file_transport_append_emits(debug_mode) -> None:
     log_file = tempfile.NamedTemporaryFile()
-    config = FileConfig(append=True, log_file_path=log_file.name)
+    config = FileConfig(append=True, log_file_path=log_file.name, debug_mode=debug_mode)
     transport = FileTransport(config)
 
     client = OpenLineageClient(transport=transport)
@@ -67,6 +68,8 @@ def test_client_with_file_transport_append_emits() -> None:
     with open(log_file.name) as log_file_handle:
         log_file_handle.seek(0)
         log_lines = log_file_handle.read().splitlines()
+
+        assert len(log_lines) == len(test_event_set)
 
         for i, raw_log_line in enumerate(log_lines):
             log_line = json.loads(raw_log_line)
@@ -752,12 +755,9 @@ def test_file_transport_debug_mode_different_event_types(mock_dt, event_type, ex
     assert file_path == expected_path
 
 
-def test_file_transport_debug_mode_json_prettified():
+def test_file_transport_debug_mode_json_prettified(tmp_path):
     """Test that debug mode outputs prettified (indented) JSON."""
-    log_file = tempfile.NamedTemporaryFile(mode="w", delete=False)
-    log_file.close()
-
-    config = FileConfig(log_file_path=log_file.name, debug_mode=True, append=True)
+    config = FileConfig(log_file_path=str(tmp_path / "events"), debug_mode=True, append=False)
     transport = FileTransport(config)
 
     event = RunEvent(
@@ -776,8 +776,6 @@ def test_file_transport_debug_mode_json_prettified():
         mock_to_json.assert_called_once()
         call_args = mock_to_json.call_args
         assert call_args[1].get("indent") == 2
-
-    os.remove(log_file.name)
 
 
 def test_file_transport_debug_mode_json_not_prettified_when_disabled():

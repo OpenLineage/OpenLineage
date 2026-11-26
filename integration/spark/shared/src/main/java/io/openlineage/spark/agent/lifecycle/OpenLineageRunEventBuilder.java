@@ -152,8 +152,6 @@ class OpenLineageRunEventBuilder {
 
   @NonNull private final Collection<ColumnLevelLineageVisitor> columnLineageVisitors;
 
-  private final UnknownEntryFacetListener unknownEntryFacetListener =
-      UnknownEntryFacetListener.getInstance();
   private final Map<Integer, ActiveJob> jobMap = new HashMap<>();
   private final Map<Integer, Stage> stageMap = new HashMap<>();
   private final OpenLineageRunEventTimeoutExecutor timeouter;
@@ -172,6 +170,14 @@ class OpenLineageRunEventBuilder {
         factory.createJobFacetBuilders(context),
         factory.createColumnLevelLineageVisitors(context),
         new OpenLineageRunEventTimeoutExecutor(context));
+    // the context uses these when it builds datasets, so they go on the context
+    context
+        .getDatasetIdentityFacetBuilders()
+        .addAll(factory.createDatasetIdentityFacetBuilders(context));
+    context.getFileWriteTargetResolvers().addAll(factory.createFileWriteTargetResolvers(context));
+    context
+        .getDatasetIdentifierResolvers()
+        .addAll(factory.createDatasetIdentifierResolvers(context));
   }
 
   /**
@@ -229,10 +235,20 @@ class OpenLineageRunEventBuilder {
         timeouter.timeoutJobFacets(
             () -> buildJobFacets(nodes, jobFacetBuilders, context.getJobFacetsBuilder()));
     List<InputDataset> inputDatasets =
-        timeouter.timeoutInputDatasets(() -> buildInputDatasets(nodes));
+        timeouter.timeoutInputDatasets(
+            () ->
+                openLineageContext
+                    .getMeterRegistry()
+                    .timer("openlineage.spark.dataset.input.execution.time")
+                    .record(() -> buildInputDatasets(nodes)));
     openLineageContext.getLineageRunStatus().capturedInputs(inputDatasets.size());
     List<OutputDataset> outputDatasets =
-        timeouter.timeoutOutputDatasets(() -> buildOutputDatasets(nodes));
+        timeouter.timeoutOutputDatasets(
+            () ->
+                openLineageContext
+                    .getMeterRegistry()
+                    .timer("openlineage.spark.dataset.output.execution.time")
+                    .record(() -> buildOutputDatasets(nodes)));
     openLineageContext.getLineageRunStatus().capturedOutputs(outputDatasets.size());
     RunFacets runFacets =
         timeouter.timeoutRunFacets(() -> buildRunFacets(context, nodes), openLineage);
@@ -326,34 +342,10 @@ class OpenLineageRunEventBuilder {
     return datasets;
   }
 
-  /**
-   * Returns a {@link Function1} that passes the input {@link LogicalPlan} node to the {@link
-   * #unknownEntryFacetListener} if the inputVisitor is defined for the input node.
-   *
-   * @param inputVisitor
-   * @param <D>
-   * @return
-   */
   private <D> Function1<LogicalPlan, Collection<D>> visitLogicalPlan(
       PartialFunction<LogicalPlan, Collection<D>> inputVisitor) {
-    return openLineageContext
-        .getMeterRegistry()
-        .timer("openlineage.spark.dataset.input.execution.time")
-        .record(
-            () ->
-                ScalaConversionUtils.toScalaFn(
-                    node ->
-                        inputVisitor
-                            .andThen(
-                                toScalaFn(
-                                    ds -> {
-                                      if (!FacetUtils.isFacetDisabled(
-                                          openLineageContext, "spark_unknown")) {
-                                        unknownEntryFacetListener.accept(node);
-                                      }
-                                      return ds;
-                                    }))
-                            .applyOrElse(node, toScalaFn(n -> Collections.emptyList()))));
+    return ScalaConversionUtils.toScalaFn(
+        node -> inputVisitor.applyOrElse(node, toScalaFn(n -> Collections.emptyList())));
   }
 
   private List<OutputDataset> buildOutputDatasets(List<Object> nodes) {
@@ -481,18 +473,6 @@ class OpenLineageRunEventBuilder {
         && context.getApplicationParentRunFacet() != null) {
       FacetUtils.attachSmartDebugFacet(openLineageContext, runFacetsBuilder);
     }
-
-    openLineageContext
-        .getQueryExecution()
-        .filter(qe -> !FacetUtils.isFacetDisabled(openLineageContext, "spark_unknown"))
-        .flatMap(
-            qe ->
-                openLineageContext
-                    .getMeterRegistry()
-                    .timer("openlineage.spark.unknownFacet.time")
-                    .record(() -> unknownEntryFacetListener.build(qe.optimizedPlan())))
-        .ifPresent(facet -> runFacetsBuilder.put("spark_unknown", facet));
-    unknownEntryFacetListener.clear();
 
     nodes.forEach(
         event ->

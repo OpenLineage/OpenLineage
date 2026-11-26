@@ -154,7 +154,7 @@ class TestGCPLineageTransportInitialization:
 class TestGCPLineageTransportRouting:
     """Test event routing logic based on async transport rules."""
 
-    def _create_event(self, integration: str, job_type: str) -> RunEvent:
+    def _create_event(self, integration: str | None, job_type: str | None) -> RunEvent:
         """Helper method to create events with JobTypeJobFacet."""
         job_facets = {
             "jobType": JobTypeJobFacet(processingType="BATCH", integration=integration, jobType=job_type)
@@ -228,6 +228,38 @@ class TestGCPLineageTransportRouting:
             # Verify sync transport was used
             mock_emit_sync.assert_called_once_with(event)
             mock_emit_async.assert_not_called()
+
+    @pytest.mark.parametrize(
+        ("integration", "job_type", "rules", "use_async"),
+        [
+            ("dbt", None, {"dbt": {"*": True}}, True),
+            ("dbt", "", {"dbt": {"*": True}}, True),
+            ("dbt", None, {"dbt": {"model": True}}, False),
+            ("dbt", "", {"dbt": {"model": True}}, False),
+            ("dbt", None, {"dbt": {"*": False}}, False),
+            (None, "model", {"dbt": {"*": True}}, False),
+            ("", "model", {"dbt": {"*": True}}, False),
+            (None, None, {"*": {"*": True}}, True),
+        ],
+    )
+    def test_routing_with_empty_job_type_fields(self, integration, job_type, rules, use_async):
+        """Test that a JobTypeJobFacet without jobType or integration is routed, not crashed on."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project", "async_transport_rules": rules})
+        transport = GCPLineageTransport(config)
+        event = self._create_event(integration, job_type)
+
+        with (
+            patch.object(transport, "_emit_async", return_value=None) as mock_emit_async,
+            patch.object(transport, "_emit_sync", return_value=None) as mock_emit_sync,
+        ):
+            transport.emit(event)
+
+            if use_async:
+                mock_emit_async.assert_called_once_with(event)
+                mock_emit_sync.assert_not_called()
+            else:
+                mock_emit_sync.assert_called_once_with(event)
+                mock_emit_async.assert_not_called()
 
     def test_routing_custom_async_rules(self):
         """Test routing with custom async transport rules."""

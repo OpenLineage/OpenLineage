@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/ParentJobFacet.json",
+  "$defs": {
+    "ParentJobFacetJob": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "description": "The namespace containing that job",
+          "type": "string",
+          "example": "my-scheduler-namespace"
+        },
+        "name": {
+          "description": "The unique name for that job within that namespace",
+          "type": "string",
+          "example": "myjob"
+        },
+        "facets": {
+          "description": "Selected subset of facets of the referenced job (not the current job), forwarded here for convenience. See the referenced job's own event for full information.",
+          "type": "object",
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": { "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/JobFacet" }
+            }
+          ]
+        }
+      },
+      "required": ["namespace", "name"]
+    },
+    "ParentJobFacetRoot": {
+      "type": "object",
+      "properties": {
+        "job": {
+          "$ref": "#/$defs/ParentJobFacetJob"
+        }
+      },
+      "required": ["job"]
+    },
+    "ParentJobFacet": {
+      "description": "The parent job of this job, if this job is a sub-job of another job by design (for example, a task defined within a DAG). Should be used on job events. It may also be used on run events when the specific run of the parent job is not known; if a ParentRunFacet is also present, it takes precedence.",
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/JobFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "job": {
+              "$ref": "#/$defs/ParentJobFacetJob"
+            },
+            "root": {
+              "$ref": "#/$defs/ParentJobFacetRoot"
+            }
+          },
+          "required": ["job"]
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "parent": {
+      "$ref": "#/$defs/ParentJobFacet"
+    }
+  }
+}

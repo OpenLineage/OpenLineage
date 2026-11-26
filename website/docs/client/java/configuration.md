@@ -39,7 +39,7 @@ In YAML configuration file you can also disable facets to filter them out from t
 transport:
   type: console
 facets:
-  spark_unknown:
+  debug:
     disabled: true
   "spark.logicalPlan":
     disabled: true
@@ -52,7 +52,7 @@ The following syntax was deprecated and got removed:
 ```yaml
 facets:
   disabled:
-    - spark_unknown
+    - debug
     - spark.logicalPlan
 ```
 

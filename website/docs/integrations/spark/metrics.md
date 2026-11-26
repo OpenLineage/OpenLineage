@@ -21,8 +21,8 @@ The following table provides the metrics added by the Spark integration, along w
 | `openlineage.spark.event.app.end`                | Number of SparkListenerApplicationEnd events received                  | Counter |
 | `openlineage.spark.event.app.start.memoryusage`  | Percentage of used memory at the start of the application              | Counter |
 | `openlineage.spark.event.app.end.memoryusage`    | Percentage of used memory at the end of the application                | Counter |
-| `openlineage.spark.unknownFacet.time`            | Time spent building the UnknownEntryRunFacet                           | Timer   |
 | `openlineage.spark.dataset.input.execution.time` | Time spent constructing input datasets for execution                   | Timer   |
+| `openlineage.spark.dataset.output.execution.time` | Time spent constructing output datasets for execution                  | Timer   |
 | `openlineage.spark.facets.job.execution.time`    | Time spent building job-specific facets                                | Timer   |
 | `openlineage.spark.facets.run.execution.time`    | Time spent constructing run-specific facets                            | Timer   |
 

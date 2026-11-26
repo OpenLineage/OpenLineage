@@ -793,6 +793,214 @@ class ColumnLineageWithTransformationTypesTest {
   }
 
   @NotNull
+  @Test
+  void unionWithAggregation() {
+    createTable("t1", "a;int", "b;int");
+    createTable("t2", "a;int", "b;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("a;int", "n;bigint"),
+            "SELECT a, sum(b) AS n\n"
+                + "FROM (SELECT a, b FROM t1 UNION ALL SELECT a, b FROM t2) u\n"
+                + "GROUP BY a");
+    // the columns of both tables are aggregated and grouped by, not only those of the first one
+    assertCountColumnDependencies(facet, 4);
+    assertCountDatasetDependencies(facet, 2);
+    for (String table : Arrays.asList(T1_EXPECTED_NAME, T2_EXPECTED_NAME)) {
+      assertColumnDependsOnType(facet, "a", FILE, table, "a", TransformationInfo.identity("a"));
+      assertColumnDependsOnType(
+          facet, "n", FILE, table, "b", TransformationInfo.aggregation("sum(u.b) AS n"));
+      assertDatasetDependsOnType(
+          facet, FILE, table, "a", TransformationInfo.indirect(GROUP_BY, "GROUP BY u.a"));
+    }
+  }
+
+  @Test
+  void queryWithRollup() {
+    createTable("t1", "a;int", "b;int", "c;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("a;int", "b;int", "c;bigint"),
+            "SELECT a, b, sum(c) AS c FROM t1 GROUP BY ROLLUP (a, b)");
+    assertGroupingSetsLineage(facet);
+  }
+
+  @Test
+  void queryWithCube() {
+    createTable("t1", "a;int", "b;int", "c;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("a;int", "b;int", "c;bigint"),
+            "SELECT a, b, sum(c) AS c FROM t1 GROUP BY CUBE (a, b)");
+    assertGroupingSetsLineage(facet);
+  }
+
+  @Test
+  void queryWithGroupingSets() {
+    createTable("t1", "a;int", "b;int", "c;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("a;int", "b;int", "c;bigint"),
+            "SELECT a, b, sum(c) AS c FROM t1 GROUP BY GROUPING SETS ((a), (b))");
+    assertGroupingSetsLineage(facet);
+  }
+
+  private void assertGroupingSetsLineage(OpenLineage.ColumnLineageDatasetFacet facet) {
+    assertCountColumnDependencies(facet, 3);
+    assertColumnDependsOnType(
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
+    assertColumnDependsOnType(
+        facet, "b", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.identity("b"));
+    assertColumnDependsOnType(
+        facet,
+        "c",
+        FILE,
+        T1_EXPECTED_NAME,
+        "c",
+        TransformationInfo.aggregation("sum(spark_catalog.default.t1.c) AS c"));
+    // one for each grouping column, the grouping id has no input
+    assertCountDatasetDependencies(facet, 2);
+    TransformationInfo groupBy =
+        TransformationInfo.indirect(
+            GROUP_BY,
+            "GROUP BY spark_catalog.default.t1.a, spark_catalog.default.t1.b, spark_grouping_id");
+    assertDatasetDependsOnType(facet, FILE, T1_EXPECTED_NAME, "a", groupBy);
+    assertDatasetDependsOnType(facet, FILE, T1_EXPECTED_NAME, "b", groupBy);
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = "spark.version", matches = "^(3\\.[4-9].*|[4-9].*)$")
+  void queryWithUnpivot() {
+    createTable("t1", "a;int", "b;int", "c;bigint");
+    // b and c have different types, so Spark casts b inside of the Expand node
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("a;int", "k;string", "v;bigint"),
+            "SELECT a, k, v FROM t1 UNPIVOT (v FOR k IN (b, c))");
+    assertCountColumnDependencies(facet, 3);
+    assertColumnDependsOnType(
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
+    assertColumnDependsOnType(
+        facet,
+        "v",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.transformation("CAST(spark_catalog.default.t1.b AS BIGINT)"));
+    assertColumnDependsOnType(
+        facet,
+        "v",
+        FILE,
+        T1_EXPECTED_NAME,
+        "c",
+        TransformationInfo.identity("spark_catalog.default.t1.c"));
+    // UNPIVOT excludes null values
+    assertCountDatasetDependencies(facet, 2);
+    assertDatasetDependsOnType(
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.indirect(
+            FILTER, "WHERE (CAST(spark_catalog.default.t1.b AS BIGINT) IS NOT NULL)"));
+    assertDatasetDependsOnType(
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "c",
+        TransformationInfo.indirect(FILTER, "WHERE (spark_catalog.default.t1.c IS NOT NULL)"));
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = "spark.version", matches = "^(3\\.[4-9].*|[4-9].*)$")
+  void queryWithGroupByOverUnpivotKeyNamedGid() {
+    createTable("t1", "a;int", "b;int", "c;int");
+    // gid is also the name of the group id that Spark generates for DISTINCT aggregates
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("a;int", "gid;string", "total;bigint"),
+            "SELECT a, gid, sum(v) AS total\n"
+                + "FROM t1 UNPIVOT INCLUDE NULLS (v FOR gid IN (b, c))\n"
+                + "GROUP BY a, gid");
+    assertCountColumnDependencies(facet, 3);
+    assertColumnDependsOnType(
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
+    assertColumnDependsOnType(
+        facet,
+        "total",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.aggregation("sum(spark_catalog.default.t1.b) AS total"));
+    assertColumnDependsOnType(
+        facet,
+        "total",
+        FILE,
+        T1_EXPECTED_NAME,
+        "c",
+        TransformationInfo.aggregation("sum(spark_catalog.default.t1.c) AS total"));
+    // the key has no input
+    assertCountDatasetDependencies(facet, 1);
+    assertDatasetDependsOnType(
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(GROUP_BY, "GROUP BY spark_catalog.default.t1.a, gid"));
+  }
+
+  @Test
+  void queryWithMultipleCountDistinct() {
+    createTable("t1", "a;int", "b;int", "c;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("a;bigint", "b;bigint", "c;bigint"),
+            "SELECT count(DISTINCT a) AS a, count(DISTINCT b) AS b, sum(c) AS c FROM t1");
+    assertCountColumnDependencies(facet, 3);
+    assertCountDistinctLineage(facet, "a");
+    assertCountDistinctLineage(facet, "b");
+    assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "c");
+    // the Aggregate that Spark adds to deduplicate the DISTINCT columns is not a GROUP BY
+    assertCountDatasetDependencies(facet, 0);
+  }
+
+  @Test
+  void queryWithMultipleCountDistinctAndGroupBy() {
+    createTable("t1", "a;int", "b;int", "c;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("a;int", "b;bigint", "c;bigint"),
+            "SELECT a, count(DISTINCT b) AS b, count(DISTINCT c) AS c FROM t1 GROUP BY a");
+    assertCountColumnDependencies(facet, 3);
+    assertColumnDependsOnType(
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
+    assertCountDistinctLineage(facet, "b");
+    assertCountDistinctLineage(facet, "c");
+    assertCountDatasetDependencies(facet, 1);
+    assertDatasetDependsOnType(
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(GROUP_BY, "GROUP BY spark_catalog.default.t1.a"));
+  }
+
+  private void assertCountDistinctLineage(
+      OpenLineage.ColumnLineageDatasetFacet facet, String column) {
+    // Spark filters the aggregate on the group of its DISTINCT column, groups are numbered from 1
+    String description = "count(spark_catalog.default.t1.%s) FILTER (WHERE (gid = %d)) AS %s";
+    assertColumnDependsOnType(
+        facet,
+        column,
+        FILE,
+        T1_EXPECTED_NAME,
+        column,
+        TransformationInfo.aggregation(true),
+        Arrays.asList(
+            String.format(description, column, 1, column),
+            String.format(description, column, 2, column)));
+  }
+
   private OpenLineage.ColumnLineageDatasetFacet getFacetForQuery(
       OpenLineage.SchemaDatasetFacet schemaFacet, String query) {
     return getFacetForQuery(schemaFacet, query, false);

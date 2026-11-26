@@ -408,6 +408,18 @@ type OwnershipJobFacet struct {
 	Owners []OwnershipJobFacetOwner `json:"owners,omitempty"`
 }
 
+// The parent job of this job, if this job is a sub-job of another job by design (for example, a task defined within a DAG). Should be used on job events. It may also be used on run events when the specific run of the parent job is not known; if a ParentRunFacet is also present, it takes precedence.
+type ParentJobFacet struct {
+	// URI identifying the producer of this metadata.
+	Producer string `json:"_producer"`
+	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// set to true to delete a facet
+	Deleted *bool               `json:"_deleted,omitempty"`
+	Job     ParentJobFacetJob   `json:"job"`
+	Root    *ParentJobFacetRoot `json:"root,omitempty"`
+}
+
 // SQLJobFacet
 type SQLJobFacet struct {
 	// URI identifying the producer of this metadata.
@@ -568,6 +580,24 @@ type ExtractionErrorRunFacet struct {
 	FailedTasks int64 `json:"failedTasks"`
 	// The number of distinguishable tasks in a run that were processed by OpenLineage, whether successfully or not. Those could be, for example, distinct SQL statements.
 	TotalTasks int64 `json:"totalTasks"`
+}
+
+// FabricSparkRunFacet
+type FabricSparkRunFacet struct {
+	// URI identifying the producer of this metadata.
+	Producer string `json:"_producer"`
+	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// ID of the Fabric item the Spark session runs for, in lowercase: the notebook or Spark Job Definition that started it, or the lakehouse a Livy API session or batch runs against. A notebook run from another notebook reports the outer notebook, because both run in the same session.
+	ItemID *string `json:"itemId,omitempty"`
+	// Type of that item, as Fabric names it in the session's settings, for example SynapseNotebook, SparkJobDefinition or Lakehouse.
+	ItemType *string `json:"itemType,omitempty"`
+	// ID of the Fabric job instance the session belongs to, in lowercase. All attempts of one Spark Job Definition run share it.
+	JobInstanceID *string `json:"jobInstanceId,omitempty"`
+	// ID of the Livy session that runs the Spark application, in lowercase. Fabric's Livy session list and run history key runs on it. A retried Spark Job Definition gets a new Livy session for each attempt.
+	LivyID *string `json:"livyId,omitempty"`
+	// ID of the Microsoft Fabric workspace that holds the item the Spark session runs for, in lowercase.
+	WorkspaceID *string `json:"workspaceId,omitempty"`
 }
 
 // GcpComposerRunFacet
@@ -1338,6 +1368,21 @@ type OwnershipJobFacetOwner struct {
 	Name string `json:"name"`
 	// The type of ownership (optional)
 	Type *string `json:"type,omitempty"`
+}
+
+// ParentJobFacetJob
+type ParentJobFacetJob struct {
+	// Selected subset of facets of the referenced job (not the current job), forwarded here for convenience. See the referenced job's own event for full information.
+	Facets map[string]interface{} `json:"facets,omitempty"`
+	// The unique name for that job within that namespace
+	Name string `json:"name"`
+	// The namespace containing that job
+	Namespace string `json:"namespace"`
+}
+
+// ParentJobFacetRoot
+type ParentJobFacetRoot struct {
+	Job ParentJobFacetJob `json:"job"`
 }
 
 // ParentRunFacetJob
