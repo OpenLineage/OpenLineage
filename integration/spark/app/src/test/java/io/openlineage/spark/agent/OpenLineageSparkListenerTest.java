@@ -8,6 +8,7 @@ package io.openlineage.spark.agent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -32,6 +33,7 @@ import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.UUID;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
@@ -184,6 +186,171 @@ class OpenLineageSparkListenerTest {
       verify(contextFactory, never()).createSparkApplicationExecutionContext(sparkContext);
       verify(contextFactory, never()).createSparkSQLExecutionContext(anyLong());
     }
+  }
+
+  @Test
+  void testOnOtherEventSkippedWhenSparkContextStopped() {
+    // spark.stop() sets stopped before the listener queue drains. A new execution must not
+    // create a context from that stopped context.
+    SparkContext stoppedContext = mock(SparkContext.class);
+    when(stoppedContext.isStopped()).thenReturn(true);
+    try (MockedStatic<SparkSession> mockedSession = mockDefaultSession(stoppedContext)) {
+      ContextFactory contextFactory = mockContextFactory();
+      OpenLineageSparkListener listener = listener(contextFactory);
+
+      listener.onOtherEvent(mock(SparkListenerSQLExecutionStart.class));
+      listener.onOtherEvent(mock(SparkListenerSQLExecutionEnd.class));
+
+      verify(contextFactory, never()).createSparkSQLExecutionContext(anyLong());
+      verify(contextFactory, never()).createSparkSQLExecutionContext(any());
+    }
+  }
+
+  @Test
+  void testOnOtherEventDispatchesWhenSparkContextRunning() {
+    SparkContext runningContext = mock(SparkContext.class);
+    when(runningContext.isStopped()).thenReturn(false);
+    try (MockedStatic<SparkSession> mockedSession = mockDefaultSession(runningContext)) {
+      ContextFactory contextFactory = mockContextFactory();
+      ExecutionContext executionContext = mock(ExecutionContext.class);
+      when(contextFactory.createSparkSQLExecutionContext(1L))
+          .thenReturn(Optional.of(executionContext));
+      OpenLineageSparkListener listener = listener(contextFactory);
+      SparkListenerSQLExecutionStart start = sqlStart(1L);
+
+      listener.onOtherEvent(start);
+
+      verify(contextFactory).createSparkSQLExecutionContext(1L);
+      verify(executionContext).start(start);
+    }
+  }
+
+  @Test
+  void testSqlEndCompletesExecutionStartedBeforeContextStop() {
+    // START is processed while the context is running. stop() then sets stopped before SQL END
+    // is delivered. The execution is already registered, so END must still be dispatched.
+    SparkContext context = mock(SparkContext.class);
+    when(context.isStopped()).thenReturn(false);
+    try (MockedStatic<SparkSession> mockedSession = mockDefaultSession(context)) {
+      ContextFactory contextFactory = mockContextFactory();
+      ExecutionContext executionContext = mock(ExecutionContext.class);
+      when(contextFactory.createSparkSQLExecutionContext(1L))
+          .thenReturn(Optional.of(executionContext));
+      OpenLineageSparkListener listener = listener(contextFactory);
+      SparkListenerSQLExecutionStart start = sqlStart(1L);
+      SparkListenerSQLExecutionEnd end = sqlEnd(1L);
+
+      listener.onOtherEvent(start);
+      when(context.isStopped()).thenReturn(true);
+      listener.onOtherEvent(end);
+
+      verify(executionContext).start(start);
+      verify(executionContext).end(end);
+      verify(contextFactory, never()).createSparkSQLExecutionContext(any());
+    }
+  }
+
+  @Test
+  void testJobStartDispatchesWhenSparkContextRunning() {
+    SparkContext runningContext = mock(SparkContext.class);
+    when(runningContext.isStopped()).thenReturn(false);
+    try (MockedStatic<SparkSession> mockedSession = mockDefaultSession(runningContext)) {
+      ContextFactory contextFactory = mockContextFactory();
+      ExecutionContext executionContext = mock(ExecutionContext.class);
+      when(contextFactory.createSparkSQLExecutionContext(8L))
+          .thenReturn(Optional.of(executionContext));
+      OpenLineageSparkListener listener = listener(contextFactory);
+      SparkListenerJobStart jobStart = jobStart(8, 8L);
+
+      listener.onJobStart(jobStart);
+
+      verify(contextFactory).createSparkSQLExecutionContext(8L);
+      verify(executionContext).start(jobStart);
+    }
+  }
+
+  @Test
+  void testJobStartSkipsNewContextWhenSparkContextStopped() {
+    SparkContext stoppedContext = mock(SparkContext.class);
+    when(stoppedContext.isStopped()).thenReturn(true);
+    try (MockedStatic<SparkSession> mockedSession = mockDefaultSession(stoppedContext)) {
+      ContextFactory contextFactory = mockContextFactory();
+      OpenLineageSparkListener listener = listener(contextFactory);
+
+      listener.onJobStart(jobStart(9, 9L));
+      listener.onJobStart(jobStart(10, null));
+
+      verify(contextFactory, never()).createSparkSQLExecutionContext(anyLong());
+      verify(contextFactory, never()).createSparkSQLExecutionContext(any());
+      verify(contextFactory, never()).createRddExecutionContext(anyInt());
+    }
+  }
+
+  @Test
+  void testJobEndCompletesRegisteredExecutionAfterContextStop() {
+    SparkContext context = mock(SparkContext.class);
+    when(context.isStopped()).thenReturn(false);
+    try (MockedStatic<SparkSession> mockedSession = mockDefaultSession(context)) {
+      ContextFactory contextFactory = mockContextFactory();
+      ExecutionContext executionContext = mock(ExecutionContext.class);
+      when(contextFactory.createSparkSQLExecutionContext(4L))
+          .thenReturn(Optional.of(executionContext));
+      OpenLineageSparkListener listener = listener(contextFactory);
+      SparkListenerJobStart jobStart = jobStart(4, 4L);
+
+      listener.onJobStart(jobStart);
+      when(context.isStopped()).thenReturn(true);
+      SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
+      when(jobEnd.jobId()).thenReturn(4);
+      listener.onJobEnd(jobEnd);
+
+      verify(executionContext).start(jobStart);
+      verify(executionContext).end(jobEnd);
+    }
+  }
+
+  private MockedStatic<SparkSession> mockDefaultSession(SparkContext sparkContext) {
+    SparkSession session = mock(SparkSession.class);
+    when(session.sparkContext()).thenReturn(sparkContext);
+    MockedStatic<SparkSession> mockedSession = mockStatic(SparkSession.class);
+    mockedSession.when(SparkSession::getDefaultSession).thenReturn(Option.apply(session));
+    return mockedSession;
+  }
+
+  private ContextFactory mockContextFactory() {
+    ContextFactory contextFactory = mock(ContextFactory.class);
+    when(contextFactory.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    return contextFactory;
+  }
+
+  private OpenLineageSparkListener listener(ContextFactory contextFactory) {
+    OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
+    listener.skipInitializationForTests(contextFactory);
+    return listener;
+  }
+
+  private SparkListenerSQLExecutionStart sqlStart(long executionId) {
+    SparkListenerSQLExecutionStart start = mock(SparkListenerSQLExecutionStart.class);
+    when(start.executionId()).thenReturn(executionId);
+    return start;
+  }
+
+  private SparkListenerSQLExecutionEnd sqlEnd(long executionId) {
+    SparkListenerSQLExecutionEnd end = mock(SparkListenerSQLExecutionEnd.class);
+    when(end.executionId()).thenReturn(executionId);
+    return end;
+  }
+
+  private SparkListenerJobStart jobStart(int jobId, Long executionId) {
+    SparkListenerJobStart jobStart = mock(SparkListenerJobStart.class);
+    when(jobStart.jobId()).thenReturn(jobId);
+    when(jobStart.stageIds()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+    Properties properties = new Properties();
+    if (executionId != null) {
+      properties.setProperty("spark.sql.execution.id", Long.toString(executionId));
+    }
+    when(jobStart.properties()).thenReturn(properties);
+    return jobStart;
   }
 
   // Disabled bcz of no such method in Spark 4.x:
