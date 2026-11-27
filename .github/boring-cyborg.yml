@@ -27,8 +27,6 @@ labelPRBasedOnFilePath:
     - integration/sql/**/*
   area:integration/hive:
     - integration/hive*/**/*
-  area:proxy:
-    - proxy/**/*
   area:spec:
     - spec/**/*
   area:tests:

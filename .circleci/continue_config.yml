@@ -1241,15 +1241,6 @@ jobs:
           paths:
             - ~/.gradle
 
-  build-proxy-fluentd:
-    working_directory: ~/openlineage/proxy/fluentd
-    docker:
-      - image: cimg/ruby:3.2
-    steps:
-      - *checkout_project_root
-      - run: bundle install
-      - run: bundle exec rake test
-
   run-pre-commit:
     # add dependency to other files when pre-commit runs related checks
     working_directory: ~/openlineage
