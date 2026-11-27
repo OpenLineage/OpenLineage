@@ -1,0 +1,126 @@
+/*
+/* Copyright 2018-2026 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+plugins {
+    id 'java-library'
+    id 'com.diffplug.spotless'
+    id 'com.github.johnrengelman.shadow'
+    id 'io.openlineage.common-config'
+}
+
+group = 'io.openlineage'
+archivesBaseName = 'openlineage-flink119-sql'
+
+dependencies {
+    implementation project(':shared')
+    implementation 'net.bytebuddy:byte-buddy:1.14.18'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.9'
+
+    compileOnly "org.apache.flink:flink-java:${project.property('flink.flink1.version')}"
+    compileOnly "org.apache.flink:flink-streaming-java:${project.property('flink.flink1.version')}"
+    compileOnly "org.apache.flink:flink-table-api-java:${project.property('flink.flink1.version')}"
+    compileOnly "org.apache.flink:flink-runtime:${project.property('flink.flink1.version')}"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.3'
+    testImplementation "org.apache.flink:flink-streaming-java:${project.property('flink.flink1.version')}"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+processResources {
+    filesMatching('io/openlineage/flink/client/version.properties') {
+        expand(version: project.version)
+    }
+}
+
+jar {
+    enabled = false
+    archiveClassifier = 'plain'
+}
+
+shadowJar {
+    archiveClassifier = ''
+    // The SQL agent lives in the system classloader. Keep the DataStream listener and
+    // connector-aware visitors in the job classloader with the job's connector versions.
+    exclude 'io/openlineage/flink/visitor/**'
+    exclude 'io/openlineage/flink/tracker/**'
+    exclude 'io/openlineage/flink/utils/**'
+    exclude 'io/openlineage/flink/SinkLineage.class'
+    exclude 'io/openlineage/flink/TransformationUtils.class'
+    relocate 'io.openlineage.flink.api', 'io.openlineage.flink.sqlagent.internal.api'
+    relocate 'io.openlineage.flink.client', 'io.openlineage.flink.sqlagent.internal.client'
+    relocate 'io.openlineage.flink.config', 'io.openlineage.flink.sqlagent.internal.config'
+    relocate 'io.openlineage.flink.facets', 'io.openlineage.flink.sqlagent.internal.facets'
+    relocate 'io.openlineage.integration.identity', 'io.openlineage.flink.sqlagent.internal.identity'
+    relocate 'io.openlineage.client', 'io.openlineage.flink.sqlagent.internal.openlineageclient'
+    relocate 'com.fasterxml.jackson', 'io.openlineage.flink.sqlagent.shaded.com.fasterxml.jackson'
+    relocate 'net.bytebuddy', 'io.openlineage.flink.sqlagent.shaded.net.bytebuddy'
+    relocate 'com.github.ok2c.hc5', 'io.openlineage.flink.sqlagent.shaded.com.github.ok2c.hc5'
+    relocate 'org.apache.httpcomponents.client5', 'io.openlineage.flink.sqlagent.shaded.org.apache.httpcomponents.client5'
+    relocate 'javassist', 'io.openlineage.flink.sqlagent.shaded.javassist'
+    relocate 'org.yaml', 'io.openlineage.flink.sqlagent.shaded.org.yaml'
+    relocate 'org.apache.hc', 'io.openlineage.flink.sqlagent.shaded.org.apache.hc'
+    relocate 'org.apache.commons.codec', 'io.openlineage.flink.sqlagent.shaded.org.apache.commons.codec'
+    relocate 'org.apache.commons.lang3', 'io.openlineage.flink.sqlagent.shaded.org.apache.commons.lang3'
+    relocate 'org.HdrHistogram', 'io.openlineage.flink.sqlagent.shaded.org.hdrhistogram'
+    relocate 'org.LatencyUtils', 'io.openlineage.flink.sqlagent.shaded.org.latencyutils'
+    mergeServiceFiles()
+    exclude 'META-INF/versions/21/**'
+    exclude 'META-INF/versions/22/**'
+    exclude 'org/apache/commons/logging/**'
+    dependencies {
+        exclude(dependency('org.slf4j::'))
+    }
+    manifest {
+        attributes(
+                'Premain-Class': 'io.openlineage.flink.sqlagent.LineageAgent',
+                'Agent-Class': 'io.openlineage.flink.sqlagent.LineageAgent',
+                'Can-Retransform-Classes': 'true'
+        )
+    }
+    zip64 true
+}
+
+assemble.dependsOn shadowJar
+
+tasks.register('verifyAgentIsolation') {
+    dependsOn shadowJar
+    doLast {
+        def jarFile = tasks.shadowJar.archiveFile.get().asFile
+        def forbidden = [
+                'org/apache/flink/connector/kafka/',
+                'org/apache/flink/connector/jdbc/',
+                'org/apache/flink/batch/connectors/cassandra/',
+                'org/apache/flink/streaming/connectors/cassandra/',
+                'io/openlineage/flink/OpenLineageFlinkJobListener.class',
+                'io/openlineage/flink/visitor/',
+                'io/openlineage/flink/tracker/',
+                'io/openlineage/flink/utils/',
+                'io/openlineage/flink/api/',
+                'io/openlineage/flink/client/',
+                'io/openlineage/flink/config/',
+                'io/openlineage/flink/facets/',
+                'io/openlineage/client/'
+        ]
+        new java.util.zip.ZipFile(jarFile).withCloseable { zip ->
+            def entries = zip.entries().toList()
+            def leaked = entries.findAll { entry ->
+                !entry.directory &&
+                forbidden.any { prefix -> entry.name.startsWith(prefix) }
+            }.collect { it.name }
+            if (!leaked.isEmpty()) {
+                throw new GradleException("SQL agent contains job-side classes: ${leaked.take(10)}")
+            }
+            if (!entries.any { it.name == 'io/openlineage/flink/sqlagent/LineageAgent.class' } ||
+                    !entries.any { it.name == 'io/openlineage/flink/sqlagent/internal/client/version.properties' }) {
+                throw new GradleException('SQL agent entry point or relocated version resource is missing')
+            }
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyAgentIsolation')

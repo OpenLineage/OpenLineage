@@ -34,6 +34,7 @@ class JarVerificationPlugin : Plugin<Project> {
                 assertJarContainsAllClasses.convention(true)
                 allowedUnshadedPackages.set(listOf(
                     "io.openlineage.client",
+                    "io.openlineage.integration.identity",
                     "io.openlineage.sql",
                     "io.micrometer.core",
                     "io.micrometer.common",

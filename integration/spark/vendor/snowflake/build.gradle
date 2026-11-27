@@ -27,14 +27,15 @@ ext {
     ]
 
     sparkProp = project.findProperty('spark.version').toString()
-    // because snowflake doesn't have a 3.5.0 connector yet
-    spark = (sparkProp == "3.5.6" || sparkProp.toString().startsWith("4")) ? "3.4.4" : sparkProp
+    // Use the Spark 3.4 connector for Spark 3.5 and 4 until matching connectors are available.
+    snowflakeSparkProp =
+            (sparkProp.startsWith("3.5") || sparkProp.startsWith("4")) ? "3.4.4" : sparkProp
 
-    series = spark.substring(0, 3)
+    series = snowflakeSparkProp.substring(0, 3)
     scala = project.findProperty('scala.binary.version').toString()
     scalaFmt = scala.replace(".", "")
 
-    snowflakeVersion = snowflakeLookup[spark]
+    snowflakeVersion = snowflakeLookup[snowflakeSparkProp]
 
     activeRuntimeElementsConfiguration = "scala${scalaFmt}RuntimeElements"
 }
@@ -44,7 +45,7 @@ dependencies {
     implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
     implementation("io.openlineage:openlineage-sql-java:${project.version}")
 
-    compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")
+    compileOnly("org.apache.spark:spark-sql_${scala}:${sparkProp}")
 
     compileOnly("net.snowflake:spark-snowflake_${scala}:${snowflakeVersion}-spark_${series}") {
         exclude group: "com.google.guava:guava"
@@ -63,7 +64,7 @@ dependencies {
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
     testImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
-    testImplementation("org.apache.spark:spark-sql_${scala}:${spark}")
+    testImplementation("org.apache.spark:spark-sql_${scala}:${sparkProp}")
     testImplementation("net.snowflake:spark-snowflake_${scala}:${snowflakeVersion}-spark_${series}") {
         exclude group: "com.google.guava:guava"
         exclude group: "org.apache.spark:spark-core_${scala}"

@@ -123,4 +123,14 @@ class DropTableDatasetBuilderTest {
       assertThat(datasets).isEmpty();
     }
   }
+
+  @Test
+  void testJobNameDistinguishesDroppedTables() {
+    when(tableCatalog.name()).thenReturn("hive_catalog");
+    assertThat(builder.jobNameSuffix(dropTable)).contains("hive_catalog_db_my_table");
+    Identifier other = Identifier.of(new String[] {"db"}, "other_table");
+    DropTable otherDrop = mock(DropTable.class);
+    when(otherDrop.child()).thenReturn(new ResolvedIdentifier(tableCatalog, other));
+    assertThat(builder.jobNameSuffix(otherDrop)).contains("hive_catalog_db_other_table");
+  }
 }

@@ -17,6 +17,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.agent.vendor.snowflake.LogicalRelationTestUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.Vendors;
@@ -408,11 +409,7 @@ class ColumnLevelLineageSnowflakeTest {
   private void givenALogicalRelationWith(
       SnowflakeRelation relation, AttributeReference... attributes) {
     LogicalRelation logicalRelation =
-        new LogicalRelation(
-            relation,
-            ScalaConversionUtils.fromList(Arrays.asList(attributes)),
-            Option.empty(),
-            false);
+        LogicalRelationTestUtils.create(relation, Arrays.asList(attributes));
     when(queryExecution.optimizedPlan()).thenReturn(logicalRelation);
   }
 

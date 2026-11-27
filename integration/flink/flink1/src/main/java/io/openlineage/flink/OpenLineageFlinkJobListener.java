@@ -14,6 +14,7 @@ import io.openlineage.flink.utils.ClassUtils;
 import io.openlineage.flink.utils.JobTypeUtils;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContextFactory;
+import io.openlineage.integration.identity.DatasetIdentityNormalizer;
 import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -99,9 +100,7 @@ public class OpenLineageFlinkJobListener implements JobListener {
 
       if (super.jobNamespace == null) {
         super.jobNamespace(
-            super.executionEnvironment
-                .getConfiguration()
-                .get(OPEN_LINEAGE_LISTENER_CONFIG_JOB_NAMESPACE));
+            defaultJobNamespace((Configuration) super.executionEnvironment.getConfiguration()));
       }
 
       if (super.jobName == null) {
@@ -153,6 +152,16 @@ public class OpenLineageFlinkJobListener implements JobListener {
         log.error("Failed to rewrite transformations");
       }
     }
+  }
+
+  static String defaultJobNamespace(Configuration configuration) {
+    String namespace = configuration.get(OPEN_LINEAGE_LISTENER_CONFIG_JOB_NAMESPACE);
+    if (configuration.contains(OPEN_LINEAGE_LISTENER_CONFIG_JOB_NAMESPACE)) return namespace;
+    return DatasetIdentityNormalizer.fromTransport(
+                FlinkConfigParser.parse(configuration).getTransportConfig())
+            == null
+        ? namespace
+        : "flink-jobs";
   }
 
   @Override

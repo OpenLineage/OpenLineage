@@ -15,6 +15,56 @@ import org.junit.jupiter.api.Test;
 class EventEmitterTest {
   @SneakyThrows
   @Test
+  void usesDefaultJobNamespaceForRegularTransport() {
+    SparkConf conf = new SparkConf(false).setAppName("orders");
+    EventEmitter emitter = new EventEmitter(ArgumentParser.parse(conf), "orders");
+    assertThat(emitter.getJobNamespace()).isEqualTo("default");
+  }
+
+  @SneakyThrows
+  @Test
+  void usesSparkJobsOnlyForGravitinoTransport() {
+    SparkConf conf =
+        new SparkConf(false)
+            .setAppName("orders")
+            .set("spark.openlineage.transport.type", "http")
+            .set("spark.openlineage.transport.url", "http://localhost:8080")
+            .set("spark.openlineage.transport.endpoint", "/api/v1/lineage");
+    assertThat(new EventEmitter(ArgumentParser.parse(conf), "orders").getJobNamespace())
+        .isEqualTo("default");
+    conf.set("spark.openlineage.transport.endpoint", "/api/lineage");
+    assertThat(new EventEmitter(ArgumentParser.parse(conf), "orders").getJobNamespace())
+        .isEqualTo("spark-jobs");
+    conf.set("spark.openlineage.namespace", "default");
+    assertThat(new EventEmitter(ArgumentParser.parse(conf), "orders").getJobNamespace())
+        .isEqualTo("default");
+  }
+
+  @SneakyThrows
+  @Test
+  void keepsExplicitDefaultJobNamespace() {
+    SparkConf conf =
+        new SparkConf(false).setAppName("orders").set("spark.openlineage.namespace", "default");
+    EventEmitter emitter = new EventEmitter(ArgumentParser.parse(conf), "orders");
+    assertThat(emitter.getJobNamespace()).isEqualTo("default");
+  }
+
+  @Test
+  void namespaceMergeDistinguishesUnsetFromExplicitDefault() {
+    SparkOpenLineageConfig configured = new SparkOpenLineageConfig();
+    configured.setNamespace("custom");
+    SparkOpenLineageConfig unset = new SparkOpenLineageConfig();
+    assertThat(unset.getNamespace()).isEqualTo("default");
+    assertThat(configured.mergeWithNonNull(unset).getNamespace()).isEqualTo("custom");
+    for (String namespace : new String[] {"default", "spark-jobs"}) {
+      SparkOpenLineageConfig override = new SparkOpenLineageConfig();
+      override.setNamespace(namespace);
+      assertThat(configured.mergeWithNonNull(override).getNamespace()).isEqualTo(namespace);
+    }
+  }
+
+  @SneakyThrows
+  @Test
   void testApplicationNameOverride() {
     String appName = "test-app";
     String overrideName = "override-app";
@@ -42,5 +92,32 @@ class EventEmitterTest {
     eventEmitter.setApplicationJobName(resolvedName);
 
     assertThat(eventEmitter.getApplicationJobName()).isEqualTo(resolvedName);
+  }
+
+  @SneakyThrows
+  @Test
+  void keepsConfiguredJobNamespaceWithoutSharedRegistry() {
+    SparkConf conf =
+        new SparkConf(false)
+            .setAppName("native-tables")
+            .set("spark.openlineage.namespace", "spark-jobs");
+
+    EventEmitter emitter = new EventEmitter(ArgumentParser.parse(conf), "native-tables");
+
+    assertThat(emitter.getJobNamespace()).isEqualTo("spark-jobs");
+  }
+
+  @SneakyThrows
+  @Test
+  void keepsConfiguredJobNamespaceWithSharedRegistry() {
+    SparkConf conf =
+        new SparkConf(false)
+            .setAppName("hive-tables")
+            .set("spark.openlineage.namespace", "spark-jobs")
+            .set("spark.openlineage.dataset.identity.sources", "{\"sources\":[]}");
+
+    EventEmitter emitter = new EventEmitter(ArgumentParser.parse(conf), "hive-tables");
+
+    assertThat(emitter.getJobNamespace()).isEqualTo("spark-jobs");
   }
 }

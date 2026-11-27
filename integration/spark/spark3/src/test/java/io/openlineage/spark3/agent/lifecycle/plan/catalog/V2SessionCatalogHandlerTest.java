@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
@@ -45,7 +46,7 @@ class V2SessionCatalogHandlerTest {
   private final Map<String, String> properties =
       Collections.singletonMap("location", "file:/tmp/warehouse/schema.db/table");
   private final Map<String, String> namespaceMetadata =
-      Collections.singletonMap("location", "file:/tmp/warehouse");
+      Collections.singletonMap("location", "file:/tmp/warehouse/schema.db");
   private final Identifier id = Identifier.of(new String[] {"catalog", "schema"}, "table");
 
   @BeforeEach
@@ -53,6 +54,7 @@ class V2SessionCatalogHandlerTest {
     when(context.getSparkSession()).thenReturn(Optional.of(session));
     when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(session.sparkContext()).thenReturn(sparkContext);
+    when(sparkContext.hadoopConfiguration()).thenReturn(new Configuration(false));
   }
 
   @Test
@@ -73,7 +75,8 @@ class V2SessionCatalogHandlerTest {
 
   @Test
   void testGetNonHiveDatasetIdentifierWhenWarehouseLocationPresent() {
-    when(sparkContext.getConf()).thenReturn(new SparkConf());
+    when(sparkContext.getConf())
+        .thenReturn(new SparkConf().set("spark.sql.warehouse.dir", "file:/tmp/warehouse"));
     when(catalog.loadNamespaceMetadata(id.namespace())).thenReturn(namespaceMetadata);
 
     DatasetIdentifier datasetIdentifier =
@@ -86,9 +89,34 @@ class V2SessionCatalogHandlerTest {
     assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
 
     assertThat(datasetIdentifier.getSymlinks().get(0))
-        .hasFieldOrPropertyWithValue("name", "catalog.schema.table")
+        .hasFieldOrPropertyWithValue("name", "schema.table")
         .hasFieldOrPropertyWithValue("namespace", "file:/tmp/warehouse")
         .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
+  }
+
+  @Test
+  void droppedTableUsesDatabaseDirectoryOnceAndSameIdentityAsWrites() {
+    when(sparkContext.getConf())
+        .thenReturn(new SparkConf().set("spark.sql.warehouse.dir", "file:/tmp/warehouse"));
+    when(catalog.loadNamespaceMetadata(id.namespace())).thenReturn(namespaceMetadata);
+    DatasetIdentifier written =
+        catalogHandler.getDatasetIdentifier(session, catalog, id, properties);
+    DatasetIdentifier dropped =
+        catalogHandler.getDatasetIdentifier(session, catalog, id, Collections.emptyMap());
+    assertThat(dropped.getName()).isEqualTo(written.getName());
+    assertThat(dropped.getNamespace()).isEqualTo(written.getNamespace());
+    assertThat(dropped.getSymlinks()).usingRecursiveComparison().isEqualTo(written.getSymlinks());
+  }
+
+  @Test
+  void droppedTableUsesCustomDatabaseDirectory() {
+    when(sparkContext.getConf()).thenReturn(new SparkConf());
+    when(catalog.loadNamespaceMetadata(id.namespace()))
+        .thenReturn(Collections.singletonMap("location", "file:/custom/database"));
+    DatasetIdentifier dataset =
+        catalogHandler.getDatasetIdentifier(session, catalog, id, Collections.emptyMap());
+    assertThat(dataset.getName()).isEqualTo("/custom/database/table");
+    assertThat(dataset.getSymlinks()).isEmpty();
   }
 
   @Test
