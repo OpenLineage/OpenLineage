@@ -83,6 +83,15 @@ pub struct ContextFrame {
     // Kept apart from `cte_dependencies` so a nested CTE of the same name
     // cannot replace the entry.
     recursive_ctes: HashMap<String, Ident>,
+    // Whether this frame's region is the main body of its statement, where
+    // table references become inputs directly. The flag belongs to the
+    // frame's own region: Query::visit sets it on the frames it creates,
+    // and frame merges (collect, coalesce, collect_aliases,
+    // collect_with_table) must never overwrite the receiving frame's flag
+    // with the merged frame's. A merged subquery frame is routinely not a
+    // main body (a query with a WITH unsets the flag on its own frames);
+    // copying its flag up would silently demote the rest of the enclosing
+    // body - later joins, say - to dependency recording.
     pub is_main_body: bool,
 }
 
@@ -93,6 +102,14 @@ pub struct CteDependency {
     pub name: Ident,
     pub is_used: bool,
     pub deps: HashSet<DbTableMeta>,
+    // The subset of `deps` that was written without a schema or database
+    // at the point it was recorded. Only those can name a CTE of an
+    // enclosing scope: a reference written `sch.c` is the real table
+    // even when a CTE called `c` is in scope, so it must never be
+    // resolved through one. Tracked separately because DbTableMeta
+    // values cannot carry the distinction - defaults make a bare `c`
+    // and an explicit `public.c` the same value.
+    pub bare_deps: HashSet<DbTableMeta>,
 }
 
 impl ContextFrame {
@@ -148,6 +165,21 @@ pub struct Context<'a> {
     // an unaliased table stands for its full name (`orders` for
     // `FROM raw.orders`).
     correlation_names: Vec<HashMap<String, Vec<Ident>>>,
+}
+
+/// The identifier a recorded table reference was written with, rebuilt
+/// from the parts `DbTableMeta` keeps: its name and quote style.
+fn ident_of(table: &DbTableMeta) -> Ident {
+    let mut ident = Ident::new(table.name.clone());
+    ident.quote_style = table.quote_style.as_ref().and_then(|style| style.name);
+    ident
+}
+
+/// The CTE key of a recorded table reference: the key of the
+/// identifier it was written with, under the dialect's folding (see
+/// `ident_key`), so it matches the key the CTE was registered under.
+fn cte_key_of(table: &DbTableMeta, dialect: &dyn Dialect) -> String {
+    ident_key(&ident_of(table), dialect)
 }
 
 impl<'a> Context<'a> {
@@ -240,6 +272,22 @@ impl<'a> Context<'a> {
         if !self.is_table_alias(&name) {
             self.outputs.insert(name);
         }
+    }
+
+    /// Registers an INSERT target as an output. Unlike
+    /// [`Context::add_output`], the name is never treated as a table alias:
+    /// CTE names are registered as aliases of an empty table, and an insert
+    /// target can share its name with a CTE defined over the insert's
+    /// source. The target is a real table written by the statement, outside
+    /// the CTE's alias scope, so it must always be registered.
+    pub fn add_insert_output(&mut self, output: Vec<Ident>) {
+        let name = DbTableMeta::new(
+            output,
+            self.dialect,
+            self.default_schema.clone(),
+            self.default_database.clone(),
+        );
+        self.outputs.insert(name);
     }
 
     pub fn move_input_to_output(&mut self, input: Vec<Ident>) {
@@ -553,7 +601,6 @@ impl<'a> Context<'a> {
         frame.column_ancestry = result;
         frame.dependencies.extend(old.dependencies);
         frame.bare_dependencies.extend(old.bare_dependencies);
-        frame.is_main_body = old.is_main_body;
     }
 
     fn expand_ancestors(ancestor: ColumnMeta, old: &ContextFrame) -> Vec<ColumnMeta> {
@@ -573,7 +620,13 @@ impl<'a> Context<'a> {
                 .column_ancestry
                 .get(&current)
                 // try to find by name in case of column without origin
-                // this can happen when selecting from subquery without alias
+                // this can happen when selecting from subquery without alias.
+                // An origin that names a CTE carries the CTE's name as
+                // defined (references are replaced where they are read),
+                // so no folded match is needed here - and one would be
+                // wrong: a qualifier kept as written because it names an
+                // alias or a real table (orders, o) must not be expanded
+                // through a CTE that merely folds to the same key.
                 .or_else(|| {
                     old.column_ancestry.iter().find_map(|(col, anc)| {
                         if col.name == current.name && current.origin.is_none() {
@@ -603,10 +656,186 @@ impl<'a> Context<'a> {
 
     pub fn collect(&mut self, mut old: ContextFrame) {
         if let Some(frame) = self.frames.last_mut() {
-            frame.column_ancestry.extend(old.column_ancestry.drain());
+            // Union the ancestor sets of columns both frames know: a
+            // merged frame can hold another arm's or subquery's
+            // contribution to the same output column (a parenthesized
+            // set-operation arm, say), and replacing the set would
+            // silently drop the earlier contributions.
+            for (column, ancestors) in old.column_ancestry.drain() {
+                frame
+                    .column_ancestry
+                    .entry(column)
+                    .and_modify(|existing| existing.extend(ancestors.iter().cloned()))
+                    .or_insert(ancestors);
+            }
             frame.dependencies.extend(old.dependencies);
             frame.bare_dependencies.extend(old.bare_dependencies);
-            frame.is_main_body = old.is_main_body;
+            // CTE registrations travel up with the frame, so the used
+            // dependencies of CTEs defined in nested queries still reach
+            // collect_inputs. Merges flow from inner scopes outward, so a
+            // registration already present - an outer scope's - wins over
+            // a same-named nested one.
+            for (name, dep) in old.cte_dependencies {
+                frame.cte_dependencies.entry(name).or_insert(dep);
+            }
+        }
+    }
+
+    /// Resolves the CTE registrations of a frame popped from a finished
+    /// subquery - a derived table, an expression subquery, a CTE body -
+    /// before the frame is merged into the enclosing query. A CTE is
+    /// visible only inside its own query, so its registration must not
+    /// travel up as a live registration: left in the enclosing frame it
+    /// captures later references to real tables of the same name. What
+    /// travels up instead is the resolved outcome:
+    ///
+    /// - the real tables a used CTE read become plain dependencies of
+    ///   the frame (references between the subquery's own CTEs are
+    ///   resolved transitively first);
+    /// - a dependency that was written bare and names a CTE of an
+    ///   enclosing scope is a reference to that CTE: at the main body
+    ///   the enclosing registration is marked used and the dependency
+    ///   itself is dropped, so the enclosing CTE's own inputs are
+    ///   collected; inside another CTE body the dependency travels up
+    ///   as a bare dependency instead, because the enclosing CTE may
+    ///   itself go unused;
+    /// - unused CTEs contribute nothing, as at statement level.
+    ///
+    /// Call this with the subquery's frame already popped: the frames
+    /// still on the stack are the enclosing scopes.
+    pub fn resolve_subquery_cte_dependencies(&mut self, frame: &mut ContextFrame) {
+        if frame.cte_dependencies.is_empty() {
+            return;
+        }
+
+        // A reference to one of this frame's own CTEs from a region
+        // that records dependencies - anywhere outside the main body,
+        // where a table reference cannot mark the CTE used directly -
+        // arrives as a bare dependency naming it. That is a use of
+        // the CTE: without this step the name would travel up as a
+        // plain table dependency and the CTE's own inputs would be
+        // lost. (The tail of this function then drops those bare
+        // dependencies, as it does for every resolved CTE.)
+        let dialect = self.dialect.as_base();
+        let own_references: Vec<String> = frame
+            .bare_dependencies
+            .iter()
+            .filter(|table| {
+                frame
+                    .cte_dependencies
+                    .contains_key(&cte_key_of(table, dialect))
+            })
+            .map(|table| cte_key_of(table, dialect))
+            .collect();
+        for name in own_references {
+            if let Some(dep) = frame.cte_dependencies.get_mut(&name) {
+                dep.is_used = true;
+            }
+        }
+
+        // Resolve the used registrations transitively: a used CTE whose
+        // dependency names a sibling CTE of the same subquery pulls that
+        // CTE's dependencies in, whether or not the sibling was itself
+        // marked used.
+        let mut resolved: Vec<(DbTableMeta, bool)> = Vec::new();
+        let mut resolved_names: HashSet<String> = HashSet::new();
+        let mut queue: Vec<String> = frame
+            .cte_dependencies
+            .iter()
+            .filter(|(_, dep)| dep.is_used)
+            .map(|(name, _)| name.clone())
+            .collect();
+        while let Some(name) = queue.pop() {
+            if !resolved_names.insert(name.clone()) {
+                continue;
+            }
+            if let Some(dep) = frame.cte_dependencies.get(&name) {
+                for table in &dep.deps {
+                    let table_key = cte_key_of(table, dialect);
+                    // A dependency naming the CTE being resolved is
+                    // the real table of that name, not a reference to
+                    // the CTE: adjust_cte_dependencies kept it for
+                    // exactly that reason (a non-recursive CTE's own
+                    // name is not in scope in its body, and a recursive
+                    // one's self-reference is dropped there instead).
+                    // Queueing it would resolve the table away and
+                    // lose the input.
+                    if dep.bare_deps.contains(table)
+                        && table_key != name
+                        && frame.cte_dependencies.contains_key(&table_key)
+                    {
+                        queue.push(table_key);
+                    } else {
+                        resolved.push((table.clone(), dep.bare_deps.contains(table)));
+                    }
+                }
+            }
+        }
+
+        frame.cte_dependencies.clear();
+
+        // A plain dependency of the frame that was written bare and
+        // names one of the resolved CTEs was a reference to it, from a
+        // region that records dependencies; the CTE's own dependencies,
+        // resolved above, already account for it. A qualified reference
+        // of the same name is a real table and stays. This runs before
+        // the resolved tables are distributed below: a resolved table
+        // that shares a resolved CTE's name (the real table a
+        // non-recursive CTE reads under its own name) is an input in
+        // its own right and must not be dropped as a reference.
+        let resolved_bare: Vec<DbTableMeta> = frame
+            .bare_dependencies
+            .iter()
+            .filter(|table| resolved_names.contains(&cte_key_of(table, dialect)))
+            .cloned()
+            .collect();
+        for table in resolved_bare {
+            frame.dependencies.remove(&table);
+            frame.bare_dependencies.remove(&table);
+        }
+
+        // Marking an enclosing CTE used is only sound at the main
+        // body: inside another CTE body the enclosing CTE may itself
+        // go unused, and marking it would collect its inputs anyway.
+        // There the dependency travels up as a (bare) dependency
+        // instead, so it is resolved when the enclosing CTE is
+        // adjusted - and dropped if that CTE is recursive or unused.
+        // Keeping was_bare in that case matters: a bare dependency is
+        // the only kind adjust_cte_dependencies can recognise as a
+        // CTE reference rather than a schema-qualified real table.
+        let enclosing_is_main = self.is_main();
+        for (table, was_bare) in resolved {
+            let enclosing_cte = if enclosing_is_main && was_bare {
+                self.cte_named_by(&[ident_of(&table)])
+            } else {
+                None
+            };
+            if let Some(cte) = enclosing_cte {
+                self.mark_table_as_used(&cte);
+            } else {
+                if was_bare {
+                    frame.bare_dependencies.insert(table.clone());
+                }
+                frame.dependencies.insert(table);
+            }
+        }
+    }
+
+    /// CTE registrations never outlive their statement: collect() carries
+    /// nested registrations up to the global frame, so drop them there
+    /// once the statement's inputs have been collected, lest a later
+    /// statement mistake them for its own CTEs. Only the global frame
+    /// is cleared: Statement::visit also runs for statements nested in
+    /// a query body (a WITH wrapping an INSERT visits the INSERT as its
+    /// own statement), and at that inner tail the enclosing statement's
+    /// registrations live in deeper frames and must survive. Registrations
+    /// reach the global frame when a statement's frame merges complete;
+    /// a visit error aborts the whole parse instead (the caller
+    /// propagates it and drops the Context), so a frame leaked by an
+    /// early return never carries registrations into another statement.
+    pub fn clear_global_cte_dependencies(&mut self) {
+        if let Some(frame) = self.frames.first_mut() {
+            frame.cte_dependencies.clear();
         }
     }
 
@@ -614,6 +843,7 @@ impl<'a> Context<'a> {
         &mut self,
         cte_deps: HashMap<String, CteDependency>,
         deps: HashSet<DbTableMeta>,
+        bare_deps: HashSet<DbTableMeta>,
     ) {
         if cte_deps.is_empty() {
             for table in deps {
@@ -622,14 +852,29 @@ impl<'a> Context<'a> {
             return;
         }
 
-        for (_key, value) in cte_deps {
+        for value in cte_deps.values() {
             if !value.is_used {
                 continue;
             }
 
-            for table in value.deps {
+            for table in &value.deps {
                 self.inputs.insert(table.clone());
             }
+        }
+
+        // Dependencies that do not name a CTE are inputs in their own
+        // right - a predicate subquery reading another table, say, whose
+        // frame was merged into the statement's. Only bare dependencies
+        // can name a CTE (see ContextFrame::bare_dependencies); one that
+        // does is not itself an input - it resolves through the CTE,
+        // whose own dependencies were collected above when it is used.
+        for table in deps {
+            if bare_deps.contains(&table)
+                && cte_deps.contains_key(&cte_key_of(&table, self.dialect.as_base()))
+            {
+                continue;
+            }
+            self.inputs.insert(table);
         }
     }
 
@@ -654,7 +899,6 @@ impl<'a> Context<'a> {
             frame.dependencies.extend(old.dependencies);
             frame.bare_dependencies.extend(old.bare_dependencies);
             frame.cte_dependencies.extend(old.cte_dependencies);
-            frame.is_main_body = old.is_main_body;
         }
     }
 
@@ -731,11 +975,13 @@ impl<'a> Context<'a> {
         let bare_dependencies = self.frames[size - 1].bare_dependencies.clone();
 
         let mut resolved_dependencies = HashSet::new();
+        let mut resolved_bare_dependencies = HashSet::new();
 
         // A used CTE nested in the body under the same key is replaced by
         // this one below, so its tables are carried over.
         if let Some(nested) = cte_dependencies.get(&cte_key).filter(|cte| cte.is_used) {
             resolved_dependencies.extend(nested.deps.clone());
+            resolved_bare_dependencies.extend(nested.bare_deps.clone());
         }
 
         for dependency in dependencies {
@@ -760,17 +1006,20 @@ impl<'a> Context<'a> {
             // `C AS (WITH c AS (...) SELECT id FROM c)` reads the nested `c`.
             if let Some(cte) = cte_dependencies.get(&reference_key) {
                 resolved_dependencies.extend(cte.deps.clone());
+                resolved_bare_dependencies.extend(cte.bare_deps.clone());
                 continue;
             }
 
             if reference_key == cte_key {
                 if !recursive {
                     resolved_dependencies.insert(dependency.clone());
+                    resolved_bare_dependencies.insert(dependency.clone());
                 }
                 continue;
             }
 
             resolved_dependencies.insert(dependency.clone());
+            resolved_bare_dependencies.insert(dependency);
         }
 
         if let Some(frame) = self.frames.last_mut() {
@@ -781,6 +1030,7 @@ impl<'a> Context<'a> {
                     name: cte_name,
                     is_used: false,
                     deps: resolved_dependencies,
+                    bare_deps: resolved_bare_dependencies,
                 },
             );
             frame.dependencies = HashSet::new();
@@ -788,9 +1038,33 @@ impl<'a> Context<'a> {
         }
     }
 
+    /// Merges only the table dependencies of a popped frame, without its
+    /// CTE and alias scope. Used for frames whose scope ends with them -
+    /// a multi-table insert's WHEN predicate, say: the tables it reads are
+    /// inputs of the statement, but a CTE it defines is visible only
+    /// inside the predicate. Carrying that CTE's registration into the
+    /// statement frame (as collect_aliases would) makes later, unrelated
+    /// references to a real table of the same name resolve to the CTE and
+    /// vanish from the inputs. The resolved dependencies of CTEs the frame
+    /// did use are carried as plain dependencies - they were resolved
+    /// against the frame's own scope, so they are real tables - but the
+    /// CTE registrations themselves are not.
+    pub fn collect_dependencies(&mut self, old: &ContextFrame) {
+        if let Some(frame) = self.frames.last_mut() {
+            frame.dependencies.extend(old.dependencies.clone());
+            frame
+                .bare_dependencies
+                .extend(old.bare_dependencies.clone());
+            for value in old.cte_dependencies.values() {
+                if value.is_used {
+                    frame.dependencies.extend(value.deps.clone());
+                }
+            }
+        }
+    }
+
     pub fn collect_aliases(&mut self, old: &ContextFrame) {
         if let Some(frame) = self.frames.last_mut() {
-            frame.is_main_body = old.is_main_body;
             frame.dependencies.extend(old.dependencies.clone());
             frame
                 .bare_dependencies
