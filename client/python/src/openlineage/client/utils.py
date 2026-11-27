@@ -176,21 +176,29 @@ def add_additional_properties(instance: Any, **kwargs: Any) -> Any:
     and set of extra field names) a new ``attrs`` subclass at runtime via `attr.make_class` to
     hold any keyword that isn't an existing field.
     """
-    current_attrs = [a.name for a in attr.fields(instance.__class__)]
-    new_attr_names = frozenset(k for k in kwargs if k not in current_attrs)
+    existing_fields = attr.fields(instance.__class__)
+    existing_init_aliases = {a.alias for a in existing_fields if a.init}
+    existing_names = {a.name for a in existing_fields}
+    new_attr_names = frozenset(
+        k for k in kwargs if k not in existing_init_aliases and k not in existing_names
+    )
 
-    cache_key = (instance.__class__, new_attr_names)
-    new_class = _DYNAMIC_ADDITIONAL_PROPERTIES_CLASSES.get(cache_key)
-    if new_class is None:
-        new_class = attr.make_class(
-            instance.__class__.__name__,
-            {k: attr.field(default=None) for k in new_attr_names},
-            bases=(instance.__class__,),
-        )
-        new_class.__module__ = instance.__class__.__module__
-        _DYNAMIC_ADDITIONAL_PROPERTIES_CLASSES[cache_key] = new_class
+    if new_attr_names:
+        cache_key = (instance.__class__, new_attr_names)
+        cached_class = _DYNAMIC_ADDITIONAL_PROPERTIES_CLASSES.get(cache_key)
+        if cached_class is None:
+            cached_class = attr.make_class(
+                instance.__class__.__name__,
+                {k: attr.field(default=None, alias=k) for k in new_attr_names},
+                bases=(instance.__class__,),
+            )
+            cached_class.__module__ = instance.__class__.__module__
+            _DYNAMIC_ADDITIONAL_PROPERTIES_CLASSES[cache_key] = cached_class
+        new_class: type[Any] = cached_class
+    else:
+        new_class = instance.__class__
 
-    for a in attr.fields(instance.__class__):
+    for a in existing_fields:
         if not a.init:
             continue
         attr_name = a.name  # To deal with private attributes.
@@ -221,8 +229,8 @@ def reduce_with_additional_properties(instance: Any) -> tuple[Any, ...]:
     c = cls
     while c is not base_cls:
         parent = c.__bases__[0]
-        own_names = frozenset(a.name for a in attr.fields(c))
-        own_names -= frozenset(a.name for a in attr.fields(parent))
+        own_names = frozenset(a.alias for a in attr.fields(c) if a.init)
+        own_names -= frozenset(a.alias for a in attr.fields(parent) if a.init)
         levels.append(own_names)
         c = parent
     levels.reverse()
