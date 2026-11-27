@@ -159,6 +159,38 @@ class DeltaEventFilterTest {
   }
 
   @Test
+  void testTopLevelJobStartAndEndAreNotDisabledWhenRootIsKnown() {
+    try (MockedStatic mocked = mockStatic(SparkSession.class)) {
+      when(SparkSession.active()).thenReturn(sparkSession);
+      when(sparkConf.get("spark.sql.extensions", ""))
+          .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
+      when(context.getCommandChildExecution()).thenReturn(Optional.of(false));
+      LogicalPlan plan = mock(LogicalPlan.class);
+      when(plan.collectLeaves()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+      when(queryExecution.optimizedPlan()).thenReturn(plan);
+
+      assertFalse(filter.isDisabled(mock(SparkListenerJobStart.class)));
+      assertFalse(filter.isDisabled(mock(SparkListenerJobEnd.class)));
+    }
+  }
+
+  @Test
+  void testCommandChildJobStartAndEndAreDisabled() {
+    try (MockedStatic mocked = mockStatic(SparkSession.class)) {
+      when(SparkSession.active()).thenReturn(sparkSession);
+      when(sparkConf.get("spark.sql.extensions", ""))
+          .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
+      when(context.getCommandChildExecution()).thenReturn(Optional.of(true));
+      LogicalPlan plan = mock(LogicalPlan.class);
+      when(plan.collectLeaves()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+      when(queryExecution.optimizedPlan()).thenReturn(plan);
+
+      assertTrue(filter.isDisabled(mock(SparkListenerJobStart.class)));
+      assertTrue(filter.isDisabled(mock(SparkListenerJobEnd.class)));
+    }
+  }
+
+  @Test
   void testDisabledForLogicalRDDWithDeltaColumns() {
     try (MockedStatic mocked = mockStatic(SparkSession.class)) {
       LogicalPlan logicalPlan = mock(LogicalPlan.class);
