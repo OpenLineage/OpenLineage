@@ -6,6 +6,7 @@ package io.openlineage.spark.agent.lifecycle;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.JobFacets;
@@ -14,10 +15,13 @@ import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.spark.agent.facets.DebugRunFacet;
+import io.openlineage.spark.agent.lifecycle.plan.column.CheckpointColumnLineage;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.OpenLineageRunStatus;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.TimeoutConfig;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -34,10 +38,14 @@ public class OpenLineageRunEventTimeoutExecutor {
 
   private static final String INCOMPLETE_LINEAGE_MESSSAGE =
       "Incomplete lineage: timeout caught. Inputs missing: %s, Outputs missing: %s, RunFacets missing: %s, JobFacets missing: %s";
+  private static final String INCOMPLETE_CHECKPOINT_LINEAGE_MESSAGE =
+      "Incomplete lineage: column lineage of a checkpoint read by this run, or of a checkpoint it "
+          + "was built from, timed out while being captured";
 
   private final TimeoutConfig timeoutConfig;
   private final ExecutorService executor;
   private final Duration globalTimeout;
+  private final OpenLineageContext context;
 
   private long datasetsTimeSpent;
   private long runFacetsTimeSpent;
@@ -47,8 +55,10 @@ public class OpenLineageRunEventTimeoutExecutor {
   private boolean outputsTimedOut;
   private boolean runFacetsTimedOut;
   private boolean jobFacetsTimedOut;
+  private boolean checkpointColumnLineageTimedOut;
 
   public OpenLineageRunEventTimeoutExecutor(OpenLineageContext context) {
+    this.context = context;
     globalTimeout =
         Optional.ofNullable(context)
             .map(OpenLineageContext::getOpenLineageConfig)
@@ -96,6 +106,34 @@ public class OpenLineageRunEventTimeoutExecutor {
     return outputDatasets;
   }
 
+  /**
+   * Builds the column lineage of a checkpoint within what's left of the datasets budget after its
+   * input datasets were built - the same way column lineage of regular events is built along with
+   * their output datasets. Skipped if building the input datasets has timed out already, or used up
+   * the whole budget without timing out - an empty budget would otherwise mean no timeout at all.
+   */
+  public Optional<CheckpointColumnLineage> timeoutCheckpointColumnLineage(
+      Callable<Optional<CheckpointColumnLineage>> callable) {
+    if (inputsTimedOut || isDatasetsBudgetExhausted()) {
+      checkpointColumnLineageTimedOut = true;
+      return Optional.empty();
+    }
+    TimeoutExecutor<Optional<CheckpointColumnLineage>> timeoutExecutor =
+        new TimeoutExecutor<>(callable, effectiveDatasetsTimeout().orElse(0L), Optional.empty());
+    Optional<CheckpointColumnLineage> columnLineage = timeoutExecutor.run();
+    datasetsTimeSpent += timeoutExecutor.timeSpent;
+    checkpointColumnLineageTimedOut = timeoutExecutor.cancelled;
+    return columnLineage;
+  }
+
+  boolean isInputsTimedOut() {
+    return inputsTimedOut;
+  }
+
+  boolean isCheckpointColumnLineageTimedOut() {
+    return checkpointColumnLineageTimedOut;
+  }
+
   public JobFacets timeoutJobFacets(Callable<JobFacets> callable) {
     if (facetsTimeoutConfigured().isPresent() && !facetsTimeout().isPresent()) {
       jobFacetsTimedOut = true;
@@ -121,14 +159,26 @@ public class OpenLineageRunEventTimeoutExecutor {
       runFacetsTimedOut = timeoutExecutor.cancelled;
     }
 
-    if (hasAnyTimeoutOccurred()) {
+    if (hasAnyTimeoutOccurred() || hasReadIncompleteCheckpoint()) {
       if (runFacets == null) {
         runFacets = openLineage.newRunFacetsBuilder().build();
       }
-      addTimeoutLog(runFacets);
+      if (hasAnyTimeoutOccurred()) {
+        addTimeoutLog(runFacets);
+      }
+      if (hasReadIncompleteCheckpoint()) {
+        addDebugLog(runFacets, INCOMPLETE_CHECKPOINT_LINEAGE_MESSAGE);
+      }
     }
 
     return runFacets;
+  }
+
+  private boolean hasReadIncompleteCheckpoint() {
+    return Optional.ofNullable(context)
+        .map(OpenLineageContext::getLineageRunStatus)
+        .map(OpenLineageRunStatus::isReadIncompleteCheckpoint)
+        .orElse(false);
   }
 
   private boolean hasAnyTimeoutOccurred() {
@@ -143,6 +193,10 @@ public class OpenLineageRunEventTimeoutExecutor {
             outputsTimedOut,
             runFacetsTimedOut,
             jobFacetsTimedOut);
+    addDebugLog(runFacets, message);
+  }
+
+  private void addDebugLog(RunFacets runFacets, String message) {
     log.warn(message);
 
     if (runFacets.getAdditionalProperties().containsKey("debug")) {
@@ -150,7 +204,8 @@ public class OpenLineageRunEventTimeoutExecutor {
       debugFacet.getLogs().add(message);
     } else {
       DebugRunFacet debugFacet =
-          new DebugRunFacet(null, null, null, null, null, null, Arrays.asList(message), 100);
+          new DebugRunFacet(
+              null, null, null, null, null, null, new ArrayList<>(Arrays.asList(message)), 100);
       runFacets.getAdditionalProperties().put("debug", debugFacet);
     }
   }
@@ -159,6 +214,21 @@ public class OpenLineageRunEventTimeoutExecutor {
     return facetsTimeoutConfigured()
         .map(l -> l - datasetsTimeSpent - runFacetsTimeSpent - jobFacetsTimeSpent)
         .filter(l -> l > 0);
+  }
+
+  /**
+   * Records time spent building datasets, the same as a step finishing in that time without timing
+   * out would. Lets tests use up the budget exactly, which can't be done reliably by timing a step.
+   */
+  @VisibleForTesting
+  void recordDatasetsTimeSpent(long millis) {
+    datasetsTimeSpent += millis;
+  }
+
+  /** Whether a datasets timeout is configured, but its budget is already used up. */
+  private boolean isDatasetsBudgetExhausted() {
+    return (datasetsTimeoutConfigured().isPresent() || facetsTimeoutConfigured().isPresent())
+        && !effectiveDatasetsTimeout().isPresent();
   }
 
   private Optional<Long> effectiveDatasetsTimeout() {

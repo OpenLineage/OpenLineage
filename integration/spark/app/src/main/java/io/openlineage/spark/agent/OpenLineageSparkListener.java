@@ -19,6 +19,7 @@ import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
 import io.openlineage.client.circuitBreaker.NoOpCircuitBreaker;
 import io.openlineage.client.metrics.MicrometerProvider;
 import io.openlineage.client.utils.RuntimeUtils;
+import io.openlineage.spark.agent.lifecycle.CheckpointExecution;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -29,6 +30,7 @@ import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -52,6 +54,7 @@ import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerTaskEnd;
+import org.apache.spark.scheduler.SparkListenerUnpersistRDD;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.Command;
 import org.apache.spark.sql.execution.QueryExecution;
@@ -75,6 +78,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   private static final String SQL_EXECUTION_ID_KEY = "spark.sql.execution.id";
   private static final String SQL_EXECUTION_ROOT_ID_KEY = "spark.sql.execution.root.id";
+  private static final int MAX_PENDING_CHECKPOINT_EXECUTIONS = 100;
 
   // These are used only in integration tests to override default factory,
   // before SparkSession creates new listener object
@@ -91,6 +95,24 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       Collections.synchronizedMap(new HashMap<>());
   private final Map<Long, Boolean> commandChildExecutions =
       Collections.synchronizedMap(new HashMap<>());
+
+  /**
+   * Checkpoint executions whose start event was handled once their {@code QueryExecution} was gone
+   * already - when the listener falls behind and a checkpoint (e.g. a lazy one, running no job)
+   * completes before its start event is handled - so no context could be created for them. Kept
+   * until their end event, when a context is created from the end event instead. Bounded, so that
+   * entries of executions whose end event got dropped (e.g. on a listener bus overflow) don't
+   * accumulate.
+   */
+  private final Map<Long, CheckpointExecution> pendingCheckpointExecutions =
+      Collections.synchronizedMap(
+          new LinkedHashMap<Long, CheckpointExecution>() {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<Long, CheckpointExecution> eldest) {
+              return size() > MAX_PENDING_CHECKPOINT_EXECUTIONS;
+            }
+          });
+
   private final Map<Integer, ExecutionContext> rddExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
   private final JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
@@ -164,18 +186,46 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         rootId ->
             commandChildExecutions.put(
                 startEvent.executionId(), isCommandChild(startEvent.executionId(), rootId)));
-    getSparkSQLExecutionContext(startEvent.executionId())
+    Optional<ExecutionContext> executionContext =
+        getSparkSQLExecutionContext(startEvent.executionId());
+    if (!executionContext.isPresent()) {
+      recordPendingCheckpointExecution(startEvent);
+    }
+    executionContext.ifPresent(
+        context -> {
+          jobMetricsLifecycle.registerExecution(
+              startEvent.executionId(), rootExecutionId.orElse(startEvent.executionId()));
+          meterRegistry.counter("openlineage.spark.event.sql.start").increment();
+          circuitBreaker.run(
+              () -> {
+                activeJobId.ifPresent(context::setActiveJobId);
+                context.start(startEvent);
+                return null;
+              });
+        });
+  }
+
+  /**
+   * Keeps a checkpoint execution no context could be created for, see {@link
+   * #pendingCheckpointExecutions}.
+   */
+  private void recordPendingCheckpointExecution(SparkListenerSQLExecutionStart startEvent) {
+    boolean checkpointLineageEnabled =
+        Optional.ofNullable(contextFactory)
+            .map(ContextFactory::getConfig)
+            .map(config -> config.getCheckpointConfig().getEnabled())
+            .orElse(false);
+    if (!checkpointLineageEnabled) {
+      return;
+    }
+    CheckpointExecution.detect(startEvent.details())
         .ifPresent(
-            context -> {
-              jobMetricsLifecycle.registerExecution(
-                  startEvent.executionId(), rootExecutionId.orElse(startEvent.executionId()));
-              meterRegistry.counter("openlineage.spark.event.sql.start").increment();
-              circuitBreaker.run(
-                  () -> {
-                    activeJobId.ifPresent(context::setActiveJobId);
-                    context.start(startEvent);
-                    return null;
-                  });
+            checkpoint -> {
+              log.debug(
+                  "Checkpoint execution {} started with no query execution available, keeping it "
+                      + "until it ends",
+                  startEvent.executionId());
+              pendingCheckpointExecutions.put(startEvent.executionId(), checkpoint);
             });
   }
 
@@ -183,6 +233,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private void sparkSQLExecEnd(SparkListenerSQLExecutionEnd endEvent) {
     log.debug("sparkSQLExecEnd with activeJobId {}", activeJobId);
     ExecutionContext context = sparkSqlExecutionRegistry.remove(endEvent.executionId());
+    CheckpointExecution pendingCheckpoint =
+        pendingCheckpointExecutions.remove(endEvent.executionId());
     Optional<Boolean> commandChildExecution =
         Optional.ofNullable(commandChildExecutions.get(endEvent.executionId()));
     meterRegistry.counter("openlineage.spark.event.sql.end").increment();
@@ -201,6 +253,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
             .ifPresent(
                 c -> {
                   commandChildExecution.ifPresent(c::setCommandChildExecution);
+                  if (pendingCheckpoint != null) {
+                    c.setCheckpointExecution(pendingCheckpoint);
+                  }
                   circuitBreaker.run(
                       () -> {
                         activeJobId.ifPresent(c::setActiveJobId);
@@ -254,6 +309,11 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         executionId
             .map(id -> getExecutionContext(jobStart.jobId(), id))
             .orElseGet(() -> getExecutionContext(jobStart.jobId()));
+    if (!executionContext.isPresent()) {
+      executionId
+          .map(pendingCheckpointExecutions::get)
+          .ifPresent(checkpoint -> checkpoint.recordJobStart(jobStart));
+    }
     executionContext.ifPresent(
         context -> {
           executionId.ifPresent(
@@ -328,6 +388,12 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           () -> {
             if (context != null) {
               context.end(jobEnd);
+            } else {
+              synchronized (pendingCheckpointExecutions) {
+                pendingCheckpointExecutions
+                    .values()
+                    .forEach(checkpoint -> checkpoint.recordJobEnd(jobEnd));
+              }
             }
             return null;
           });
@@ -337,6 +403,19 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       }
       jobMetricsLifecycle.completeJob(jobEnd.jobId());
     }
+  }
+
+  /**
+   * Locally checkpointed RDDs are persisted, so they get unpersisted - either explicitly or by
+   * Spark's {@code ContextCleaner} once the RDD is garbage collected - after which the checkpoint
+   * can't be read anymore and the lineage captured for it can be dropped.
+   */
+  @Override
+  public void onUnpersistRDD(SparkListenerUnpersistRDD unpersistRDD) {
+    if (checkIfDisabled() || contextFactory == null) {
+      return;
+    }
+    contextFactory.getCheckpointContext().removeRdd(unpersistRDD.rddId());
   }
 
   @Override
@@ -386,6 +465,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     executionContexts().forEach(ExecutionContext::clearRetainedState);
     sparkSqlExecutionRegistry.clear();
     commandChildExecutions.clear();
+    pendingCheckpointExecutions.clear();
     rddExecutionRegistry.clear();
     jobMetricsLifecycle.cleanUpAll();
   }

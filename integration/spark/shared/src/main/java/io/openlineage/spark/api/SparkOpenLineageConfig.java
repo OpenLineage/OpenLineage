@@ -8,6 +8,7 @@ package io.openlineage.spark.api;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import io.openlineage.client.MergeConfig;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
@@ -61,6 +62,9 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   @JsonProperty("filter")
   private FilterConfig filterConfig;
 
+  @JsonProperty("checkpointLineage")
+  private CheckpointConfig checkpointConfig;
+
   @JsonProperty("debug")
   private DebugConfig debugConfig;
 
@@ -92,6 +96,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       ColumnLineageConfig columnLineageConfig,
       VendorsConfig vendors,
       FilterConfig filterConfig,
+      CheckpointConfig checkpointConfig,
       RunConfig run) {
     super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig, run, job);
     this.namespace = namespace;
@@ -112,6 +117,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.columnLineageConfig = columnLineageConfig;
     this.vendors = vendors;
     this.filterConfig = filterConfig;
+    this.checkpointConfig = checkpointConfig;
   }
 
   @Override
@@ -152,6 +158,13 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     return columnLineageConfig;
   }
 
+  public CheckpointConfig getCheckpointConfig() {
+    if (checkpointConfig == null) {
+      checkpointConfig = new CheckpointConfig();
+    }
+    return checkpointConfig;
+  }
+
   @Getter
   @Setter
   @ToString
@@ -183,6 +196,44 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     private final Boolean rddEventsDisabled = false;
   }
 
+  /**
+   * Fields are left unset rather than defaulted, so that config sources (e.g. {@code
+   * openlineage.yml} and {@code SparkConf}) setting only some of them are merged field by field -
+   * the getters apply the defaults.
+   */
+  @Setter
+  @ToString
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class CheckpointConfig implements MergeConfig<CheckpointConfig> {
+    public static final int DEFAULT_MAX_ENTRIES = 1000;
+
+    // Disabled by default: capturing lineage across checkpoint() / localCheckpoint() boundaries
+    // keeps a bounded, but potentially large, cache of input datasets and column lineage facets
+    // in memory for every checkpoint materialized by the application, which can cause OOM
+    // exceptions for applications with large schemas or plans. Opt in explicitly if needed.
+    private Boolean enabled;
+
+    // Number of most recent checkpoints whose lineage is kept in memory. Memory usage grows with
+    // the width of the checkpointed schemas, so lower it if the cache gets too large.
+    private Integer maxEntries;
+
+    public Boolean getEnabled() {
+      return Boolean.TRUE.equals(enabled);
+    }
+
+    public Integer getMaxEntries() {
+      return maxEntries == null ? DEFAULT_MAX_ENTRIES : maxEntries;
+    }
+
+    @Override
+    public CheckpointConfig mergeWithNonNull(CheckpointConfig other) {
+      return new CheckpointConfig(
+          mergePropertyWith(enabled, other.enabled),
+          mergePropertyWith(maxEntries, other.maxEntries));
+    }
+  }
+
   @Override
   public SparkOpenLineageConfig mergeWithNonNull(SparkOpenLineageConfig other) {
     return new SparkOpenLineageConfig(
@@ -210,6 +261,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(columnLineageConfig, other.columnLineageConfig),
         mergePropertyWith(vendors, other.vendors),
         mergePropertyWith(filterConfig, other.filterConfig),
+        mergePropertyWith(checkpointConfig, other.checkpointConfig),
         mergePropertyWith(runConfig, other.runConfig));
   }
 }
