@@ -52,6 +52,9 @@ A dataset, or `table`, is organized according to a producer, namespace, database
 | FileNet                       | Document Management System           | `filenet://{host}:{port}/{repository ID} `                                                                                                               | `{object key}`
 | S3                            | Blob Storage                         | `s3://{bucket name}`                                                                                                               | `{object key}`                                                               |
 | SharePoint                    | Document Management System           | `mssharepoint://{host}:{port}/{site}`                                                                                                               | `{object key}`
+| Dropbox                       | Document Management System           | `dropbox://api.dropbox.com`                                                                                                        | `{path}`                                                                     |
+| Google Drive                  | Document Management System           |  `googledrive://drive.google.com/{drive ID}`                                                    | `{path}`                                |
+| OneDrive                      | Document Management System           | `onedrive://graph.microsoft.com:443/{drive}`                                                                                       | `{path}`                                                                     |                                                      |
 | WASBS (Azure Blob Storage)    | Blob Storage                         | `wasbs://{container name}@{service name}.dfs.core.windows.net`                                                                     | `{object key}`                                                               |
 | PubSub                        | Distributed event streaming platform | `pubsub`                                                                                                                           | `topic:{projectId}:{topicId}` or `subscription:{projectId}:{subscriptionId}` |
 | In memory                     | In-memory (temporary datasets) with no persistance backend  | `inmemory://`                                                       | `{temporary dataset name or ID}` | 
@@ -94,12 +97,13 @@ A `Run` event identifies the `Job` it instances by providing the job’s unique 
 The `Job` identifier is composed of a `Namespace` and `Name`. The job namespace is usually set in OpenLineage client
 config. The job name is unique within its namespace.
 
-| Job type     | Name                          | Example                                                      |
-|:-------------|:------------------------------|:-------------------------------------------------------------|
-| Airflow task | `{dag_id}.{task_id}`          | `orders_etl.count_orders`                                    |
-| Spark job    | `{appName}.{command}.{table}` | `my_awesome_app.execute_insert_into_hive_table.mydb_mytable` |
-| SQL          | `{schema}.{table}`            | `gx.validate_datasets`                                       |
-| Debezium     | `{topic.prefix}.{taskId}`     | `inventory.0`                                                |
+| Job type                   | Recommended Namespace                                                              | Name                          | Example                                                      |
+|:---------------------------|:-----------------------------------------------------------------------|:------------------------------|:-------------------------------------------------------------|
+| Airflow task               |                                  | `{dag_id}.{task_id}`          | `orders_etl.count_orders`                                    |
+| Spark job                  |                                  | `{appName}.{command}.{table}` | `my_awesome_app.execute_insert_into_hive_table.mydb_mytable` |
+| SQL                        |                                  | `{schema}.{table}`            | `gx.validate_datasets`                                       |
+| Docling pipelines | `docpipe://{host}:{port}`                                                | `{flow_name}.{node_name}`     | `my_flow.chunker`                                            |
+| Debezium                   |                                  | `{topic.prefix}.{taskId}`     | `inventory.0`                                                |
 
 ## Run Naming
 

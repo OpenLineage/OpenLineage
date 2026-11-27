@@ -35,6 +35,16 @@ export const Producers: Array<Partner> = [
     org_url: "https://www.getdbt.com",
   },
   {
+    image: "docling_horizontal_logo.png",
+    org: "Docling pipelines",
+    full_name: "Docling pipelines",
+    description:
+      "Docling pipelines is an enterprise-grade document curation pipeline for Retrieval Augmented Generation (RAG) applications. Docling-pipelines can be configured to emit OpenLineage run events at two levels of detail: a single flow-level event sequence that summarises the entire pipeline run, and per-operator events that capture the input and output of each individual DAG node.",
+    docs_url:
+      "https://github.com/docling-project/docling-pipelines/blob/main/docs/integrations/openlineage/OPENLINEAGE_GUIDE.md",
+    org_url: "https://github.com/docling-project/docling-pipelines",
+  },
+  {
     image: "egeria_logo_new.svg",
     org: "Egeria",
     full_name: "Egeria",
