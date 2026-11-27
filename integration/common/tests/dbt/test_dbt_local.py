@@ -63,7 +63,7 @@ def test_artifact_source_identifier(fixture, monkeypatch):
         } == source_inputs
     else:
         assert any(
-            "dataQualityAssertions" in dataset.inputFacets
+            "dataQualityAssertions" in dataset.facets
             for event in events
             for dataset in event.inputs
             if dataset.name in source_inputs

@@ -105,10 +105,10 @@ Facets that can be used to augment the metadata of a Dataset include:
 
 - **version**: Captures the dataset version when versioning is defined by the data store (e.g.. Iceberg snapshot ID)
 
+- **dataQualityAssertions**: Captures the result of running data tests on dataset or its columns
+
 Input Datasets have the following facets:
 - **dataQualityMetrics**: Captures dataset-level and column-level data quality metrics (row count, byte size, null count, distinct count, average, min, max, quantiles)
-
-- **dataQualityAssertions**: Captures the result of running data tests on dataset or its columns
 
 Output Datasets have the following facets:
 - **outputStatistics**: Captures the size of the output written to a dataset (e.g., row count and byte size)
