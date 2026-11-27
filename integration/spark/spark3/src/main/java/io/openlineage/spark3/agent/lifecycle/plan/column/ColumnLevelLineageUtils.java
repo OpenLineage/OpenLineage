@@ -14,6 +14,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.ColumnLineageConfig;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark3.agent.utils.HudiUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +60,10 @@ public class ColumnLevelLineageUtils {
 
     LogicalPlan plan = getAdjustedPlan(olContext);
 
-    OutputFieldsCollector.collect(context, plan);
+    if (!HudiInsertOutputsCollector.collect(
+        context, olContext.getOptimizedPlan(), plan, schemaFacet)) {
+      OutputFieldsCollector.collect(context, plan);
+    }
     collectInputsAndExpressionDependencies(context, plan);
 
     OpenLineage.ColumnLineageDatasetFacetBuilder facetBuilder =
@@ -117,6 +121,10 @@ public class ColumnLevelLineageUtils {
       plan = ((CreateDataSourceTableAsSelectCommand) logicalPlan).query();
     } else if (PlanUtils.safeIsInstanceOf(logicalPlan, CREATE_HIVE_TABLE_AS_SELECT_COMMAND)) {
       plan = ((CreateHiveTableAsSelectCommand) logicalPlan).query();
+    } else if (HudiUtils.isInsertIntoHoodieTableCommand(logicalPlan)) {
+      plan = HudiUtils.insertQuery(logicalPlan).orElse(logicalPlan);
+    } else if (HudiUtils.isCreateHoodieTableAsSelectCommand(logicalPlan)) {
+      plan = HudiUtils.ctasQuery(logicalPlan).orElse(logicalPlan);
     } else {
       plan = logicalPlan;
     }

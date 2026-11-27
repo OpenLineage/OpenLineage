@@ -1,0 +1,625 @@
+/*
+/* Copyright 2018-2026 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+package io.openlineage.spark.agent;
+
+import static io.openlineage.spark.agent.SparkTestUtils.SPARK_3_OR_ABOVE;
+import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
+import io.openlineage.client.OpenLineage.DatasetTypeDatasetFacet;
+import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.InputField;
+import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet;
+import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineage.RunEvent;
+import java.io.File;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.SaveMode;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.types.LongType$;
+import org.apache.spark.sql.types.Metadata;
+import org.apache.spark.sql.types.StringType$;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.mockserver.integration.ClientAndServer;
+
+@Tag("integration-test")
+@Tag("hudi")
+@EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
+class SparkHudiIntegrationTest {
+  private static final int MOCK_SERVER_PORT = 1090;
+
+  @SuppressWarnings("PMD")
+  private static final String LOCAL_IP = "127.0.0.1";
+
+  private static final String HUDI_BASE_PATH = "/tmp/hudi";
+  private static final String INPUT_PATH = HUDI_BASE_PATH + "/input";
+
+  private static final Map<String, String> RENAMED_ID_LINEAGE =
+      ImmutableMap.of("entity_id", "id", "name", "name", "ts", "ts");
+  private static final Map<String, String> IDENTITY_LINEAGE =
+      ImmutableMap.of("entity_id", "entity_id", "name", "name", "ts", "ts");
+
+  private static SparkSession spark;
+  private static ClientAndServer mockServer;
+
+  @BeforeAll
+  @SneakyThrows
+  public static void beforeAll() {
+    Spark4CompatUtils.cleanupAnyExistingSession();
+    FileUtils.deleteDirectory(new File(HUDI_BASE_PATH));
+    mockServer = MockServerUtils.createAndConfigureMockServer(MOCK_SERVER_PORT);
+  }
+
+  @AfterAll
+  @SneakyThrows
+  public static void afterAll() {
+    Spark4CompatUtils.cleanupAnyExistingSession();
+    MockServerUtils.stopMockServer(mockServer);
+  }
+
+  @BeforeEach
+  @SneakyThrows
+  public void beforeEach() {
+    MockServerUtils.clearRequests(mockServer);
+    FileUtils.deleteDirectory(new File(HUDI_BASE_PATH));
+    SparkSession.Builder sparkSessionBuilder =
+        SparkSession.builder()
+            .master("local[*]")
+            .appName("HudiIntegrationTest")
+            .config("spark.driver.host", LOCAL_IP)
+            .config("spark.driver.bindAddress", LOCAL_IP)
+            .config("spark.ui.enabled", false)
+            .config("spark.sql.shuffle.partitions", 1)
+            .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+            .config("spark.openlineage.transport.type", "http")
+            .config(
+                "spark.openlineage.transport.url",
+                "http://localhost:" + mockServer.getPort() + "/api/v1/lineage")
+            .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
+            .config("spark.sql.extensions", "org.apache.spark.sql.hudi.HoodieSparkSessionExtension")
+            .config(
+                "spark.sql.catalog.spark_catalog",
+                "org.apache.spark.sql.hudi.catalog.HoodieCatalog");
+
+    spark = sparkSessionBuilder.getOrCreate();
+  }
+
+  @Test
+  void testHudiCopyOnWriteCapturesOutputDataset() {
+    String outputPath = HUDI_BASE_PATH + "/cow_target";
+    writeHudi("COPY_ON_WRITE", outputPath);
+
+    RunEvent completeEvent = getLatestSaveCompleteEvent();
+    assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+    assertHudiOutputDatasetType(outputPath, "COPY_ON_WRITE");
+  }
+
+  @Test
+  void testHudiMergeOnReadCapturesOutputDataset() {
+    String outputPath = HUDI_BASE_PATH + "/mor_target";
+    writeHudi("MERGE_ON_READ", outputPath);
+
+    RunEvent completeEvent = getLatestSaveCompleteEvent();
+    assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+    assertHudiOutputDatasetType(outputPath, "MERGE_ON_READ");
+  }
+
+  @Test
+  void testHudiReadTransformAndWriteAgainCapturesOutputDataset() {
+    String sourcePath = HUDI_BASE_PATH + "/roundtrip_source";
+    String targetPath = HUDI_BASE_PATH + "/roundtrip_target";
+
+    writeHudi("COPY_ON_WRITE", sourcePath);
+    MockServerUtils.clearRequests(mockServer);
+
+    Dataset<Row> transformed =
+        spark
+            .read()
+            .format("hudi")
+            .load(sourcePath)
+            .selectExpr("entity_id", "upper(name) as name", "ts");
+
+    writeHudiDataset("COPY_ON_WRITE", targetPath, transformed, "hudi_roundtrip_target");
+
+    RunEvent completeEvent = getLatestSaveCompleteEvent();
+    assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertColumnLineage(targetPath, sourcePath, IDENTITY_LINEAGE);
+    assertHudiInputDatasetType(sourcePath, "COPY_ON_WRITE");
+  }
+
+  @Test
+  void testHudiMergeOnReadReadTransformAndWriteAgainCapturesOutputDataset() {
+    String sourcePath = HUDI_BASE_PATH + "/mor_roundtrip_source";
+    String targetPath = HUDI_BASE_PATH + "/mor_roundtrip_target";
+
+    writeHudi("MERGE_ON_READ", sourcePath);
+    MockServerUtils.clearRequests(mockServer);
+
+    Dataset<Row> transformed =
+        spark
+            .read()
+            .format("hudi")
+            .load(sourcePath)
+            .selectExpr("entity_id", "upper(name) as name", "ts");
+
+    writeHudiDataset("MERGE_ON_READ", targetPath, transformed, "hudi_mor_roundtrip_target");
+
+    RunEvent completeEvent = getLatestSaveCompleteEvent();
+    assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertColumnLineage(targetPath, sourcePath, IDENTITY_LINEAGE);
+    assertHudiInputDatasetType(sourcePath, "MERGE_ON_READ");
+  }
+
+  @Test
+  void testHudiMergeOnReadIncrementalReadTransformAndWriteAgainCapturesOutputDataset() {
+    String sourcePath = HUDI_BASE_PATH + "/mor_incremental_source";
+    String targetPath = HUDI_BASE_PATH + "/mor_incremental_target";
+
+    writeHudi("MERGE_ON_READ", sourcePath);
+    MockServerUtils.clearRequests(mockServer);
+
+    Dataset<Row> transformed =
+        spark
+            .read()
+            .format("hudi")
+            .option("hoodie.datasource.query.type", "incremental")
+            .option("hoodie.datasource.read.begin.instanttime", "000")
+            .load(sourcePath)
+            .selectExpr("entity_id", "concat(name, '_inc') as name", "ts");
+
+    writeHudiDataset(
+        "MERGE_ON_READ", targetPath, transformed, "hudi_mor_incremental_roundtrip_target");
+
+    RunEvent completeEvent = getLatestSaveCompleteEvent();
+    assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertColumnLineage(targetPath, sourcePath, IDENTITY_LINEAGE);
+  }
+
+  @Test
+  void testHudiSqlCopyOnWriteTableCapturesOutputDataset() {
+    String outputPath = HUDI_BASE_PATH + "/sql_cow_target";
+    String tableName = "default.hudi_sql_cow_target";
+
+    writeHudiSqlTable("COPY_ON_WRITE", outputPath, tableName);
+
+    RunEvent completeEvent = getLatestSaveCompleteEvent();
+    assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertThat(completeEvent.getJob().getName()).endsWith(".hudi_sql_cow_target");
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+    assertOverwriteLifecycleStateChange(outputPath);
+  }
+
+  @Test
+  void testHudiSqlMergeOnReadTableCapturesOutputDataset() {
+    String outputPath = HUDI_BASE_PATH + "/sql_mor_target";
+    String tableName = "default.hudi_sql_mor_target";
+
+    writeHudiSqlTable("MERGE_ON_READ", outputPath, tableName);
+
+    RunEvent completeEvent = getLatestSaveCompleteEvent();
+    assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertThat(completeEvent.getJob().getName()).endsWith(".hudi_sql_mor_target");
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+    assertOverwriteLifecycleStateChange(outputPath);
+  }
+
+  @Test
+  void testHudiSqlInsertWithoutAliasesAlignsColumnsByPosition() {
+    String outputPath = HUDI_BASE_PATH + "/sql_positional_target";
+    String tableName = "default.hudi_sql_positional_target";
+
+    // Hudi writes id into entity_id by position, as the names don't match
+    writeHudiSqlTable("COPY_ON_WRITE", outputPath, tableName, "id, name, ts");
+
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+  }
+
+  @Test
+  void testHudiSqlMergeIntoCapturesLineage() {
+    String outputPath = HUDI_BASE_PATH + "/sql_merge_target";
+    String tableName = "default.hudi_sql_merge_target";
+    writeHudiSqlTable("COPY_ON_WRITE", outputPath, tableName);
+    spark
+        .read()
+        .parquet(INPUT_PATH)
+        .selectExpr("id + 1 as id", "concat(name, '_new') as name", "ts + 1 as ts")
+        .createOrReplaceTempView("hudi_merge_source");
+    MockServerUtils.clearRequests(mockServer);
+
+    spark.sql(
+        "MERGE INTO "
+            + tableName
+            + " t USING hudi_merge_source s ON t.entity_id = s.id "
+            + "WHEN MATCHED THEN UPDATE SET entity_id = s.id, name = concat(t.name, s.name), ts = s.ts "
+            + "WHEN NOT MATCHED THEN INSERT (entity_id, name, ts) VALUES (s.id, s.name, s.ts)");
+
+    RunEvent event = getCompleteEventWritingTo(outputPath);
+    assertThat(event.getJob().getName()).endsWith(".hudi_sql_merge_target");
+    assertThat(inputNames(event)).contains(INPUT_PATH, outputPath);
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+    // name = concat(t.name, s.name) also reads the target's name
+    assertColumnLineage(outputPath, outputPath, ImmutableMap.of("name", "name"));
+  }
+
+  @Test
+  void testHudiSqlInsertMatchingByNameInOtherCaseCapturesLineage() {
+    String outputPath = HUDI_BASE_PATH + "/sql_by_name_target";
+    String tableName = "default.hudi_sql_by_name_target";
+
+    // Hudi aligns the columns by name, ignoring case and order
+    writeHudiSqlTable("COPY_ON_WRITE", outputPath, tableName, "ts as TS, name, id as ENTITY_ID");
+
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+  }
+
+  @Test
+  void testHudiSqlUpdateWithSubqueryReadsSubqueryTable() {
+    String outputPath = HUDI_BASE_PATH + "/sql_update_subquery_target";
+    String tableName = "default.hudi_sql_update_subquery_target";
+    writeHudiSqlTable("COPY_ON_WRITE", outputPath, tableName);
+    MockServerUtils.clearRequests(mockServer);
+
+    spark.sql(
+        "UPDATE "
+            + tableName
+            + " SET name = 'updated' WHERE entity_id IN (SELECT id FROM hudi_sql_input WHERE id = 1)");
+
+    RunEvent event = getCompleteEventWritingTo(outputPath);
+    assertThat(inputNames(event)).contains(outputPath, INPUT_PATH);
+  }
+
+  @Test
+  void testHudiSqlDeleteWithSubqueryReadsSubqueryTable() {
+    String outputPath = HUDI_BASE_PATH + "/sql_delete_subquery_target";
+    String tableName = "default.hudi_sql_delete_subquery_target";
+    writeHudiSqlTable("COPY_ON_WRITE", outputPath, tableName);
+    MockServerUtils.clearRequests(mockServer);
+
+    spark.sql(
+        "DELETE FROM "
+            + tableName
+            + " WHERE entity_id IN (SELECT id FROM hudi_sql_input WHERE id = 2)");
+
+    RunEvent event = getCompleteEventWritingTo(outputPath);
+    assertThat(inputNames(event)).contains(outputPath, INPUT_PATH);
+  }
+
+  @Test
+  void testHudiCopyOnWriteReadThroughPartitionPathIsNamedAfterBasePath() {
+    String sourcePath = HUDI_BASE_PATH + "/partitioned_source";
+    String outputPath = HUDI_BASE_PATH + "/partition_read_output";
+    writeInputParquet();
+    spark
+        .read()
+        .parquet(INPUT_PATH)
+        .selectExpr("id as entity_id", "name", "ts")
+        .write()
+        .format("hudi")
+        .mode(SaveMode.Overwrite)
+        .option("hoodie.table.name", "hudi_partitioned_source")
+        .option("hoodie.datasource.write.recordkey.field", "entity_id")
+        .option("hoodie.datasource.write.precombine.field", "ts")
+        .option("hoodie.datasource.write.partitionpath.field", "name")
+        .option("hoodie.datasource.write.table.type", "COPY_ON_WRITE")
+        .save(sourcePath);
+    MockServerUtils.clearRequests(mockServer);
+
+    // a partition directory, which Hudi returns as the root path of the table's file index
+    spark
+        .read()
+        .format("hudi")
+        .load(sourcePath + "/alpha")
+        .select("entity_id", "ts")
+        .write()
+        .mode(SaveMode.Overwrite)
+        .parquet(outputPath);
+
+    RunEvent event = getCompleteEventWritingTo(outputPath);
+    assertThat(inputNames(event)).containsExactly(sourcePath);
+    assertColumnLineage(
+        outputPath, sourcePath, ImmutableMap.of("entity_id", "entity_id", "ts", "ts"));
+  }
+
+  @Test
+  void testHudiSqlUpdateCapturesLineage() {
+    String outputPath = HUDI_BASE_PATH + "/sql_update_target";
+    String tableName = "default.hudi_sql_update_target";
+    writeHudiSqlTable("COPY_ON_WRITE", outputPath, tableName);
+    MockServerUtils.clearRequests(mockServer);
+
+    spark.sql("UPDATE " + tableName + " SET name = 'updated' WHERE entity_id = 1");
+
+    RunEvent event = getCompleteEventWritingTo(outputPath);
+    assertThat(event.getJob().getName()).endsWith(".hudi_sql_update_target");
+    assertThat(inputNames(event)).containsExactly(outputPath);
+  }
+
+  @Test
+  void testHudiSqlDeleteCapturesLineage() {
+    String outputPath = HUDI_BASE_PATH + "/sql_delete_target";
+    String tableName = "default.hudi_sql_delete_target";
+    writeHudiSqlTable("MERGE_ON_READ", outputPath, tableName);
+    MockServerUtils.clearRequests(mockServer);
+
+    spark.sql("DELETE FROM " + tableName + " WHERE entity_id = 2");
+
+    RunEvent event = getCompleteEventWritingTo(outputPath);
+    assertThat(event.getJob().getName()).endsWith(".hudi_sql_delete_target");
+    assertThat(inputNames(event)).containsExactly(outputPath);
+    assertHudiOutputDatasetType(outputPath, "MERGE_ON_READ");
+  }
+
+  @Test
+  void testHudiSqlCreateTableAsSelectCapturesLineage() {
+    String outputPath = HUDI_BASE_PATH + "/sql_ctas_target";
+    String tableName = "default.hudi_sql_ctas_target";
+    writeInputParquet();
+    spark.read().parquet(INPUT_PATH).createOrReplaceTempView("hudi_sql_input");
+    spark.sql("DROP TABLE IF EXISTS " + tableName);
+
+    spark.sql(
+        String.format(
+            Locale.ROOT,
+            "CREATE TABLE %s USING hudi LOCATION '%s' "
+                + "TBLPROPERTIES (primaryKey = 'entity_id', preCombineField = 'ts') "
+                + "AS SELECT id as entity_id, name, ts FROM hudi_sql_input",
+            tableName,
+            outputPath));
+
+    RunEvent event = getCompleteEventWritingTo(outputPath);
+    assertThat(event.getJob().getName()).endsWith("hudi_sql_ctas_target");
+    assertThat(inputNames(event)).contains(INPUT_PATH);
+    assertThat(
+            event.getOutputs().stream()
+                .filter(d -> outputPath.equals(d.getName()))
+                .map(d -> d.getFacets().getLifecycleStateChange().getLifecycleStateChange()))
+        .containsOnly(LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+  }
+
+  @Test
+  void testHudiSqlCreateOrReplaceTableAsSelectOverwritesTable() {
+    String outputPath = HUDI_BASE_PATH + "/sql_replace_target";
+    String tableName = "default.hudi_sql_replace_target";
+    writeHudiSqlTable("COPY_ON_WRITE", outputPath, tableName);
+    MockServerUtils.clearRequests(mockServer);
+
+    spark
+        .table("hudi_sql_input")
+        .selectExpr("id as entity_id", "name", "ts")
+        .write()
+        .format("hudi")
+        .mode(SaveMode.Overwrite)
+        .option("primaryKey", "entity_id")
+        .option("preCombineField", "ts")
+        .option("path", outputPath)
+        .saveAsTable(tableName);
+
+    RunEvent event = getCompleteEventWritingTo(outputPath);
+    assertThat(inputNames(event)).contains(INPUT_PATH);
+    assertThat(
+            event.getOutputs().stream()
+                .filter(d -> outputPath.equals(d.getName()))
+                .map(d -> d.getFacets().getLifecycleStateChange().getLifecycleStateChange()))
+        .containsOnly(LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
+  }
+
+  private RunEvent getCompleteEventWritingTo(String outputPath) {
+    return MockServerUtils.getEventsEmitted(mockServer).stream()
+        .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
+        .filter(
+            e ->
+                e.getOutputs() != null
+                    && e.getOutputs().stream().anyMatch(d -> outputPath.equals(d.getName())))
+        .reduce((previous, current) -> current)
+        .orElseThrow(
+            () ->
+                new AssertionError("No COMPLETE event writing to " + outputPath + " was emitted."));
+  }
+
+  private static List<String> inputNames(RunEvent event) {
+    return event.getInputs().stream().map(InputDataset::getName).collect(Collectors.toList());
+  }
+
+  private RunEvent getLatestSaveCompleteEvent() {
+    List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
+    return events.stream()
+        .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
+        .filter(e -> e.getOutputs() != null && !e.getOutputs().isEmpty())
+        .reduce((previous, current) -> current)
+        .orElseThrow(
+            () -> new AssertionError("No COMPLETE event with output datasets was emitted."));
+  }
+
+  private void assertOverwriteLifecycleStateChange(String outputPath) {
+    assertThat(
+            MockServerUtils.getEventsEmitted(mockServer).stream()
+                .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
+                .filter(e -> e.getOutputs() != null)
+                .flatMap(e -> e.getOutputs().stream())
+                .filter(d -> outputPath.equals(d.getName()))
+                .map(d -> d.getFacets().getLifecycleStateChange())
+                .filter(Objects::nonNull)
+                .map(LifecycleStateChangeDatasetFacet::getLifecycleStateChange))
+        .as("lifecycle state change of output %s", outputPath)
+        .contains(LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
+  }
+
+  private void assertHudiOutputDatasetType(String outputPath, String hudiTableType) {
+    assertThat(
+            MockServerUtils.getEventsEmitted(mockServer).stream()
+                .filter(e -> e.getOutputs() != null)
+                .flatMap(e -> e.getOutputs().stream())
+                .filter(d -> outputPath.equals(d.getName()))
+                .map(d -> d.getFacets().getDatasetType())
+                .filter(Objects::nonNull)
+                .map(DatasetTypeDatasetFacet::getSubType))
+        .as("Hudi table type of output %s", outputPath)
+        .contains(hudiTableType);
+  }
+
+  private void assertHudiInputDatasetType(String inputPath, String hudiTableType) {
+    assertThat(
+            MockServerUtils.getEventsEmitted(mockServer).stream()
+                .filter(e -> e.getInputs() != null)
+                .flatMap(e -> e.getInputs().stream())
+                .filter(d -> inputPath.equals(d.getName()))
+                .map(d -> d.getFacets().getDatasetType())
+                .filter(Objects::nonNull)
+                .map(DatasetTypeDatasetFacet::getSubType))
+        .as("Hudi table type of input %s", inputPath)
+        .contains(hudiTableType);
+  }
+
+  /**
+   * Asserts that a column lineage facet was emitted for the output dataset located at {@code
+   * outputPath} and that each expected output field is derived from the given field of the input
+   * dataset located at {@code inputPath}.
+   *
+   * @param expectedLineage mapping of output field name to input field name
+   */
+  private void assertColumnLineage(
+      String outputPath, String inputPath, Map<String, String> expectedLineage) {
+    ColumnLineageDatasetFacet columnLineage =
+        MockServerUtils.getEventsEmitted(mockServer).stream()
+            .filter(e -> e.getOutputs() != null)
+            .flatMap(e -> e.getOutputs().stream())
+            .filter(d -> outputPath.equals(d.getName()))
+            .map(OutputDataset::getFacets)
+            .filter(f -> f != null && f.getColumnLineage() != null)
+            .map(f -> f.getColumnLineage())
+            .reduce((previous, current) -> current)
+            .orElseThrow(
+                () ->
+                    new AssertionError(
+                        "No column lineage facet was emitted for output dataset " + outputPath));
+
+    expectedLineage.forEach(
+        (outputField, inputField) -> {
+          assertThat(columnLineage.getFields().getAdditionalProperties())
+              .as("column lineage for output field %s", outputField)
+              .containsKey(outputField);
+          List<String> inputFields =
+              columnLineage
+                  .getFields()
+                  .getAdditionalProperties()
+                  .get(outputField)
+                  .getInputFields()
+                  .stream()
+                  .map(SparkHudiIntegrationTest::describe)
+                  .collect(Collectors.toList());
+          assertThat(inputFields)
+              .as("input fields of output field %s", outputField)
+              .contains(describe("file", inputPath, inputField));
+        });
+  }
+
+  private static String describe(InputField inputField) {
+    return describe(inputField.getNamespace(), inputField.getName(), inputField.getField());
+  }
+
+  private static String describe(String namespace, String name, String field) {
+    return namespace + ":" + name + "#" + field;
+  }
+
+  private void writeHudi(String tableType, String outputPath) {
+    writeInputParquet();
+
+    Dataset<Row> transformedInput =
+        spark.read().parquet(INPUT_PATH).selectExpr("id as entity_id", "name", "ts");
+
+    writeHudiDataset(
+        tableType, outputPath, transformedInput, "hudi_" + tableType.toLowerCase(Locale.ROOT));
+  }
+
+  private void writeHudiDataset(
+      String tableType, String outputPath, Dataset<Row> dataset, String tableName) {
+    dataset
+        .write()
+        .format("hudi")
+        .mode(SaveMode.Overwrite)
+        .option("hoodie.table.name", tableName)
+        .option("hoodie.datasource.write.recordkey.field", "entity_id")
+        .option("hoodie.datasource.write.precombine.field", "ts")
+        .option("hoodie.datasource.write.partitionpath.field", "")
+        .option(
+            "hoodie.datasource.write.keygenerator.class",
+            "org.apache.hudi.keygen.NonpartitionedKeyGenerator")
+        .option("hoodie.datasource.write.table.type", tableType)
+        .save(outputPath);
+  }
+
+  private void writeHudiSqlTable(String tableType, String outputPath, String tableName) {
+    writeHudiSqlTable(tableType, outputPath, tableName, "id as entity_id, name, ts");
+  }
+
+  private void writeHudiSqlTable(
+      String tableType, String outputPath, String tableName, String selectList) {
+    String hudiTableType = "MERGE_ON_READ".equals(tableType) ? "mor" : "cow";
+    writeInputParquet();
+    spark.read().parquet(INPUT_PATH).createOrReplaceTempView("hudi_sql_input");
+
+    spark.sql("DROP TABLE IF EXISTS " + tableName);
+    spark.sql(
+        String.format(
+            Locale.ROOT,
+            "CREATE TABLE %s (entity_id BIGINT, name STRING, ts BIGINT) "
+                + "USING hudi LOCATION '%s' "
+                + "TBLPROPERTIES (primaryKey = 'entity_id', preCombineField = 'ts', type = '%s')",
+            tableName,
+            outputPath,
+            hudiTableType));
+    spark.sql(
+        String.format(
+            Locale.ROOT,
+            "INSERT OVERWRITE TABLE %s SELECT %s FROM hudi_sql_input",
+            tableName,
+            selectList));
+  }
+
+  private void writeInputParquet() {
+    createInputDataset().write().mode(SaveMode.Overwrite).format("parquet").save(INPUT_PATH);
+    MockServerUtils.clearRequests(mockServer);
+  }
+
+  private Dataset<Row> createInputDataset() {
+    StructType schema =
+        new StructType(
+            new StructField[] {
+              new StructField("id", LongType$.MODULE$, false, Metadata.empty()),
+              new StructField("name", StringType$.MODULE$, false, Metadata.empty()),
+              new StructField("ts", LongType$.MODULE$, false, Metadata.empty())
+            });
+
+    return spark.createDataFrame(
+        ImmutableList.of(
+            RowFactory.create(1L, "alpha", 10L),
+            RowFactory.create(2L, "beta", 20L),
+            RowFactory.create(3L, "gamma", 30L)),
+        schema);
+  }
+}
