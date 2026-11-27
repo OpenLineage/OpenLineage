@@ -5,6 +5,8 @@
 
 package io.openlineage.client.job;
 
+import io.openlineage.client.naming.NameConfig;
+import io.openlineage.client.naming.NameEscaping;
 import javax.annotation.Nullable;
 import lombok.Builder;
 
@@ -38,23 +40,33 @@ public class Naming {
     private final String appName;
     private final String command;
     private final String table;
+    private final NameConfig nameConfig;
 
     /**
      * Constructs a new {@link Spark} job name.
      *
      * @param appName the Spark application name; must be non-null and non-empty
-     * @param command the command or function being run; must be non-null and non-empty
-     * @param table the target table; must be non-null and non-empty
-     * @throws IllegalArgumentException if any argument is empty
-     * @throws NullPointerException if any argument is null
+     * @param command the command or function being run
+     * @param table the target table
+     * @param nameConfig optional name configuration for dot-escaping
+     * @throws IllegalArgumentException if appName is empty
      */
-    public Spark(String appName, @Nullable String command, @Nullable String table) {
+    public Spark(
+        String appName,
+        @Nullable String command,
+        @Nullable String table,
+        @Nullable NameConfig nameConfig) {
       if (appName.isEmpty()) {
         throw new IllegalArgumentException("appName, command, and table must be non-empty");
       }
       this.appName = appName;
       this.command = command;
       this.table = table;
+      this.nameConfig = nameConfig;
+    }
+
+    public Spark(String appName, @Nullable String command, @Nullable String table) {
+      this(appName, command, table, null);
     }
 
     /**
@@ -64,7 +76,9 @@ public class Naming {
      */
     @Override
     public String getName() {
-      return appName + (command != null ? "." + command : "") + (table != null ? "." + table : "");
+      return NameEscaping.escapeSegment(appName, nameConfig)
+          + (command != null ? "." + NameEscaping.escapeSegment(command, nameConfig) : "")
+          + (table != null ? "." + NameEscaping.escapeSegment(table, nameConfig) : "");
     }
   }
 }
