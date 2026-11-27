@@ -12,6 +12,10 @@ fi
 
 JAR=build/libs/openlineage-sql-java-$version.jar
 
+# Prefer JAVA_HOME over PATH, so the smoke test runs on the same JDK as the
+# Gradle build, which matters for loading the native library
+JAVA_BIN=${JAVA_HOME:+$JAVA_HOME/bin/}
+
 rm -f "$BASEDIR"/*.class
-javac -cp "$JAR" "$BASEDIR"/TestParser.java
-java -cp "$JAR":"$BASEDIR" TestParser "$@"
+"${JAVA_BIN}javac" -cp "$JAR" "$BASEDIR"/TestParser.java
+"${JAVA_BIN}java" -cp "$JAR":"$BASEDIR" TestParser "$@"
