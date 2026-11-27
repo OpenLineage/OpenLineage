@@ -1283,3 +1283,148 @@ fn inner_cte_reading_outer_cte_with_its_own_name_keeps_outer_inputs() {
         }
     );
 }
+
+#[test]
+fn redshift_duckdb_and_mysql_cte_folding() {
+    assert_eq!(
+        in_tables(
+            "WITH \"Orders\" AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM orders",
+            "redshift"
+        ),
+        vec!["src"]
+    );
+    assert_eq!(
+        in_tables(
+            "WITH Orders AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM \"orders\"",
+            "redshift"
+        ),
+        vec!["src"]
+    );
+    assert_eq!(
+        in_tables(
+            "WITH \"Orders\" AS (SELECT id FROM src) SELECT id FROM orders",
+            "duckdb"
+        ),
+        vec!["src"]
+    );
+    assert_eq!(
+        in_tables(
+            "WITH Orders AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM orders",
+            "mysql"
+        ),
+        vec!["orders"]
+    );
+    assert_eq!(
+        in_tables(
+            "WITH Orders AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM Orders",
+            "mysql"
+        ),
+        vec!["src"]
+    );
+}
+
+#[test]
+fn same_case_qualified_source_and_recursive_cte_stay_distinct() {
+    assert_eq!(
+        in_tables_with_default_schema(
+            "WITH RECURSIVE orders AS \
+             (SELECT * FROM public.orders UNION ALL SELECT * FROM orders) \
+             INSERT INTO target SELECT * FROM orders",
+            "postgres",
+            "public"
+        ),
+        vec!["public.orders"]
+    );
+}
+
+#[test]
+fn nested_recursive_ctes_preserve_outer_self_reference() {
+    assert_eq!(
+        in_tables(
+            "WITH RECURSIVE OuterCte AS (\
+                WITH RECURSIVE InnerCte AS (\
+                    SELECT id FROM src UNION ALL SELECT id FROM innercte\
+                ) \
+                SELECT id FROM innercte UNION ALL SELECT id FROM outercte\
+             ) \
+             INSERT INTO tgt SELECT id FROM outercte",
+            "postgres"
+        ),
+        vec!["src"]
+    );
+}
+
+#[test]
+fn create_table_and_view_target_named_like_query_cte_is_output() {
+    for sql in [
+        "CREATE TABLE c AS WITH c AS (SELECT id FROM src) SELECT id FROM c",
+        "CREATE VIEW c AS WITH c AS (SELECT id FROM src) SELECT id FROM c",
+    ] {
+        assert_eq!(
+            test_sql_dialect(sql, "postgres").unwrap().table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["src"]),
+                out_tables: tables(vec!["c"]),
+            },
+            "{sql}"
+        );
+    }
+}
+
+#[test]
+fn non_recursive_cte_does_not_resolve_forward_to_later_sibling() {
+    for dialect in ["postgres", "snowflake"] {
+        assert_eq!(
+            in_tables(
+                "WITH a AS (SELECT * FROM b), b AS (SELECT * FROM t1) SELECT * FROM a",
+                dialect
+            ),
+            vec!["b"],
+            "{dialect}"
+        );
+    }
+    assert_eq!(
+        in_tables_with_default_schema(
+            "WITH a AS (SELECT * FROM b), b AS (SELECT * FROM t1) SELECT * FROM a",
+            "postgres",
+            "public"
+        ),
+        vec!["public.b"]
+    );
+    assert_eq!(
+        in_tables(
+            "WITH RECURSIVE a AS (SELECT * FROM b), b AS (SELECT * FROM t1) SELECT * FROM a",
+            "postgres"
+        ),
+        vec!["t1"]
+    );
+}
+
+#[test]
+fn unread_data_modifying_cte_keeps_its_inputs() {
+    assert_eq!(
+        test_sql_dialect(
+            "WITH x AS (INSERT INTO t SELECT * FROM s RETURNING id) SELECT 1",
+            "postgres",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t"]),
+        }
+    );
+    assert_eq!(
+        test_sql_dialect(
+            "WITH d AS (SELECT * FROM src), \
+             x AS (INSERT INTO t SELECT * FROM d RETURNING id) SELECT 1",
+            "postgres",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["t"]),
+        }
+    );
+}

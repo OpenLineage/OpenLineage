@@ -190,3 +190,45 @@ fn create_stage() {
         }
     )
 }
+
+#[test]
+fn create_table_and_view_target_matching_from_alias_is_output() {
+    assert_eq!(
+        openlineage_sql::parse_multiple_statements_with_default_database(
+            vec![
+                "CREATE OR REPLACE TABLE DB.SCH.ORDERS AS SELECT * FROM RAW.ORDERS ORDERS"
+                    .to_string(),
+            ],
+            &SnowflakeDialect {},
+            Some("SCH".to_string()),
+            Some("DB".to_string()),
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["DB.RAW.ORDERS"]),
+            out_tables: tables(vec!["DB.SCH.ORDERS"]),
+        }
+    );
+
+    assert_eq!(
+        test_sql_dialect(
+            "CREATE TABLE dim AS SELECT f.id FROM fact f JOIN raw.dim dim ON f.id = dim.id",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["fact", "raw.dim"]),
+            out_tables: tables(vec!["dim"]),
+        }
+    );
+
+    for sql in [
+        "CREATE VIEW customers AS SELECT customers.id FROM raw.customers customers",
+        "CREATE VIEW customers AS SELECT * FROM raw.customers customers UNION ALL SELECT * FROM extra",
+    ] {
+        let lineage = test_sql_dialect(sql, "postgres").unwrap().table_lineage;
+        assert_eq!(lineage.out_tables, tables(vec!["customers"]), "{sql}");
+    }
+}

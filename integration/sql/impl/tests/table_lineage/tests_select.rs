@@ -625,3 +625,16 @@ fn select_snowflake_lateral() {
         }
     )
 }
+
+#[test]
+fn select_from_quoted_empty_name_has_no_input() {
+    assert_eq!(
+        test_sql_dialect("SELECT * FROM \"\"", "snowflake")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![],
+            out_tables: vec![],
+        }
+    );
+}

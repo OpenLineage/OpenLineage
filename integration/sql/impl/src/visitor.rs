@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::context::{Context, ContextFrame};
+use crate::dialect::allows_implicit_recursive_cte;
 use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
@@ -15,7 +16,7 @@ use sqlparser::ast::{
     WindowType, With,
 };
 use sqlparser::dialect::{
-    DatabricksDialect, Dialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
+    DatabricksDialect, Dialect, MsSqlDialect, MySqlDialect, SnowflakeDialect,
 };
 use sqlparser::parser::Parser;
 use sqlparser::tokenizer::Token;
@@ -26,44 +27,27 @@ pub trait Visit {
 
 impl Visit for With {
     fn visit(&self, context: &mut Context) -> Result<()> {
-        // Snowflake, SQL Server and SQLite let any CTE refer to itself, with or
-        // without RECURSIVE.
-        let dialect = context.dialect().as_base();
-        let recursive = self.recursive
-            || dialect.is::<SnowflakeDialect>()
-            || dialect.is::<MsSqlDialect>()
-            || dialect.is::<SQLiteDialect>();
-        for (i, cte) in self.cte_tables.iter().enumerate() {
+        let recursive =
+            self.recursive || allows_implicit_recursive_cte(context.dialect().as_base());
+        for cte in &self.cte_tables {
             if recursive {
                 context.declare_recursive_cte(cte.alias.name.clone());
             }
             context.add_table_alias(
                 DbTableMeta::new_default_dialect("".to_string()),
-                vec![cte.alias.name.clone()],
+                cte.alias.name.clone(),
             );
             context.push_frame();
             cte.query.visit(context)?;
-            let frame = context.pop_frame();
-            if let Some(mut f) = frame {
-                // The CTE body's own WITH scope ends with the body:
-                // resolve its registrations before they merge into the
-                // enclosing query, where they would capture references
-                // meant for real tables or enclosing CTEs.
-                context.resolve_subquery_cte_dependencies(&mut f);
-                let table = DbTableMeta::new(
-                    vec![cte.alias.name.clone()],
-                    context.dialect(),
-                    context.default_schema().clone(),
-                    context.default_database().clone(),
-                );
-                context.collect_with_table(f, table);
+            if let Some(frame) = context.pop_frame() {
+                let table = context.table_meta(vec![cte.alias.name.clone()]);
+                context.collect_with_table(frame, table);
             }
-
-            if i == 0 {
-                context.collect_lower_nested_dependencies();
-            }
-
-            context.adjust_cte_dependencies(cte.alias.name.clone(), recursive);
+            let is_dml = matches!(
+                *cte.query.body,
+                SetExpr::Insert(_) | SetExpr::Update(_) | SetExpr::Delete(_) | SetExpr::Merge(_)
+            );
+            context.adjust_cte_dependencies(cte.alias.name.clone(), recursive, is_dml);
         }
         Ok(())
     }
@@ -72,67 +56,50 @@ impl Visit for With {
 impl Visit for TableFactor {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match self {
-            TableFactor::Table {
-                name, alias, args, ..
-            } => {
+            TableFactor::Table { alias, .. } => {
                 // Check if table name is provided using IDENTIFIER function,
                 // use it if found and valid, otherwise keep the current name
-                let effective_name = match resolve_effective_table_name(name, args, context) {
-                    Some(table_name) => table_name,
-                    None => return Ok(()), // Exit if couldn't parse identifier function
+                let Some(effective_idents) = get_table_name_from_table_factor(self, context) else {
+                    return Ok(());
                 };
 
                 // A reference to a CTE in scope is replaced by the CTE's name
                 // as defined, which may differ in case (`orders` for CTE
                 // `Orders` in Snowflake).
-                let effective_idents = convert_to_idents(&effective_name);
                 let cte = context.cte_named_by(&effective_idents);
                 let idents = match &cte {
                     Some(cte) => vec![cte.clone()],
                     None => effective_idents.clone(),
                 };
 
-                let table = DbTableMeta::new(
-                    idents.clone(),
-                    context.dialect(),
-                    context.default_schema().clone(),
-                    context.default_database().clone(),
-                );
+                let table = context.table_meta(idents);
                 if let Some(alias) = alias {
-                    context.add_table_alias(table, vec![alias.name.clone()]);
-                }
-
-                // A dependency keeps the name as written: `adjust_cte_dependencies`
-                // matches it to a CTE by folded key, and the CTE's spelling would
-                // make `ORDERS` and `public.orders` one table under a default
-                // schema.
-                if !context.is_main() {
-                    context.add_table_dependency(effective_idents);
+                    context.add_table_alias(table.clone(), alias.name.clone());
                 }
 
                 if context.is_main() {
                     match cte {
                         Some(cte) => context.mark_table_as_used(&cte),
-                        None => context.add_relation_input(idents),
+                        None => context.add_relation_input(table),
                     }
+                } else {
+                    // A dependency keeps the name as written: `adjust_cte_dependencies`
+                    // matches it to a CTE by folded key, and the CTE's spelling would
+                    // make `ORDERS` and `public.orders` one table under a default
+                    // schema.
+                    context.add_table_dependency(effective_idents);
                 }
 
                 Ok(())
             }
-            TableFactor::Pivot { table, alias, .. } => {
+            TableFactor::Pivot { table, alias, .. } | TableFactor::Unpivot { table, alias, .. } => {
                 table.visit(context)?;
-                if let Some(ident) = get_table_name_from_table_factor(table, &*context) {
-                    if let Some(pivot_alias) = alias {
-                        context.add_table_alias(
-                            DbTableMeta::new(
-                                context.resolve_cte_reference(ident),
-                                context.dialect(),
-                                context.default_schema().clone(),
-                                context.default_database().clone(),
-                            ),
-                            vec![pivot_alias.clone().name],
-                        );
-                    }
+                if let (Some(alias), Some(ident)) =
+                    (alias, get_table_name_from_table_factor(table, context))
+                {
+                    let resolved = context.resolve_cte_reference(ident);
+                    let meta = context.table_meta(resolved);
+                    context.add_table_alias(meta, alias.name.clone());
                 }
                 Ok(())
             }
@@ -144,20 +111,10 @@ impl Visit for TableFactor {
             } => {
                 context.push_frame();
                 subquery.visit(context)?;
-                let mut frame = context.pop_frame().unwrap();
-                // The subquery's WITH scope ends with it: resolve its
-                // CTE registrations before they merge into the enclosing
-                // query, where they would capture references meant for
-                // real tables or enclosing CTEs.
-                context.resolve_subquery_cte_dependencies(&mut frame);
+                let frame = context.pop_frame().unwrap();
 
                 if let Some(alias) = alias {
-                    let table = DbTableMeta::new(
-                        vec![alias.clone().name],
-                        context.dialect(),
-                        context.default_schema().clone(),
-                        context.default_database().clone(),
-                    );
+                    let table = context.table_meta(vec![alias.name.clone()]);
                     context.collect_with_table(frame, table);
                 } else {
                     context.collect(frame);
@@ -165,56 +122,22 @@ impl Visit for TableFactor {
 
                 Ok(())
             }
-            TableFactor::TableFunction { .. } => {
+            TableFactor::TableFunction { .. } | TableFactor::Function { .. } => {
                 // https://docs.snowflake.com/en/sql-reference/functions-table
-                // We can skip them as we don't support extracting lineage from functions
-                Ok(())
-            }
-            TableFactor::Function { .. } => {
                 // https://github.com/apache/datafusion-sqlparser-rs/pull/1026/files#r1373705587
-                // This variant provides distinct functionality from TableFunction but can be
-                // treated the same here
+                // Skip table functions as we don't support extracting lineage from functions
                 Ok(())
             }
             TableFactor::NestedJoin {
                 table_with_joins, ..
-            } => {
-                table_with_joins.relation.visit(context)?;
-                for join in &table_with_joins.joins {
-                    join.visit(context)?;
-                }
-                Ok(())
-            }
+            } => table_with_joins.visit(context),
             TableFactor::UNNEST { array_exprs, .. } => {
                 // https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unnest_operator
-                // BigQuery's `UNNEST(...)` (e.g. UNNEST(GENERATE_ARRAY(1, 1000)) AS n) is a
-                // row generator over an array expression, not a real table - so UNNEST itself
-                // contributes no input. But the array expression can still reference real
-                // tables (e.g. UNNEST(ARRAY(SELECT id FROM source_table))), so visit each one
-                // rather than discarding them outright.
+                // BigQuery's `UNNEST(...)` is a row generator over an array expression, not a
+                // real table, so UNNEST itself contributes no input; still visit array_exprs
+                // in case they contain subqueries referencing real tables.
                 for array_expr in array_exprs {
                     array_expr.visit(context)?;
-                }
-                Ok(())
-            }
-            TableFactor::Unpivot { table, alias, .. } => {
-                // https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unpivot_operator
-                // Same bug class as UNNEST above and #1358: this variant had no arm and fell
-                // through to the catch-all Err. Mirrors the Pivot arm above - the real table
-                // lineage lives in the wrapped `table`.
-                table.visit(context)?;
-                if let Some(ident) = get_table_name_from_table_factor(table, &*context) {
-                    if let Some(unpivot_alias) = alias {
-                        context.add_table_alias(
-                            DbTableMeta::new(
-                                context.resolve_cte_reference(ident),
-                                context.dialect(),
-                                context.default_schema().clone(),
-                                context.default_database().clone(),
-                            ),
-                            vec![unpivot_alias.clone().name],
-                        );
-                    }
                 }
                 Ok(())
             }
@@ -232,14 +155,14 @@ impl Visit for Expr {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match self {
             Expr::Subquery(query) => {
-                visit_subquery(query, context)?;
+                query.visit(context)?;
             }
             Expr::InSubquery {
                 expr: _,
                 subquery,
                 negated: _,
             } => {
-                visit_subquery(subquery, context)?;
+                subquery.visit(context)?;
             }
             Expr::BinaryOp { left, op: _, right } => {
                 left.visit(context)?;
@@ -268,9 +191,8 @@ impl Visit for Expr {
                 }
             }
             Expr::Identifier(id) => {
-                let context_set = context.column_context().is_some();
-                if context_set {
-                    let descendant = context.column_context().as_ref().unwrap().name.clone();
+                if let Some(column_ctx) = context.column_context() {
+                    let descendant = column_ctx.name.clone();
                     context.add_column_ancestors(
                         ColumnMeta::new(descendant, None),
                         vec![ColumnMeta::new(
@@ -281,50 +203,13 @@ impl Visit for Expr {
                 }
             }
             Expr::CompoundIdentifier(ids) => {
-                let context_set = context.column_context().is_some();
-                if context_set {
-                    let descendant = context.column_context().as_ref().unwrap().name.clone();
-                    let ancestor = ids.last().unwrap().value.clone();
-                    let qualifier: Vec<Ident> = ids.iter().take(ids.len() - 1).cloned().collect();
-                    // The qualifier binds to a name this SELECT's FROM clause
-                    // introduces before it can bind to a CTE, compared under
-                    // the dialect's folding: `orders.x` is `t.x` in
-                    // `FROM t AS ORDERS`, and `raw.orders.id` in
-                    // `FROM raw.orders`, even with CTE `Orders` in scope.
-                    // A name an enclosing SELECT's FROM clause introduces
-                    // keeps the qualifier as written, unless that FROM item
-                    // is the CTE itself.
-                    let relation = match context.correlation_named_by(&qualifier) {
-                        Some(relation) => relation,
-                        None => match context.cte_named_by(&qualifier) {
-                            Some(cte) => {
-                                let as_written = DbTableMeta::new(
-                                    qualifier.clone(),
-                                    context.dialect(),
-                                    context.default_schema().clone(),
-                                    context.default_database().clone(),
-                                );
-                                let outer = context.enclosing_correlation_named_by(&qualifier);
-                                if context.is_relation_alias(&as_written)
-                                    || outer.is_some_and(|relation| relation[..] != [cte.clone()])
-                                {
-                                    qualifier
-                                } else {
-                                    vec![cte]
-                                }
-                            }
-                            None => qualifier,
-                        },
-                    };
-                    let table = DbTableMeta::new(
-                        relation,
-                        context.dialect(),
-                        context.default_schema().clone(),
-                        context.default_database().clone(),
-                    );
+                if let Some(column_ctx) = context.column_context() {
+                    let descendant = column_ctx.name.clone();
+                    let (ancestor_ident, qualifier) = ids.split_last().unwrap();
+                    let table = context.resolve_column_qualifier(qualifier.to_vec());
                     context.add_column_ancestors(
                         ColumnMeta::new(descendant, None),
-                        vec![ColumnMeta::new(ancestor, Some(table))],
+                        vec![ColumnMeta::new(ancestor_ident.value.clone(), Some(table))],
                     );
                 }
             }
@@ -485,7 +370,7 @@ impl Visit for Expr {
                 }
             }
             Expr::Exists { subquery, .. } => {
-                visit_subquery(subquery, context)?;
+                subquery.visit(context)?;
             }
             Expr::GroupingSets(list) | Expr::Cube(list) | Expr::Rollup(list) => {
                 for exprs in list {
@@ -527,7 +412,7 @@ impl Visit for Function {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match &self.args {
             FunctionArguments::None => {}
-            FunctionArguments::Subquery(query) => visit_subquery(query, context)?,
+            FunctionArguments::Subquery(query) => query.visit(context)?,
             FunctionArguments::List(arguments) => {
                 for arg in &arguments.args {
                     arg.visit(context)?;
@@ -641,46 +526,43 @@ impl Visit for Join {
     }
 }
 
+impl Visit for TableWithJoins {
+    fn visit(&self, context: &mut Context) -> Result<()> {
+        self.relation.visit(context)?;
+        for join in &self.joins {
+            join.visit(context)?;
+        }
+        Ok(())
+    }
+}
+
+fn table_with_joins_relations(table: &TableWithJoins) -> impl Iterator<Item = &TableFactor> {
+    std::iter::once(&table.relation).chain(table.joins.iter().map(|join| &join.relation))
+}
+
 impl Visit for Select {
     fn visit(&self, context: &mut Context) -> Result<()> {
         // If we're selecting from a single table, that table becomes the default
-        if self.from.len() == 1 {
-            let t = self.from.first().unwrap();
-            if let TableFactor::Table { alias, .. } = &t.relation {
-                if let Some(ident) = get_table_name_from_table_factor(&t.relation, &*context) {
-                    let table = DbTableMeta::new(
-                        context.resolve_cte_reference(ident),
-                        context.dialect(),
-                        context.default_schema().clone(),
-                        context.default_database().clone(),
-                    );
-                    if let Some(alias) = alias {
-                        context.add_table_alias(table.clone(), vec![alias.clone().name]);
-                    }
-                    context.set_table_context(Some(table));
-                }
+        if let [t] = self.from.as_slice() {
+            if let Some(ident) = get_table_name_from_table_factor(&t.relation, context) {
+                let resolved = context.resolve_cte_reference(ident);
+                let table = context.table_meta(resolved);
+                context.set_table_context(Some(table));
             }
         }
 
         // The names this SELECT's FROM clause introduces, in scope until the
         // end of the SELECT, even when visiting it fails. A nested query
         // opens its own scope, so it never binds to these.
-        let names = self
-            .from
-            .iter()
-            .flat_map(|table| {
-                std::iter::once(&table.relation)
-                    .chain(table.joins.iter().map(|join| &join.relation))
-            })
-            .flat_map(|relation| correlation_names(relation, context))
-            .collect();
-        context.push_correlation_names(names);
-        let visited = visit_from(&self.from, context).and_then(|tables_frame| {
+        let mut names = Vec::new();
+        for relation in self.from.iter().flat_map(table_with_joins_relations) {
+            collect_correlation_names(relation, context, &mut names);
+        }
+        let tables_frame = context.with_correlation_names(names, |context| {
+            let tables_frame = visit_from(&self.from, context)?;
             visit_select_clauses(self, context)?;
             Ok(tables_frame)
-        });
-        context.pop_correlation_names();
-        let tables_frame = visited?;
+        })?;
 
         if let Some(into) = &self.into {
             // MySQL SELECT INTO assigns variables rather than creating tables.
@@ -702,7 +584,6 @@ impl Visit for Select {
         }
 
         context.set_table_context(None);
-
         context.coalesce(tables_frame);
 
         Ok(())
@@ -712,21 +593,20 @@ impl Visit for Select {
 /// Visits the FROM items of a SELECT and returns the frame holding their
 /// tables.
 fn visit_from(from: &[TableWithJoins], context: &mut Context) -> Result<ContextFrame> {
-    context.push_frame();
-
-    for table in from {
+    fn visit_item(item: &impl Visit, context: &mut Context) -> Result<()> {
         context.push_frame();
-        table.relation.visit(context)?;
+        item.visit(context)?;
         let frame = context.pop_frame().unwrap();
         context.collect_aliases(&frame);
         context.collect(frame);
+        Ok(())
+    }
 
+    context.push_frame();
+    for table in from {
+        visit_item(&table.relation, context)?;
         for join in &table.joins {
-            context.push_frame();
-            join.visit(context)?;
-            let frame = context.pop_frame().unwrap();
-            context.collect_aliases(&frame);
-            context.collect(frame);
+            visit_item(join, context)?;
         }
     }
 
@@ -735,32 +615,41 @@ fn visit_from(from: &[TableWithJoins], context: &mut Context) -> Result<ContextF
     Ok(tables_frame)
 }
 
-/// The names a FROM item introduces for column qualifiers, each with the
-/// relation it stands for. An alias stands for itself and hides whatever
+/// Appends the names a FROM item introduces for column qualifiers, each with
+/// the relation it stands for. An alias stands for itself and hides whatever
 /// it renames; an unaliased table stands for its full name (CTE references
 /// resolved) under its last name part; an unaliased parenthesized join
 /// introduces the names of its members, and an unaliased PIVOT or UNPIVOT
 /// those of the table it wraps.
-fn correlation_names(relation: &TableFactor, context: &Context) -> Vec<(Ident, Vec<Ident>)> {
+fn collect_correlation_names(
+    relation: &TableFactor,
+    context: &Context,
+    out: &mut Vec<(Ident, Vec<Ident>)>,
+) {
     if let Some(alias) = table_factor_alias(relation) {
-        return vec![(alias.name.clone(), vec![alias.name.clone()])];
+        out.push((alias.name.clone(), vec![alias.name.clone()]));
+        return;
     }
     match relation {
-        TableFactor::Table { .. } => get_table_name_from_table_factor(relation, context)
-            .map(|name| context.resolve_cte_reference(name))
-            .and_then(|name| Some((name.last()?.clone(), name)))
-            .into_iter()
-            .collect(),
+        TableFactor::Table { .. } => {
+            if let Some(ident) = get_table_name_from_table_factor(relation, context) {
+                let resolved = context.resolve_cte_reference(ident);
+                if let Some(last) = resolved.last().cloned() {
+                    out.push((last, resolved));
+                }
+            }
+        }
         TableFactor::NestedJoin {
             table_with_joins, ..
-        } => std::iter::once(&table_with_joins.relation)
-            .chain(table_with_joins.joins.iter().map(|join| &join.relation))
-            .flat_map(|member| correlation_names(member, context))
-            .collect(),
-        TableFactor::Pivot { table, .. } | TableFactor::Unpivot { table, .. } => {
-            correlation_names(table, context)
+        } => {
+            for member in table_with_joins_relations(table_with_joins) {
+                collect_correlation_names(member, context, out);
+            }
         }
-        _ => vec![],
+        TableFactor::Pivot { table, .. } | TableFactor::Unpivot { table, .. } => {
+            collect_correlation_names(table, context, out);
+        }
+        _ => {}
     }
 }
 
@@ -807,25 +696,11 @@ fn visit_select_clauses(select: &Select, context: &mut Context) -> Result<()> {
 
     context.set_column_context(None);
 
-    if let Some(selection) = &select.selection {
-        context.push_frame();
-        selection.visit(context)?;
-        let frame = context.pop_frame().unwrap();
-        context.collect_aliases(&frame);
-    }
-
-    if let Some(having) = &select.having {
-        context.push_frame();
-        having.visit(context)?;
-        let frame = context.pop_frame().unwrap();
-        context.collect_aliases(&frame);
-    }
-
-    if let Some(qualify) = &select.qualify {
-        context.push_frame();
-        qualify.visit(context)?;
-        let frame = context.pop_frame().unwrap();
-        context.collect_aliases(&frame);
+    for clause in [&select.selection, &select.having, &select.qualify]
+        .into_iter()
+        .flatten()
+    {
+        visit_isolated(context, |ctx| clause.visit(ctx))?;
     }
 
     Ok(())
@@ -844,11 +719,7 @@ impl Visit for SetExpr {
                 Ok(())
             }
             SetExpr::Insert(stmt) => stmt.visit(context),
-            // A parenthesized query is a scope of its own - as a set
-            // operation branch it must not leave its CTE registrations
-            // in the shared set-operation frame, where they would
-            // capture the other branches' references.
-            SetExpr::Query(q) => visit_subquery(q, context),
+            SetExpr::Query(q) => q.visit(context),
             SetExpr::SetOperation {
                 op: _,
                 set_quantifier: _,
@@ -872,40 +743,50 @@ impl Visit for Query {
             return Err(anyhow!("SQL pipe operators are not supported"));
         }
 
-        context.push_frame();
+        let Some(with) = &self.with else {
+            // Isolate the query body in its own frame so its FROM aliases do
+            // not leak into the enclosing statement (e.g. CTAS/CREATE VIEW
+            // targets or INSERT ALL WHEN predicates) or sibling set-op arms.
+            context.push_frame();
+            let result = self.body.visit(context);
+            let frame = context.pop_frame().unwrap();
+            context.collect(frame);
+            return result;
+        };
+
         // Whether the region this query sits in is the main body -
         // the body frame below may only be promoted back to main if
         // it is. A query nested inside a CTE body keeps the enclosing
         // region's flag: its direct table reads are dependencies of
         // that CTE, not inputs of the statement.
         let enclosing_is_main = context.is_main();
-        if self.with.is_some() {
-            context.unset_frame_to_main_body();
-        }
 
-        if let Some(with) = &self.with {
-            with.visit(context)?
+        // Keep `with_frame` on the stack while visiting `self.body` so its
+        // CTE definitions and aliases are visible inside this query without
+        // ever leaking into the enclosing frame.
+        context.push_frame();
+        context.unset_frame_to_main_body();
+        if let Err(err) = with.visit(context) {
+            context.pop_frame();
+            return Err(err);
         }
-        let with_frame = context.pop_frame().unwrap();
-
-        context.collect_aliases(&with_frame);
 
         context.push_frame();
-        if self.with.is_some() && enclosing_is_main {
+        if enclosing_is_main {
             context.set_frame_to_main_body();
         }
+        let body_result = self.body.visit(context);
 
-        self.body.visit(context)?;
+        let mut body_frame = context.pop_frame().unwrap();
+        let with_frame = context.pop_frame().unwrap();
 
-        if self.with.is_some() {
-            context.unset_frame_to_main_body();
-        }
+        body_result?;
 
-        let frame = context.pop_frame().unwrap();
-        context.collect(frame);
-
-        // Resolve CTEs
-        context.coalesce(with_frame);
+        // Resolve column lineage and CTE inputs/dependencies within this
+        // query's scope before merging `body_frame` into the enclosing frame.
+        body_frame.coalesce(&with_frame);
+        context.resolve_cte_scope(with_frame, &mut body_frame, with.recursive);
+        context.collect(body_frame);
 
         Ok(())
     }
@@ -928,21 +809,7 @@ impl Visit for Statement {
                     add_multi_table_target(clause, context);
                 }
                 for when_clause in &insert.multi_table_when_clauses {
-                    // A WHEN predicate is a general expression and can
-                    // read tables through subqueries; visit it so those
-                    // tables join the statement's inputs. Like a SELECT
-                    // predicate, it is visited in a temporary frame: the
-                    // columns a predicate subquery projects are compared
-                    // or tested, never inserted, so they must not enter
-                    // the INSERT's column lineage. Only the frame's table
-                    // dependencies are kept: a CTE or alias defined inside
-                    // one predicate is scoped to it, and registering it on
-                    // the statement frame would hide a real table of the
-                    // same name read by a later predicate.
-                    context.push_frame();
-                    when_clause.condition.visit(context)?;
-                    let frame = context.pop_frame().unwrap();
-                    context.collect_dependencies(&frame);
+                    visit_isolated(context, |ctx| when_clause.condition.visit(ctx))?;
                     for clause in &when_clause.into_clauses {
                         add_multi_table_target(clause, context);
                     }
@@ -954,16 +821,10 @@ impl Visit for Statement {
                 }
                 match &insert.table {
                     TableObject::TableName(name) => {
-                        if let Some(name) =
+                        if let Some(idents) =
                             resolve_insert_target_name(name, &insert.columns, context)
                         {
-                            let idents = convert_to_idents(&name);
-                            // An empty name can never be a real target (it is
-                            // what multi-table inserts leave behind); registering
-                            // it would panic in DbTableMeta construction.
-                            if !idents.is_empty() {
-                                context.add_insert_output(idents);
-                            }
+                            context.add_insert_output(idents);
                         }
                     }
                     TableObject::TableFunction(func) => {
@@ -973,56 +834,46 @@ impl Visit for Statement {
                 }
             }
             Statement::Merge(merge) => {
-                if let Some(table_name) = get_table_name_from_table_factor(&merge.table, &*context)
-                {
+                if let Some(table_name) = get_table_name_from_table_factor(&merge.table, context) {
                     context.add_output(table_name);
                 }
                 merge.source.visit(context)?;
-                merge.on.visit(context)?;
-                // A WHEN clause's predicate and action expressions are
-                // general expressions, like the ON clause: they can read
-                // tables through subqueries, and those tables are inputs
-                // of the statement. Visit each clause in a temporary
-                // frame, as a multi-table INSERT visits its WHEN
-                // predicates, and keep only the frame's table
-                // dependencies: a CTE or alias defined inside one clause
-                // is scoped to it and must not capture a later clause's
-                // references.
+                visit_isolated(context, |ctx| merge.on.visit(ctx))?;
                 for clause in &merge.clauses {
-                    context.push_frame();
-                    if let Some(predicate) = &clause.predicate {
-                        predicate.visit(context)?;
-                    }
-                    match &clause.action {
-                        MergeAction::Insert(insert) => {
-                            if let MergeInsertKind::Values(values) = &insert.kind {
-                                for row in &values.rows {
-                                    for expr in &row.content {
-                                        expr.visit(context)?;
+                    visit_isolated(context, |ctx| {
+                        if let Some(predicate) = &clause.predicate {
+                            predicate.visit(ctx)?;
+                        }
+                        match &clause.action {
+                            MergeAction::Insert(insert) => {
+                                if let MergeInsertKind::Values(values) = &insert.kind {
+                                    for row in &values.rows {
+                                        for expr in &row.content {
+                                            expr.visit(ctx)?;
+                                        }
                                     }
                                 }
-                            }
-                            if let Some(predicate) = &insert.insert_predicate {
-                                predicate.visit(context)?;
-                            }
-                        }
-                        MergeAction::Update(update) => {
-                            if let MergeUpdateKind::Set(assignments) = &update.kind {
-                                for assignment in assignments {
-                                    assignment.value.visit(context)?;
+                                if let Some(predicate) = &insert.insert_predicate {
+                                    predicate.visit(ctx)?;
                                 }
                             }
-                            if let Some(predicate) = &update.update_predicate {
-                                predicate.visit(context)?;
+                            MergeAction::Update(update) => {
+                                if let MergeUpdateKind::Set(assignments) = &update.kind {
+                                    for assignment in assignments {
+                                        assignment.value.visit(ctx)?;
+                                    }
+                                }
+                                if let Some(predicate) = &update.update_predicate {
+                                    predicate.visit(ctx)?;
+                                }
+                                if let Some(predicate) = &update.delete_predicate {
+                                    predicate.visit(ctx)?;
+                                }
                             }
-                            if let Some(predicate) = &update.delete_predicate {
-                                predicate.visit(context)?;
-                            }
+                            MergeAction::Delete { .. } | MergeAction::DoNothing { .. } => {}
                         }
-                        MergeAction::Delete { .. } | MergeAction::DoNothing { .. } => {}
-                    }
-                    let frame = context.pop_frame().unwrap();
-                    context.collect_dependencies(&frame);
+                        Ok(())
+                    })?;
                 }
             }
             Statement::CreateTable(ct) => {
@@ -1050,18 +901,14 @@ impl Visit for Statement {
             Statement::CreateStage {
                 name, stage_params, ..
             } => {
-                if stage_params.url.as_ref().is_some() {
-                    context.add_non_table_input(
-                        vec![Ident::new(stage_params.url.as_ref().unwrap().to_string())],
-                        true,
-                        true,
-                    );
+                if let Some(url) = &stage_params.url {
+                    context.add_non_table_input(vec![Ident::new(url.to_string())], true, true);
                 }
                 context.add_non_table_output(convert_to_idents(name), false, true);
             }
             Statement::Update(update) => {
                 if let Some(name) =
-                    get_table_name_from_table_factor(&update.table.relation, &*context)
+                    get_table_name_from_table_factor(&update.table.relation, context)
                 {
                     context.add_output(name);
                 }
@@ -1070,24 +917,19 @@ impl Visit for Statement {
                     join.visit(context)?;
                 }
 
-                if let Some(from) = &update.from {
-                    match from {
-                        UpdateTableFromKind::BeforeSet(tables)
-                        | UpdateTableFromKind::AfterSet(tables) => {
-                            for table_with_joins in tables {
-                                table_with_joins.relation.visit(context)?;
-                                for join in &table_with_joins.joins {
-                                    join.visit(context)?;
-                                }
-                            }
-                        }
+                if let Some(
+                    UpdateTableFromKind::BeforeSet(tables) | UpdateTableFromKind::AfterSet(tables),
+                ) = &update.from
+                {
+                    for table in tables {
+                        table.visit(context)?;
                     }
                 }
                 for assignment in &update.assignments {
                     assignment.value.visit(context)?;
                 }
                 if let Some(expr) = &update.selection {
-                    expr.visit(context)?;
+                    visit_isolated(context, |ctx| expr.visit(ctx))?;
                 }
             }
             Statement::AlterTable(alter) => {
@@ -1122,27 +964,15 @@ impl Visit for Statement {
                 };
 
                 if delete.tables.is_empty() {
-                    for table in tables {
-                        if let Some(output) =
-                            get_table_name_from_table_factor(&table.relation, &*context)
-                        {
+                    for relation in tables.iter().flat_map(table_with_joins_relations) {
+                        if let Some(output) = get_table_name_from_table_factor(relation, context) {
                             context.add_output(output);
-                        }
-                        for join in &table.joins {
-                            if let Some(output) =
-                                get_table_name_from_table_factor(&join.relation, &*context)
-                            {
-                                context.add_output(output);
-                            }
                         }
                     }
                 } else {
                     let existing_inputs = context.inputs.clone();
                     for table in tables {
-                        table.relation.visit(context)?;
-                        for join in &table.joins {
-                            join.visit(context)?;
-                        }
+                        table.visit(context)?;
                     }
                     for table in &delete.tables {
                         context.move_input_to_output(convert_to_idents(table));
@@ -1152,15 +982,12 @@ impl Visit for Statement {
 
                 if let Some(using) = &delete.using {
                     for table in using {
-                        table.relation.visit(context)?;
-                        for join in &table.joins {
-                            join.visit(context)?;
-                        }
+                        table.visit(context)?;
                     }
                 }
 
                 if let Some(expr) = &delete.selection {
-                    expr.visit(context)?;
+                    visit_isolated(context, |ctx| expr.visit(ctx))?;
                 }
             }
             Statement::Truncate(truncate) => {
@@ -1216,8 +1043,8 @@ impl Visit for Statement {
 
                 // Two ids are present, set db and schema
                 if first_id.is_some() && second_id.is_some() {
-                    context.set_default_database(first_id.clone());
-                    context.set_default_schema(second_id.clone());
+                    context.set_default_database(first_id);
+                    context.set_default_schema(second_id);
                 } else if first_id.is_some() {
                     // One id is present, each dialect can work differently
                     match use_enum {
@@ -1225,7 +1052,7 @@ impl Visit for Statement {
                             context.set_default_database(first_id); // Databricks specific
                         }
                         Use::Schema(_) => {
-                            context.set_default_schema(first_id.clone()); // Snowflake specific
+                            context.set_default_schema(first_id); // Snowflake specific
                         }
                         Use::Database(_) => {
                             if context.dialect().as_base().is::<DatabricksDialect>() {
@@ -1250,26 +1077,11 @@ impl Visit for Statement {
             _ => {}
         }
 
-        let mut frame = context.pop_frame().unwrap();
-        if matches!(self, Statement::Insert(_)) {
-            // An INSERT can sit inside a statement-level WITH (the
-            // query body is a SetExpr::Insert), with its source
-            // query's own CTE registrations accumulated on this
-            // statement frame. collect_inputs below inserts a used
-            // registration's dependencies verbatim, so a bare
-            // dependency naming a CTE of the enclosing statement
-            // would be emitted as a table and the CTE's own inputs
-            // lost. Resolve this frame the way a subquery's frame is
-            // resolved: such a dependency marks the enclosing CTE
-            // used instead.
-            context.resolve_subquery_cte_dependencies(&mut frame);
+        let frame = context.pop_frame().unwrap();
+        if context.is_main() {
+            context.collect_inputs(&frame);
         }
-        let cte_deps = frame.cte_dependencies.clone();
-        let deps = frame.dependencies.clone();
-        let bare_deps = frame.bare_dependencies.clone();
-        context.collect_inputs(cte_deps, deps, bare_deps);
         context.collect(frame);
-        context.clear_global_cte_dependencies();
 
         Ok(())
     }
@@ -1286,43 +1098,22 @@ impl Visit for Table {
 
 // --- Utils ---
 
-/// Visit a subquery appearing inside an expression. The subquery runs
-/// in a dedicated frame: when it returns, its CTE registrations are
-/// resolved and dropped (see
-/// [`Context::resolve_subquery_cte_dependencies`]) before the frame's
-/// outcome merges into the enclosing frame, so a CTE defined inside
-/// the subquery stays invisible outside it.
-fn visit_subquery(query: &Query, context: &mut Context) -> Result<()> {
+/// Visits a predicate or action clause in a temporary frame so subqueries
+/// contribute table inputs/dependencies without leaking projected columns or
+/// local aliases into the enclosing frame.
+fn visit_isolated(context: &mut Context, f: impl FnOnce(&mut Context) -> Result<()>) -> Result<()> {
     context.push_frame();
-    let result = query.visit(context);
-    let mut frame = context.pop_frame().unwrap();
-    context.resolve_subquery_cte_dependencies(&mut frame);
-    // Deliberately no collect_aliases here (TableFactor::Derived does
-    // the same): the frame's aliases are scoped to the subquery, and
-    // the CTE names among them - each registered as an alias of an
-    // empty table - would otherwise leak into the enclosing frame and
-    // hide real tables of the same name read later. collect() already
-    // merges everything that may travel up: column ancestry,
-    // dependencies and the (resolved) CTE outcome.
-    context.collect(frame);
+    let result = f(context);
+    let frame = context.pop_frame().unwrap();
+    context.collect_dependencies(frame);
     result
 }
 
 /// Register one multi-table insert clause target (an INTO clause of a
-/// Snowflake/Oracle INSERT ALL or INSERT FIRST) as an output. The
-/// target's effective name is resolved first: IDENTIFIER('t') names the
-/// table through a function call, and converting the raw name would
-/// register a false output called IDENTIFIER and lose the real target.
-/// The unconditional into-clauses, the WHEN clauses' into-clauses and
-/// the ELSE into-clauses all go through here so the three paths cannot
-/// drift apart.
+/// Snowflake/Oracle INSERT ALL or INSERT FIRST) as an output.
 fn add_multi_table_target(clause: &MultiTableInsertIntoClause, context: &mut Context) {
-    if let Some(name) = resolve_effective_table_name(&clause.table_name, &None, context) {
-        // The same guard as the regular INSERT target: a quoted empty
-        // name (INTO "") names nothing and must not become an output.
-        if !is_empty_object_name(&name) {
-            context.add_insert_output(convert_to_idents(&name));
-        }
+    if let Some(idents) = resolve_effective_table_name(&clause.table_name, &None, context) {
+        context.add_insert_output(idents);
     }
 }
 
@@ -1337,14 +1128,13 @@ fn resolve_insert_target_name(
     name: &ObjectName,
     columns: &[ObjectName],
     context: &Context,
-) -> Option<ObjectName> {
-    let is_mssql_or_databricks = context.dialect().as_base().is::<DatabricksDialect>()
-        || context.dialect().as_base().is::<MsSqlDialect>();
+) -> Option<Vec<Ident>> {
+    let dialect = context.dialect().as_base();
+    let is_mssql_or_databricks = dialect.is::<DatabricksDialect>() || dialect.is::<MsSqlDialect>();
     let is_bare_identifier = is_mssql_or_databricks
-        && name.0.len() == 1
         && matches!(
-            name.0.first(),
-            Some(ObjectNamePart::Identifier(part)) if part.value.eq_ignore_ascii_case("identifier")
+            name.0.as_slice(),
+            [ObjectNamePart::Identifier(part)] if part.value.eq_ignore_ascii_case("identifier")
         );
     if is_bare_identifier && !columns.is_empty() {
         // The target carries something in its column list. For an
@@ -1352,23 +1142,17 @@ fn resolve_insert_target_name(
         // here by sqlparser; a single-quoted string is the one
         // argument form that resolves to a table name.
         let pseudo_column = match columns {
-            [column] if column.0.len() == 1 => match column.0.first() {
-                Some(ObjectNamePart::Identifier(part)) if part.quote_style == Some('\'') => {
-                    Some(part.value.clone())
+            [column] => match column.0.as_slice() {
+                [ObjectNamePart::Identifier(part)] if part.quote_style == Some('\'') => {
+                    Some(part.value.as_str())
                 }
                 _ => None,
             },
             _ => None,
         };
         if let Some(value) = pseudo_column {
-            let resolved = parse_identifier_string(&value, context.dialect().as_base());
-            // The same check the function form applies: an empty or
-            // blank string names nothing.
-            return if is_empty_object_name(&resolved) {
-                None
-            } else {
-                Some(resolved)
-            };
+            let resolved = parse_identifier_string(value, dialect);
+            return (!is_empty_idents(&resolved)).then_some(resolved);
         }
         // Any other argument form - quoted parts, a variable, several
         // values - cannot be resolved, and then the target is an
@@ -1380,31 +1164,23 @@ fn resolve_insert_target_name(
             return None;
         }
     }
-    match resolve_effective_table_name(name, &None, context) {
-        // A quoted empty identifier (INSERT INTO "") names nothing,
-        // like the empty IDENTIFIER('') string above: emit no output
-        // rather than one with an empty name.
-        Some(resolved) if is_empty_object_name(&resolved) => None,
-        resolved => resolved,
-    }
+    resolve_effective_table_name(name, &None, context)
 }
 
 /// Whether an insert column is a plain column name, as opposed to an
 /// IDENTIFIER(...) argument that sqlparser spilled into the column
 /// list: one unquoted, bracket-quoted or backtick-quoted identifier.
 fn is_plain_column_name(column: &ObjectName) -> bool {
-    column.0.len() == 1
-        && matches!(
-            column.0.first(),
-            Some(ObjectNamePart::Identifier(part))
-                if matches!(part.quote_style, None | Some('[') | Some('`'))
-        )
+    matches!(
+        column.0.as_slice(),
+        [ObjectNamePart::Identifier(part)]
+            if matches!(part.quote_style, None | Some('[') | Some('`'))
+    )
 }
 
 fn get_table_name_from_table_factor(table: &TableFactor, context: &Context) -> Option<Vec<Ident>> {
     if let TableFactor::Table { name, args, .. } = table {
         resolve_effective_table_name(name, args, context)
-            .map(|table_name| convert_to_idents(&table_name))
     } else {
         None
     }
@@ -1414,88 +1190,56 @@ fn resolve_effective_table_name(
     name: &ObjectName,
     args: &Option<TableFunctionArgs>,
     context: &Context,
-) -> Option<ObjectName> {
-    if context.dialect().as_base().is::<DatabricksDialect>()
-        || context.dialect().as_base().is::<MsSqlDialect>()
-    {
-        let is_identifier_function = name
-            .0
-            .first()
-            .map(|part| match part {
-                ObjectNamePart::Function(_) => false,
-                ObjectNamePart::Identifier(ident) => ident.value.to_lowercase() == "identifier",
-            })
-            .unwrap_or(false);
-
-        if !is_identifier_function {
-            return Some(name.clone());
-        }
-        // Only a genuine IDENTIFIER() call carries arguments. With none,
-        // this is a plain, possibly qualified, table name whose first
-        // part happens to be `identifier` - a schema or catalog named
-        // `identifier`, say - and it must be kept as written.
-        let args = match args {
-            Some(args) => args,
-            None => return Some(name.clone()),
-        };
-        if args.args.len() != 1 {
-            return None; // Return None if the length is not 1, we do not support it yet
-        }
-        get_table_name_from_identifier_function_args(&args.args, context.dialect().as_base())
-    } else if context.dialect().as_base().is::<SnowflakeDialect>() {
-        name.0.first().and_then(|part| match part {
-            ObjectNamePart::Function(f) => {
-                if f.name.value.to_lowercase() == "identifier" {
-                    get_table_name_from_identifier_function_args(
-                        &f.args,
-                        context.dialect().as_base(),
-                    )
-                } else {
-                    Some(name.clone())
+) -> Option<Vec<Ident>> {
+    let dialect = context.dialect().as_base();
+    let idents = if dialect.is::<DatabricksDialect>() || dialect.is::<MsSqlDialect>() {
+        let is_identifier_function = matches!(
+            name.0.as_slice(),
+            [ObjectNamePart::Identifier(ident)] if ident.value.eq_ignore_ascii_case("identifier")
+        );
+        if is_identifier_function {
+            if let Some(args) = args {
+                if args.args.len() != 1 {
+                    return None;
                 }
+                identifier_function_arg(&args.args, dialect)?
+            } else {
+                // With no arguments this is a plain table named `identifier`.
+                convert_to_idents(name)
             }
-            ObjectNamePart::Identifier(_) => Some(name.clone()),
-        })
+        } else {
+            convert_to_idents(name)
+        }
+    } else if dialect.is::<SnowflakeDialect>() {
+        match name.0.first()? {
+            ObjectNamePart::Function(f) if f.name.value.eq_ignore_ascii_case("identifier") => {
+                identifier_function_arg(&f.args, dialect)?
+            }
+            _ => convert_to_idents(name),
+        }
     } else {
-        Some(name.clone())
-    }
+        convert_to_idents(name)
+    };
+
+    // An empty or blank name (e.g. `""`, `IDENTIFIER('')`, or the empty
+    // placeholder multi-table inserts leave on `insert.table`) names nothing.
+    (!is_empty_idents(&idents)).then_some(idents)
 }
 
-/// Whether an object name is a single identifier that is empty or
-/// blank - what IDENTIFIER('') and IDENTIFIER('   ') resolve to.
-/// Such a name names nothing.
-fn is_empty_object_name(name: &ObjectName) -> bool {
-    name.0.len() == 1
-        && matches!(
-            name.0.first(),
-            Some(ObjectNamePart::Identifier(part)) if part.value.trim().is_empty()
-        )
+fn is_empty_idents(idents: &[Ident]) -> bool {
+    idents.is_empty() || matches!(idents, [ident] if ident.value.trim().is_empty())
 }
 
-fn get_table_name_from_identifier_function_args(
-    args: &[FunctionArg],
-    dialect: &dyn Dialect,
-) -> Option<ObjectName> {
-    let arg = args.first()?; // Return None if empty
-
-    match arg {
-        FunctionArg::Unnamed(FunctionArgExpr::Expr(expr)) => match expr {
-            Expr::Identifier(ident) => Some(ObjectName::from(vec![ident.clone()])),
-            Expr::Value(ValueWithSpan {
-                value: Value::SingleQuotedString(ident),
-                span: _,
-            }) => {
-                let name = parse_identifier_string(ident, dialect);
-                // IDENTIFIER('') names nothing: emit no dataset rather
-                // than one with an empty name.
-                if is_empty_object_name(&name) {
-                    None
-                } else {
-                    Some(name)
-                }
-            }
-            _ => None,
-        },
+fn identifier_function_arg(args: &[FunctionArg], dialect: &dyn Dialect) -> Option<Vec<Ident>> {
+    let FunctionArg::Unnamed(FunctionArgExpr::Expr(expr)) = args.first()? else {
+        return None;
+    };
+    match expr {
+        Expr::Identifier(ident) => Some(vec![ident.clone()]),
+        Expr::Value(ValueWithSpan {
+            value: Value::SingleQuotedString(ident),
+            ..
+        }) => Some(parse_identifier_string(ident, dialect)),
         _ => None,
     }
 }
@@ -1506,7 +1250,7 @@ fn get_table_name_from_identifier_function_args(
 /// dialect so quoted components keep their quoting and case. A string that
 /// does not parse as one complete object name keeps the historical
 /// treatment of the whole string as a single identifier.
-fn parse_identifier_string(value: &str, dialect: &dyn Dialect) -> ObjectName {
+fn parse_identifier_string(value: &str, dialect: &dyn Dialect) -> Vec<Ident> {
     let parsed = (|| {
         let mut parser = Parser::new(dialect).try_with_sql(value).ok()?;
         let name = parser.parse_object_name(false).ok()?;
@@ -1516,12 +1260,12 @@ fn parse_identifier_string(value: &str, dialect: &dyn Dialect) -> ObjectName {
             .iter()
             .all(|part| matches!(part, ObjectNamePart::Identifier(_)));
         if fully_consumed && all_identifiers && !name.0.is_empty() {
-            Some(name)
+            Some(convert_to_idents(&name))
         } else {
             None
         }
     })();
-    parsed.unwrap_or_else(|| ObjectName::from(vec![Ident::new(value.to_string())]))
+    parsed.unwrap_or_else(|| vec![Ident::new(value.to_string())])
 }
 
 fn convert_copy_location_to_idents(object_name: &ObjectName) -> Vec<Ident> {

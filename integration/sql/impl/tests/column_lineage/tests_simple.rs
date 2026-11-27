@@ -507,3 +507,38 @@ fn test_insert_all_column_lineage() {
         ]
     );
 }
+
+#[test]
+fn test_dml_predicate_subquery_projections_not_in_column_lineage() {
+    for (sql, dialect) in [
+        (
+            "DELETE FROM tgt WHERE id IN (SELECT secret FROM ref)",
+            "postgres",
+        ),
+        (
+            "UPDATE tgt SET x = 1 WHERE id IN (SELECT secret FROM ref)",
+            "postgres",
+        ),
+        (
+            "MERGE INTO tgt USING src ON tgt.id = src.id AND EXISTS (SELECT secret FROM ref) \
+             WHEN MATCHED THEN DELETE",
+            "snowflake",
+        ),
+    ] {
+        let output = test_sql_dialect(sql, dialect).unwrap();
+        assert!(
+            output.column_lineage.is_empty(),
+            "expected empty column lineage for {sql}, got {:?}",
+            output.column_lineage
+        );
+        assert!(
+            output
+                .table_lineage
+                .in_tables
+                .iter()
+                .any(|t| t.name == "ref"),
+            "expected ref in inputs for {sql}, got {:?}",
+            output.table_lineage.in_tables
+        );
+    }
+}

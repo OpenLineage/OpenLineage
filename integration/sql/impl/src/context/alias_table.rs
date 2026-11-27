@@ -21,20 +21,16 @@ impl AliasTable {
         self.table_aliases.insert(alias, table);
     }
 
-    pub fn get_table_from_alias(&self, alias: String) -> Option<&DbTableMeta> {
-        self.table_aliases.iter().find_map(|entry| {
-            if entry.0.qualified_name() == alias {
-                Some(entry.1)
-            } else {
-                None
-            }
-        })
+    pub fn get_table_from_alias(&self, alias: &str) -> Option<&DbTableMeta> {
+        self.table_aliases
+            .iter()
+            .find_map(|(k, v)| (k.qualified_name() == alias).then_some(v))
     }
 
     pub fn resolve_table<'a>(&'a self, name: &'a DbTableMeta) -> &'a DbTableMeta {
         let mut max_iter = 20; // does anyone need more than 20 aliases?
         let mut current = name;
-        while let Some(next) = self.get_table_from_alias(current.qualified_name()) {
+        while let Some(next) = self.get_table_from_alias(&current.qualified_name()) {
             current = next;
             max_iter -= 1;
             if max_iter <= 0 {

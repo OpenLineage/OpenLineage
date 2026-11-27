@@ -215,6 +215,14 @@ impl AsJavaObject for rust_impl::ExtractionError {
     }
 }
 
+fn optional_jstring(env: &mut Env<'_>, value: &JString) -> Result<Option<String>, Error> {
+    if value.as_raw().is_null() {
+        Ok(None)
+    } else {
+        value.try_to_string(env).map(Some)
+    }
+}
+
 fn throw_anyhow(env: &mut Env<'_>, err: anyhow::Error) {
     let _ = env.throw_new(
         JNIString::from("java/lang/RuntimeException"),
@@ -246,24 +254,9 @@ pub extern "system" fn Java_io_openlineage_sql_OpenLineageSql_parseNative(
                 vec_sql.push(s);
             }
 
-            let dialect_str: Option<String> = if dialect.as_raw().is_null() {
-                None
-            } else {
-                Some(dialect.try_to_string(env)?)
-            };
-            let dialect_obj = get_generic_dialect(dialect_str);
-
-            let default_schema_str: Option<String> = if default_schema.as_raw().is_null() {
-                None
-            } else {
-                Some(default_schema.try_to_string(env)?)
-            };
-
-            let default_database_str: Option<String> = if default_database.as_raw().is_null() {
-                None
-            } else {
-                Some(default_database.try_to_string(env)?)
-            };
+            let dialect_obj = get_generic_dialect(optional_jstring(env, &dialect)?);
+            let default_schema_str = optional_jstring(env, &default_schema)?;
+            let default_database_str = optional_jstring(env, &default_database)?;
 
             let parsed = parse_multiple_statements_with_default_database(
                 vec_sql,
