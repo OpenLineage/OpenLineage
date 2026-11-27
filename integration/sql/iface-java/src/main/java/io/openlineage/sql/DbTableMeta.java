@@ -114,6 +114,8 @@ public class DbTableMeta {
 
   @Override
   public int hashCode() {
-    return new HashCodeBuilder().append(database).append(schema).append(name).toHashCode();
+    // must be derived from the same value equals() compares, otherwise two tables that are equal
+    // can end up in different buckets of a hash-based collection
+    return new HashCodeBuilder().append(qualifiedName()).toHashCode();
   }
 }
