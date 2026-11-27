@@ -73,6 +73,7 @@ class RedshiftDataDatasetsProvider:
         if dataset_stat_facet:
             for ds_output in ds_outputs:
                 ds_output.custom_facets.update({"stats": dataset_stat_facet})
+                ds_output.output_facets.update({"outputStatistics": dataset_stat_facet})
 
         return RedshiftFacets(run_facets, ds_inputs, ds_outputs)
 

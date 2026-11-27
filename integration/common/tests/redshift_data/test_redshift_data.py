@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
+from openlineage.client.event_v2 import OutputDataset
+from openlineage.client.facet_v2 import output_statistics_output_dataset
 from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.provider.redshift_data import RedshiftDataDatasetsProvider
@@ -71,3 +73,34 @@ def test_redshift_get_facets():
     ]
 
     assert facets.inputs == expected_inputs
+
+
+def test_redshift_output_statistics_facet():
+    client = MagicMock()
+    client.describe_statement.return_value = read_file_json(CURRENT_DIR + "/statement_details.json")
+    client.describe_table.return_value = read_file_json(CURRENT_DIR + "/table_details.json")
+    outputs = [DbTableMeta(f"{DB_NAME}.{DB_SCHEMA_NAME}.{DB_TABLE_NAME.name}")]
+    connection_details = dict(
+        database=REDSHIFT_DATABASE,
+        db_user=REDSHIFT_DATABASE_USER,
+        cluster_identifier=CLUSTER_IDENTIFIER,
+        region=REGION_NAME,
+    )
+    provider = RedshiftDataDatasetsProvider(client=client, connection_details=connection_details)
+
+    facets = provider.get_facets("job_id", inputs=[], outputs=outputs)
+
+    statement = read_file_json(CURRENT_DIR + "/statement_details.json")
+    expected = output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
+        rowCount=statement["ResultRows"], size=statement["ResultSize"]
+    )
+
+    assert len(facets.output) == 1
+    output = facets.output[0]
+    assert output.output_facets == {"outputStatistics": expected}
+    # kept under the old key as well, so existing consumers are unaffected
+    assert output.custom_facets == {"stats": expected}
+
+    emitted = output.to_openlineage_dataset()
+    assert isinstance(emitted, OutputDataset)
+    assert emitted.outputFacets == {"outputStatistics": expected}
