@@ -527,4 +527,61 @@ class DataSourceV2RelationDatasetExtractorTest {
       }
     }
   }
+
+  /** Inputs take the version from the relation's table; outputs keep the catalog lookup. */
+  @Test
+  void testInputsAndOutputsUseTheirOwnVersionLookup() {
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      try (MockedStatic<PlanUtils> mockedPlanUtils = mockStatic(PlanUtils.class)) {
+        try (MockedStatic<DatasetVersionDatasetFacetUtils> versionUtils =
+            mockStatic(DatasetVersionDatasetFacetUtils.class)) {
+          DatasetFactory<OpenLineage.OutputDataset> datasetFactory =
+              DatasetFactory.output(openLineageContext);
+          DatasetIdentifier di = mock(DatasetIdentifier.class);
+          when(di.getNamespace()).thenReturn("file://tmp");
+          when(di.getName()).thenReturn("dataset-name");
+          when(openLineageContext.getOpenLineage())
+              .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+          when(CatalogUtils.getDatasetIdentifier(
+                  openLineageContext, tableCatalog, identifier, tableProperties))
+              .thenReturn(di);
+          when(DatasetVersionDatasetFacetUtils.extractInputVersionFromDataSourceV2Relation(
+                  openLineageContext, dataSourceV2Relation))
+              .thenReturn(Optional.of("input-version"));
+          when(DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+                  openLineageContext, dataSourceV2Relation))
+              .thenReturn(Optional.of("catalog-version"));
+          when(dataSourceV2Relation.schema()).thenReturn(new StructType());
+
+          assertThat(
+                  DataSourceV2RelationDatasetExtractor.extractIncludingVersionFacet(
+                          datasetFactory, openLineageContext, dataSourceV2Relation)
+                      .get(0)
+                      .getFacets()
+                      .getVersion()
+                      .getDatasetVersion())
+              .isEqualTo("input-version");
+          assertThat(
+                  DataSourceV2RelationDatasetExtractor.extractIncludingVersionFacet(
+                          datasetFactory,
+                          openLineageContext,
+                          dataSourceV2Relation,
+                          datasetFactory.createCompositeFacetBuilder())
+                      .get(0)
+                      .getFacets()
+                      .getVersion()
+                      .getDatasetVersion())
+              .isEqualTo("input-version");
+          assertThat(
+                  DataSourceV2RelationDatasetExtractor.extract(
+                          datasetFactory, openLineageContext, dataSourceV2Relation, true)
+                      .get(0)
+                      .getFacets()
+                      .getVersion()
+                      .getDatasetVersion())
+              .isEqualTo("catalog-version");
+        }
+      }
+    }
+  }
 }

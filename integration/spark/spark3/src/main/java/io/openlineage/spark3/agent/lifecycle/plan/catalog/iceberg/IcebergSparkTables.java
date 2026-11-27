@@ -21,13 +21,35 @@ import org.apache.iceberg.spark.source.SparkTable;
  * similar wrapper - is unwrapped reflectively through its public {@code table()} accessor.
  */
 @Slf4j
-final class IcebergSparkTables {
+public final class IcebergSparkTables {
   /** The package of Iceberg's Spark connector tables - {@code SparkTable} and its siblings. */
   static final String ICEBERG_SPARK_SOURCE_PACKAGE = "org.apache.iceberg.spark.source.";
 
   private static final String TABLE_ACCESSOR = "table";
 
   private IcebergSparkTables() {}
+
+  /**
+   * The version of the Iceberg table behind a Spark table from Iceberg's connector: its current
+   * snapshot id, or empty inside when it has no snapshot yet. Empty outside when the Spark table is
+   * not Iceberg's or its snapshot could not be read, so the caller looks the version up another
+   * way.
+   */
+  public static Optional<Optional<String>> currentSnapshotId(
+      org.apache.spark.sql.connector.catalog.Table sparkTable) {
+    Optional<Table> icebergTable = fromIcebergSparkTable(sparkTable);
+    if (!icebergTable.isPresent()) {
+      return Optional.empty();
+    }
+    try {
+      return Optional.of(
+          Optional.ofNullable(icebergTable.get().currentSnapshot())
+              .map(snapshot -> Long.toString(snapshot.snapshotId())));
+    } catch (RuntimeException e) {
+      log.debug("Couldn't read the table's current snapshot, loading it through the catalog", e);
+      return Optional.empty();
+    }
+  }
 
   /**
    * Returns the Iceberg table behind a Spark table that belongs to Iceberg's Spark connector, or
