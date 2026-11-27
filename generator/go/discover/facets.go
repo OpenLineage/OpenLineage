@@ -7,6 +7,7 @@
 package discover
 
 import (
+	"slices"
 	"sort"
 	"strings"
 
@@ -152,4 +153,30 @@ func FindAllFacets(schema *schemas.Schema) []Facet {
 		})
 	}
 	return out
+}
+
+// TerraformExcludedFacets are job and dataset facets the Terraform generator skips on purpose.
+var TerraformExcludedFacets = []string{
+	"DataQualityMetricsDatasetFacet",
+	"LifecycleStateChangeDatasetFacet",
+	"GcpComposerJobFacet",
+	"GcpLineageJobFacet",
+}
+
+// IsTerraformExcluded reports whether the facets of one schema file are left out of the
+// Terraform generator: the file has an explicitly excluded facet, or a run or input/output
+// dataset facet.
+func IsTerraformExcluded(facets []Facet) bool {
+	for _, f := range facets {
+		if slices.Contains(TerraformExcludedFacets, f.Name) {
+			return true
+		}
+		switch f.Type {
+		case FacetRun,
+			FacetInputDataset,
+			FacetOutputDataset:
+			return true
+		}
+	}
+	return false
 }

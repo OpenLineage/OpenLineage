@@ -1,0 +1,9 @@
+{{- if eq .Kind "Map" -}}
+schema.MapAttribute{Optional: true, Description: {{ printf "%q" .Description }}, ElementType: {{ .ElemType }}}
+{{- else if and (eq .Kind "String") .Requires -}}
+schema.StringAttribute{Optional: true, Description: {{ printf "%q" .Description }}, Validators: requiresSiblings({{ range $i, $n := .Requires }}{{ if $i }}, {{ end }}{{ printf "%q" $n }}{{ end }})}
+{{- else if eq .Kind "String" -}}
+optionalString({{ printf "%q" .Description }})
+{{- else -}}
+schema.{{ .Kind }}Attribute{Optional: true, Description: {{ printf "%q" .Description }} }
+{{- end -}}
