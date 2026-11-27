@@ -9,6 +9,7 @@ import sys
 import time
 from collections import defaultdict
 from collections.abc import Generator
+from datetime import timezone
 from functools import cached_property
 from typing import NamedTuple, TextIO
 
@@ -322,7 +323,7 @@ class DbtStructuredLogsProcessor(DbtLiveProcessor):
                 run_facets["parent"] = parent
             yield generate_run_event(
                 event_type=event_type,
-                event_time=datetime.datetime.now().isoformat(),
+                event_time=datetime.datetime.now(timezone.utc).isoformat(),
                 run_id=run_id,
                 job_name=start_event.job.name,
                 job_namespace=start_event.job.namespace,
@@ -353,7 +354,7 @@ class DbtStructuredLogsProcessor(DbtLiveProcessor):
             return None
         return generate_run_event(
             event_type=RunState.ABORT,
-            event_time=datetime.datetime.now().isoformat(),  # Current time - no other data source
+            event_time=datetime.datetime.now(timezone.utc).isoformat(),  # Current time - no other data source
             run_id=self.dbt_run_metadata.run_id,
             job_name=self.dbt_run_metadata.job_name,
             job_namespace=self.dbt_run_metadata.job_namespace,
