@@ -1134,11 +1134,10 @@ fn insert_all_when_cte_does_not_hide_later_when_table() {
 }
 
 #[test]
-fn insert_all_when_source_cte_shadows_same_named_table() {
-    // Pinned behavior: a WHEN predicate's reference to c resolves to the
-    // source query's CTE of the same name, so s is the only input. How
-    // Snowflake scopes the source WITH against WHEN subqueries is not
-    // modelled; the predicate reference is treated as a CTE reference.
+fn insert_all_when_does_not_capture_source_cte() {
+    // A source query's WITH is scoped to that source query, not to the
+    // surrounding INSERT ALL WHEN predicates, so a WHEN subquery reading
+    // `c` references the physical table `c` rather than the source CTE.
     assert_eq!(
         test_sql_dialect(
             "INSERT ALL WHEN EXISTS (SELECT 1 FROM c) THEN INTO t1 VALUES (x) \
@@ -1148,7 +1147,7 @@ fn insert_all_when_source_cte_shadows_same_named_table() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: tables(vec!["s"]),
+            in_tables: tables(vec!["c", "s"]),
             out_tables: tables(vec!["t1"])
         }
     );
@@ -1465,6 +1464,23 @@ fn insert_all_when_into_quoted_empty_name_has_no_output() {
         TableLineage {
             in_tables: tables(vec!["src"]),
             out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_table_not_hidden_by_source_from_alias() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN EXISTS (SELECT 1 FROM x) THEN INTO a ELSE INTO b \
+             SELECT * FROM s AS x",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s", "x"]),
+            out_tables: tables(vec!["a", "b"])
         }
     );
 }
