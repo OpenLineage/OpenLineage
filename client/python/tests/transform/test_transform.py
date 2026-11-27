@@ -14,6 +14,7 @@ from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import BaseEvent, Job, Run, RunEvent, RunState
 from openlineage.client.facet_v2 import external_query_run
 from openlineage.client.serde import Serde
+from openlineage.client.transport.http import _raise_on_method_changing_redirect
 from openlineage.client.transport.transform import EventTransformer, TransformConfig, TransformTransport
 from openlineage.client.uuid import generate_new_uuid
 
@@ -126,6 +127,8 @@ def test_base_event_transformer_str():
 
 def test_client_with_transform_transport_emits(mocker: MockerFixture) -> None:
     session = mocker.patch("requests.Session")
+    session.hooks = {"response": []}
+    session.post.return_value.status_code = 200
     config = TransformConfig.from_dict(
         {
             "transport": {
@@ -154,6 +157,7 @@ def test_client_with_transform_transport_emits(mocker: MockerFixture) -> None:
         headers={"Content-Type": "application/json"},
         timeout=5.0,
         verify=True,
+        hooks={"response": [_raise_on_method_changing_redirect]},
     )
 
 
@@ -161,6 +165,8 @@ def test_client_with_transform_transport_emits(mocker: MockerFixture) -> None:
 def test_client_with_transform_transport_emits_modified_event(mock_run_tags, mocker: MockerFixture) -> None:
     mock_run_tags.return_value = []
     session = mocker.patch("requests.Session")
+    session.hooks = {"response": []}
+    session.post.return_value.status_code = 200
     config = TransformConfig.from_dict(
         {
             "transport": {
@@ -198,6 +204,7 @@ def test_client_with_transform_transport_emits_modified_event(mock_run_tags, moc
         headers={"Content-Type": "application/json"},
         timeout=5.0,
         verify=True,
+        hooks={"response": [_raise_on_method_changing_redirect]},
     )
 
     # Assert the original event is unchanged
@@ -225,6 +232,8 @@ def test_client_with_transform_transport_emits_modified_event_with_older_facets(
 
     mock_run_tags.return_value = []
     session = mocker.patch("requests.Session")
+    session.hooks = {"response": []}
+    session.post.return_value.status_code = 200
     config = TransformConfig.from_dict(
         {
             "transport": {
@@ -277,6 +286,7 @@ def test_client_with_transform_transport_emits_modified_event_with_older_facets(
         headers={"Content-Type": "application/json"},
         timeout=5.0,
         verify=True,
+        hooks={"response": [_raise_on_method_changing_redirect]},
     )
 
     # Assert the original event is unchanged
@@ -301,6 +311,7 @@ def test_client_with_transform_transport_skips_emission_when_transformed_event_i
     mocker: MockerFixture,
 ) -> None:
     session = mocker.patch("requests.Session")
+    session.hooks = {"response": []}
     config = TransformConfig.from_dict(
         {
             "transport": {
@@ -335,6 +346,8 @@ def test_client_with_transform_transport_emits_modified_deprecated_event(
 
     mock_run_tags.return_value = []
     session = mocker.patch("requests.Session")
+    session.hooks = {"response": []}
+    session.post.return_value.status_code = 200
     config = TransformConfig.from_dict(
         {
             "transport": {
@@ -372,6 +385,7 @@ def test_client_with_transform_transport_emits_modified_deprecated_event(
         headers={"Content-Type": "application/json"},
         timeout=5.0,
         verify=True,
+        hooks={"response": [_raise_on_method_changing_redirect]},
     )
 
     # Assert the original event is unchanged
@@ -397,6 +411,7 @@ def test_client_with_transform_transport_emits_modified_deprecated_event(
     },
 )
 def test_transform_transport_from_env_vars_emits(mock_post):
+    mock_post.return_value.status_code = 200
     transport = OpenLineageClient().transport
     mock_event = MagicMock()
 
@@ -454,6 +469,7 @@ def test_client_with_transform_transport_fails_initialization_if_transformer_is_
 
 def test_client_with_transform_transport_fails_when_transform_fails(mocker: MockerFixture) -> None:
     session = mocker.patch("requests.Session")
+    session.hooks = {"response": []}
     config = TransformConfig.from_dict(
         {
             "transport": {
@@ -483,6 +499,7 @@ def test_client_with_transform_transport_fails_when_transform_fails(mocker: Mock
 
 def test_client_with_transform_transport_close(mocker: MockerFixture) -> None:
     session = mocker.patch("requests.Session")
+    session.hooks = {"response": []}
     config = TransformConfig.from_dict(
         {
             "transport": {
