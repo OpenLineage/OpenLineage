@@ -50,13 +50,8 @@ impl Visit for With {
                 // enclosing query, where they would capture references
                 // meant for real tables or enclosing CTEs.
                 context.resolve_subquery_cte_dependencies(&mut f);
-                let table = DbTableMeta::new(
-                    vec![cte.alias.name.clone()],
-                    context.dialect(),
-                    context.default_schema().clone(),
-                    context.default_database().clone(),
-                );
-                context.collect_with_table(f, table);
+                let table = context.cte_table(cte.alias.name.clone());
+                context.collect_with_table(f, table, true);
             }
 
             if i == 0 {
@@ -92,12 +87,15 @@ impl Visit for TableFactor {
                     None => effective_idents.clone(),
                 };
 
-                let table = DbTableMeta::new(
-                    idents.clone(),
-                    context.dialect(),
-                    context.default_schema().clone(),
-                    context.default_database().clone(),
-                );
+                let table = match &cte {
+                    Some(cte) => context.cte_table(cte.clone()),
+                    None => DbTableMeta::new(
+                        idents.clone(),
+                        context.dialect(),
+                        context.default_schema().clone(),
+                        context.default_database().clone(),
+                    ),
+                };
                 if let Some(alias) = alias {
                     context.add_table_alias(table, vec![alias.name.clone()]);
                 }
@@ -124,12 +122,7 @@ impl Visit for TableFactor {
                 if let Some(ident) = get_table_name_from_table_factor(table, &*context) {
                     if let Some(pivot_alias) = alias {
                         context.add_table_alias(
-                            DbTableMeta::new(
-                                context.resolve_cte_reference(ident),
-                                context.dialect(),
-                                context.default_schema().clone(),
-                                context.default_database().clone(),
-                            ),
+                            context.relation_table(ident),
                             vec![pivot_alias.clone().name],
                         );
                     }
@@ -158,7 +151,7 @@ impl Visit for TableFactor {
                         context.default_schema().clone(),
                         context.default_database().clone(),
                     );
-                    context.collect_with_table(frame, table);
+                    context.collect_with_table(frame, table, false);
                 } else {
                     context.collect(frame);
                 }
@@ -206,12 +199,7 @@ impl Visit for TableFactor {
                 if let Some(ident) = get_table_name_from_table_factor(table, &*context) {
                     if let Some(unpivot_alias) = alias {
                         context.add_table_alias(
-                            DbTableMeta::new(
-                                context.resolve_cte_reference(ident),
-                                context.dialect(),
-                                context.default_schema().clone(),
-                                context.default_database().clone(),
-                            ),
+                            context.relation_table(ident),
                             vec![unpivot_alias.clone().name],
                         );
                     }
@@ -294,34 +282,28 @@ impl Visit for Expr {
                     // A name an enclosing SELECT's FROM clause introduces
                     // keeps the qualifier as written, unless that FROM item
                     // is the CTE itself.
-                    let relation = match context.correlation_named_by(&qualifier) {
-                        Some(relation) => relation,
-                        None => match context.cte_named_by(&qualifier) {
-                            Some(cte) => {
-                                let as_written = DbTableMeta::new(
-                                    qualifier.clone(),
-                                    context.dialect(),
-                                    context.default_schema().clone(),
-                                    context.default_database().clone(),
-                                );
-                                let outer = context.enclosing_correlation_named_by(&qualifier);
-                                if context.is_relation_alias(&as_written)
-                                    || outer.is_some_and(|relation| relation[..] != [cte.clone()])
-                                {
-                                    qualifier
-                                } else {
-                                    vec![cte]
-                                }
-                            }
-                            None => qualifier,
-                        },
-                    };
-                    let table = DbTableMeta::new(
-                        relation,
+                    let as_written = DbTableMeta::new(
+                        qualifier.clone(),
                         context.dialect(),
                         context.default_schema().clone(),
                         context.default_database().clone(),
                     );
+                    let table = match context.correlation_named_by(&qualifier) {
+                        Some(relation) => context.correlated_table(relation),
+                        None => match context.cte_named_by(&qualifier) {
+                            Some(cte) => {
+                                let outer = context.enclosing_correlation_named_by(&qualifier);
+                                if context.is_relation_alias(&as_written)
+                                    || outer.is_some_and(|relation| relation[..] != [cte.clone()])
+                                {
+                                    as_written
+                                } else {
+                                    context.cte_table(cte)
+                                }
+                            }
+                            None => as_written,
+                        },
+                    };
                     context.add_column_ancestors(
                         ColumnMeta::new(descendant, None),
                         vec![ColumnMeta::new(ancestor, Some(table))],
@@ -648,12 +630,7 @@ impl Visit for Select {
             let t = self.from.first().unwrap();
             if let TableFactor::Table { alias, .. } = &t.relation {
                 if let Some(ident) = get_table_name_from_table_factor(&t.relation, &*context) {
-                    let table = DbTableMeta::new(
-                        context.resolve_cte_reference(ident),
-                        context.dialect(),
-                        context.default_schema().clone(),
-                        context.default_database().clone(),
-                    );
+                    let table = context.relation_table(ident);
                     if let Some(alias) = alias {
                         context.add_table_alias(table.clone(), vec![alias.clone().name]);
                     }

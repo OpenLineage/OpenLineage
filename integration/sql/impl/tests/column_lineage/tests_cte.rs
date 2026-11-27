@@ -425,3 +425,139 @@ fn test_cte_column_lineage_rename_with_folded_reference() {
         }]
     );
 }
+
+fn edges_with_schema(sql: &str, dialect: &str, schema: Option<&str>) -> Vec<String> {
+    let mut edges: Vec<String> = openlineage_sql::parse_sql(
+        sql,
+        openlineage_sql::get_dialect(dialect),
+        schema.map(str::to_string),
+    )
+    .unwrap()
+    .column_lineage
+    .iter()
+    .flat_map(|c| {
+        c.lineage.iter().map(move |l| {
+            format!(
+                "{} <- {}.{}",
+                c.descendant.name,
+                l.origin
+                    .as_ref()
+                    .map_or(String::new(), |o| o.qualified_name()),
+                l.name
+            )
+        })
+    })
+    .collect();
+    edges.sort();
+    edges
+}
+
+// #5179: a schema-qualified table spelled like a CTE is the table, also when
+// the default schema makes its full name equal to the CTE's.
+#[test]
+fn schema_qualified_table_named_like_a_cte_is_the_table() {
+    for dialect in ["postgres", "snowflake"] {
+        for schema in [Some("public"), None] {
+            assert_eq!(
+                edges_with_schema(
+                    "WITH c AS (SELECT a AS id FROM t) SELECT id FROM public.c",
+                    dialect,
+                    schema
+                ),
+                vec!["id <- public.c.id"],
+                "{dialect}, default schema {schema:?}"
+            );
+        }
+    }
+}
+
+// The bare reference still resolves through the CTE, with or without a
+// default schema.
+#[test]
+fn bare_reference_to_a_cte_still_resolves_with_a_default_schema() {
+    for dialect in ["postgres", "snowflake"] {
+        assert_eq!(
+            edges_with_schema(
+                "WITH c AS (SELECT a AS id FROM t) SELECT id FROM c",
+                dialect,
+                Some("public")
+            ),
+            vec!["id <- public.t.a"],
+            "{dialect}"
+        );
+        assert_eq!(
+            edges_with_schema(
+                "WITH c AS (SELECT a AS id FROM t) SELECT id FROM c",
+                dialect,
+                None
+            ),
+            vec!["id <- t.a"],
+            "{dialect}"
+        );
+    }
+}
+
+// The other ways a query names a CTE or a table spelled like it, under a
+// default schema: a qualifier naming the CTE, an alias of the CTE, a table
+// aliased with the CTE's name, and a qualified table read by a qualifier.
+#[test]
+fn cte_and_table_of_the_same_name_stay_apart_under_a_default_schema() {
+    let cases = [
+        (
+            "WITH c AS (SELECT a AS id FROM t) SELECT c.id FROM c",
+            "id <- public.t.a",
+        ),
+        (
+            "WITH c AS (SELECT a AS id FROM t) SELECT x.id FROM c AS x",
+            "id <- public.t.a",
+        ),
+        (
+            "WITH c AS (SELECT a AS id FROM t) SELECT c.id FROM u AS c",
+            "id <- public.u.id",
+        ),
+        (
+            "WITH c AS (SELECT a AS id FROM t) SELECT c.id FROM public.c",
+            "id <- public.c.id",
+        ),
+    ];
+    for dialect in ["postgres", "snowflake"] {
+        for (sql, edge) in cases {
+            assert_eq!(
+                edges_with_schema(sql, dialect, Some("public")),
+                vec![edge],
+                "{dialect}: {sql}"
+            );
+        }
+    }
+}
+
+// A CTE redefined under its own name and reading its first definition keeps
+// that lineage under a default schema too, as `test_cte_with_cycles` checks
+// without one. Under a default schema, a derived table named like the CTE
+// it reads, and a CTE named like the table it reads, trace to the table's
+// own columns.
+#[test]
+fn cte_reading_its_own_name_under_a_default_schema() {
+    let cases = [
+        (
+            "WITH tab1 AS (SELECT s.col1, s.col2 FROM stg AS s), \
+             tab1 AS (SELECT col1, col2 FROM tab1) SELECT col1, col2 FROM tab1",
+            vec!["col1 <- public.stg.col1", "col2 <- public.stg.col2"],
+        ),
+        (
+            "WITH c AS (SELECT a FROM src) SELECT c.a FROM (SELECT a FROM c) AS c",
+            vec!["a <- public.src.a"],
+        ),
+        (
+            "WITH orders AS (SELECT id, amount AS amt FROM orders) SELECT id, amt FROM orders",
+            vec!["amt <- public.orders.amount", "id <- public.orders.id"],
+        ),
+    ];
+    for (sql, expected) in cases {
+        assert_eq!(
+            edges_with_schema(sql, "postgres", Some("public")),
+            expected,
+            "{sql}"
+        );
+    }
+}

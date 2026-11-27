@@ -492,6 +492,46 @@ impl<'a> Context<'a> {
         }
     }
 
+    /// The table under which a CTE's columns are collected and looked up:
+    /// its name as defined, without the default schema or database. A real
+    /// table is always named with them, so `public.c` under default schema
+    /// `public` never shares the key of CTE `c`.
+    pub fn cte_table(&self, cte: Ident) -> DbTableMeta {
+        DbTableMeta::new(vec![cte], self.dialect, None, None)
+    }
+
+    /// The table a name from a FROM clause stands for, as
+    /// `correlation_named_by` returns it: an alias keeps its own name under
+    /// the defaults, so the alias table resolves it, and an unaliased
+    /// reference to a CTE is the CTE's table.
+    pub fn correlated_table(&self, relation: Vec<Ident>) -> DbTableMeta {
+        let as_named = DbTableMeta::new(
+            relation.clone(),
+            self.dialect,
+            self.default_schema.clone(),
+            self.default_database.clone(),
+        );
+        if self.is_relation_alias(&as_named) {
+            return as_named;
+        }
+        self.relation_table(relation)
+    }
+
+    /// The table `name` refers to: the CTE's table when `name` is a
+    /// reference to a CTE in scope, and otherwise `name` under the default
+    /// schema and database.
+    pub fn relation_table(&self, name: Vec<Ident>) -> DbTableMeta {
+        match self.cte_named_by(&name) {
+            Some(cte) => self.cte_table(cte),
+            None => DbTableMeta::new(
+                name,
+                self.dialect,
+                self.default_schema.clone(),
+                self.default_database.clone(),
+            ),
+        }
+    }
+
     /// Marks the CTE named `table` as used, so its dependencies are
     /// collected as inputs. `table` is the CTE's name as defined, as
     /// returned by [`Context::cte_named_by`], so the innermost CTE under its
@@ -878,7 +918,18 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn collect_with_table(&mut self, mut old: ContextFrame, from_table: DbTableMeta) {
+    /// Collects the frame of a CTE body or derived table as the columns of
+    /// `from_table`. `is_cte_body` says that `from_table` is the CTE being
+    /// defined, so an ancestor in `from_table` itself refers to that name
+    /// as it stood before this definition rather than to the body, and is
+    /// not taken as an ancestry of its own. A CTE's table carries no default
+    /// schema, so the alias table, whose entries do, cannot tell this.
+    pub fn collect_with_table(
+        &mut self,
+        mut old: ContextFrame,
+        from_table: DbTableMeta,
+        is_cte_body: bool,
+    ) {
         if let Some(frame) = self.frames.last_mut() {
             let old_ancestry = old
                 .column_ancestry
@@ -890,7 +941,7 @@ impl<'a> Context<'a> {
                 .collect::<HashMap<ColumnMeta, ColumnAncestors>>();
 
             let removed_circular_deps =
-                Context::remove_circular_deps(&old_ancestry, frame, from_table);
+                Context::remove_circular_deps(&old_ancestry, frame, from_table, is_cte_body);
 
             if !removed_circular_deps.is_empty() {
                 frame.column_ancestry.extend(old_ancestry);
@@ -906,13 +957,16 @@ impl<'a> Context<'a> {
         old_ancestry: &HashMap<ColumnMeta, ColumnAncestors>,
         frame: &ContextFrame,
         from_table: DbTableMeta,
+        is_cte_body: bool,
     ) -> HashMap<ColumnMeta, ColumnAncestors> {
         let mut removed_circular_deps: HashMap<ColumnMeta, ColumnAncestors> = HashMap::new();
 
         for (key_column_meta, column_ancestors) in old_ancestry.iter() {
             for column_meta in column_ancestors {
                 if let Some(origin) = column_meta.origin.clone() {
-                    if frame.aliases.is_table_alias(&origin) && origin == from_table {
+                    if origin == from_table
+                        && (is_cte_body || frame.aliases.is_table_alias(&origin))
+                    {
                         continue;
                     }
                 }
@@ -1256,7 +1310,11 @@ mod tests {
         );
 
         let frame = context.pop_frame().unwrap();
-        context.collect_with_table(frame, DbTableMeta::new_default_dialect("alias".to_string()));
+        context.collect_with_table(
+            frame,
+            DbTableMeta::new_default_dialect("alias".to_string()),
+            false,
+        );
 
         let mut ancestry = Vec::from_iter(context.frames.last().unwrap().column_ancestry.iter());
         ancestry.sort_by(|a, b| a.0.cmp(b.0));
