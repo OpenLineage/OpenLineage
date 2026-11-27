@@ -8,7 +8,9 @@ package io.openlineage.spark3.agent.utils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -44,6 +47,8 @@ public class HudiUtils {
       "org.apache.spark.sql.hudi.command.DeleteHoodieTableCommand";
   private static final String CREATE_HOODIE_TABLE_AS_SELECT_COMMAND_CLASS =
       "org.apache.spark.sql.hudi.command.CreateHoodieTableAsSelectCommand";
+
+  private static final String QUERY_METHOD = "query";
 
   private HudiUtils() {}
 
@@ -94,8 +99,10 @@ public class HudiUtils {
 
   /**
    * Returns the relation of the target table of a Hudi {@code MERGE INTO}, {@code UPDATE} or {@code
-   * DELETE} command. Hudi 1.x's {@code DeleteHoodieTableCommand} only keeps the query that reads
-   * the target, so the relation is taken from there.
+   * DELETE} command. Hudi 1.x's {@code DeleteHoodieTableCommand} keeps the target as a catalog
+   * table and the query that reads it, with no {@code DeleteFromTable}, so the relation is taken
+   * from the query. A query whose predicate folded to {@code false} has no relation left; {@link
+   * #dmlCatalogTable} still has the table then.
    */
   public static Optional<LogicalRelation> dmlTarget(LogicalPlan command) {
     Optional<LogicalPlan> table;
@@ -111,7 +118,7 @@ public class HudiUtils {
           invoke(command, "dft")
               .filter(DeleteFromTable.class::isInstance)
               .map(delete -> ((DeleteFromTable) delete).table());
-      table = deleteFrom.isPresent() ? deleteFrom : invokePlanMethod(command, "query");
+      table = deleteFrom.isPresent() ? deleteFrom : invokePlanMethod(command, QUERY_METHOD);
     } else {
       table = Optional.empty();
     }
@@ -121,6 +128,54 @@ public class HudiUtils {
                 .filter(LogicalRelation.class::isInstance)
                 .map(LogicalRelation.class::cast)
                 .findFirst());
+  }
+
+  /**
+   * Returns the catalog table of a Hudi 1.x {@code DeleteHoodieTableCommand}, its {@code
+   * catalogTable().table()}. Other commands and Hudi versions return empty.
+   */
+  public static Optional<CatalogTable> dmlCatalogTable(LogicalPlan command) {
+    if (!isInstanceOf(command, DELETE_HOODIE_TABLE_COMMAND_CLASS)) {
+      return Optional.empty();
+    }
+    return invoke(command, "catalogTable")
+        .flatMap(hoodieTable -> invoke(hoodieTable, "table"))
+        .filter(CatalogTable.class::isInstance)
+        .map(CatalogTable.class::cast);
+  }
+
+  /**
+   * Returns the subqueries of a Hudi {@code MERGE INTO}, {@code UPDATE} or {@code DELETE} command,
+   * such as {@code WHERE id IN (SELECT ...)}. They live in expressions, not in children, so plan
+   * traversal doesn't reach the tables they read. Nested subqueries are included.
+   */
+  public static List<LogicalPlan> dmlSubqueries(LogicalPlan command) {
+    List<LogicalPlan> plans = new ArrayList<>();
+    mergeInto(command).ifPresent(plans::add);
+    invoke(command, "ut")
+        .filter(LogicalPlan.class::isInstance)
+        .ifPresent(p -> plans.add((LogicalPlan) p));
+    invoke(command, "dft")
+        .filter(LogicalPlan.class::isInstance)
+        .ifPresent(p -> plans.add((LogicalPlan) p));
+    if (isHudiDmlCommand(command)) {
+      invoke(command, QUERY_METHOD)
+          .filter(LogicalPlan.class::isInstance)
+          .ifPresent(p -> plans.add((LogicalPlan) p));
+    }
+    List<LogicalPlan> subqueries = new ArrayList<>();
+    plans.forEach(plan -> addSubqueries(plan, subqueries));
+    return subqueries;
+  }
+
+  private static void addSubqueries(LogicalPlan plan, List<LogicalPlan> subqueries) {
+    for (LogicalPlan subquery : ScalaConversionUtils.fromSeq(plan.subqueries())) {
+      subqueries.add(subquery);
+      addSubqueries(subquery, subqueries);
+    }
+    for (LogicalPlan child : ScalaConversionUtils.fromSeq(plan.children())) {
+      addSubqueries(child, subqueries);
+    }
   }
 
   /** Returns the Spark {@code MergeIntoTable} a {@code MergeIntoHoodieTableCommand} runs. */
@@ -137,9 +192,14 @@ public class HudiUtils {
         .map(CatalogTable.class::cast);
   }
 
+  /** Returns the save mode of a {@code CreateHoodieTableAsSelectCommand}. */
+  public static Optional<SaveMode> ctasMode(LogicalPlan command) {
+    return invoke(command, "mode").filter(SaveMode.class::isInstance).map(SaveMode.class::cast);
+  }
+
   /** Returns the query of a {@code CreateHoodieTableAsSelectCommand}. */
   public static Optional<LogicalPlan> ctasQuery(LogicalPlan command) {
-    return invokePlanMethod(command, "query");
+    return invokePlanMethod(command, QUERY_METHOD);
   }
 
   /** Returns the target relation of an {@code InsertIntoHoodieTableCommand}. */
@@ -149,7 +209,7 @@ public class HudiUtils {
 
   /** Returns the source query of an {@code InsertIntoHoodieTableCommand}. */
   public static Optional<LogicalPlan> insertQuery(LogicalPlan command) {
-    return invokePlanMethod(command, "query");
+    return invokePlanMethod(command, QUERY_METHOD);
   }
 
   /** Checks whether an {@code InsertIntoHoodieTableCommand} is an {@code INSERT OVERWRITE}. */
@@ -185,12 +245,12 @@ public class HudiUtils {
     }
   }
 
-  /** Calls a method that the command has only in some Hudi versions. */
-  private static Optional<Object> invoke(LogicalPlan command, String method) {
+  /** Calls a method that a Hudi command or object has only in some Hudi versions. */
+  private static Optional<Object> invoke(Object target, String method) {
     try {
-      return Optional.ofNullable(MethodUtils.invokeMethod(command, method));
+      return Optional.ofNullable(MethodUtils.invokeMethod(target, method));
     } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-      log.debug("Unable to call {} on Hudi command {}", method, command.getClass().getName(), e);
+      log.debug("Unable to call {} on Hudi object {}", method, target.getClass().getName(), e);
       return Optional.empty();
     }
   }
@@ -258,8 +318,9 @@ public class HudiUtils {
   }
 
   /**
-   * Resolves the base path of a {@code HoodieBaseRelation}, or returns empty if it can't be
-   * resolved. The meta client is only used when the relation has no {@code basePath()} of its own.
+   * Resolves the base path of a {@code HoodieBaseRelation} or a {@code HoodieFileIndex}, or returns
+   * empty if it can't be resolved. The meta client is only used when the relation has no {@code
+   * basePath()} of its own.
    */
   public static Optional<URI> basePath(Object relation) {
     try {

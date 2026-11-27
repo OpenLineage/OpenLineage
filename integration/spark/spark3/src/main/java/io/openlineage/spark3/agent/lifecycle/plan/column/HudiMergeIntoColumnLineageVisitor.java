@@ -10,11 +10,16 @@ import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisito
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.utils.HudiUtils;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
+import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.Assignment;
 import org.apache.spark.sql.catalyst.plans.logical.InsertAction;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -27,14 +32,39 @@ import scala.collection.Seq;
  * Column lineage of Hudi's {@code MergeIntoHoodieTableCommand}. The command is a leaf: the merge it
  * runs is a Spark {@code MergeIntoTable} kept as a field, so its target, source and actions are
  * read from there. Each target column set by an {@code UPDATE SET} or {@code INSERT VALUES}
- * assignment depends on the columns its expression reads.
+ * assignment depends on the columns its expression reads, from the source or from the target.
  */
 @Slf4j
 public class HudiMergeIntoColumnLineageVisitor implements ColumnLevelLineageVisitor {
 
+  /**
+   * Collects the target's columns that assignments read, such as {@code t.name} in {@code SET
+   * prev_name = t.name}. Target columns only overwritten from the source are left out, so they
+   * don't depend on themselves. The source's inputs are collected with its expression dependencies.
+   */
   @Override
   public void collectInputs(ColumnLevelLineageContext context, LogicalPlan node) {
-    // the source's inputs are collected with its expression dependencies
+    if (!HudiUtils.isMergeIntoHoodieTableCommand(node)) {
+      return;
+    }
+    HudiUtils.mergeInto(node)
+        .ifPresent(
+            merge -> {
+              Set<ExprId> read =
+                  assignments(merge)
+                      .flatMap(
+                          assignment ->
+                              ScalaConversionUtils.fromSeq(assignment.value().references().toSeq())
+                                  .stream())
+                      .map(Attribute::exprId)
+                      .collect(Collectors.toSet());
+              Map<ExprId, ?> inputs = context.getBuilder().getInputs();
+              Set<ExprId> existing = new HashSet<>(inputs.keySet());
+              InputFieldsCollector.collect(context, merge.targetTable());
+              inputs
+                  .keySet()
+                  .removeIf(exprId -> !existing.contains(exprId) && !read.contains(exprId));
+            });
   }
 
   @Override

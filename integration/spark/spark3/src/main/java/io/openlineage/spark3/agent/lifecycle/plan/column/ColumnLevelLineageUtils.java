@@ -60,7 +60,7 @@ public class ColumnLevelLineageUtils {
 
     LogicalPlan plan = getAdjustedPlan(olContext);
 
-    if (!HudiInsertOutputsCollector.collectByPosition(
+    if (!HudiInsertOutputsCollector.collect(
         context, olContext.getOptimizedPlan(), plan, schemaFacet)) {
       OutputFieldsCollector.collect(context, plan);
     }

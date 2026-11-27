@@ -7,7 +7,6 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -55,7 +54,7 @@ class HudiInsertOutputsCollectorTest {
     List<Attribute> outputs = queryOutputs("id", "name", "ts");
 
     boolean collected =
-        HudiInsertOutputsCollector.collectByPosition(
+        HudiInsertOutputsCollector.collect(
             context,
             command,
             query,
@@ -81,7 +80,7 @@ class HudiInsertOutputsCollectorTest {
     List<Attribute> outputs = queryOutputs("col1", "col2", "col3");
 
     assertThat(
-            HudiInsertOutputsCollector.collectByPosition(
+            HudiInsertOutputsCollector.collect(
                 context, command, query, schema("entity_id", "name", "ts")))
         .isTrue();
     verify(builder).addOutput(outputs.get(0).exprId(), "entity_id");
@@ -97,7 +96,7 @@ class HudiInsertOutputsCollectorTest {
     List<Attribute> outputs = queryOutputs("id", "label");
 
     assertThat(
-            HudiInsertOutputsCollector.collectByPosition(
+            HudiInsertOutputsCollector.collect(
                 context, command, query, schema("entity_id", "name", "dt")))
         .isTrue();
     verify(builder).addOutput(outputs.get(0).exprId(), "entity_id");
@@ -113,22 +112,38 @@ class HudiInsertOutputsCollectorTest {
     List<Attribute> outputs = queryOutputs("id", "day");
 
     assertThat(
-            HudiInsertOutputsCollector.collectByPosition(
-                context, command, query, schema("entity_id", "dt")))
+            HudiInsertOutputsCollector.collect(context, command, query, schema("entity_id", "dt")))
         .isTrue();
     verify(builder).addOutput(outputs.get(1).exprId(), "dt");
   }
 
   @Test
-  void testQueryMatchingByNameIsLeftToUsualCollection() {
-    // Hudi aligns by name when every column has a match, in any order or case
-    queryOutputs("TS", "entity_id", "name");
+  void testQueryMatchingByNameIsAlignedByNameUnderTargetSpelling() {
+    // Hudi aligns by name when the columns are the table's, in any order or case
+    List<Attribute> outputs = queryOutputs("TS", "entity_id", "name");
 
     assertThat(
-            HudiInsertOutputsCollector.collectByPosition(
+            HudiInsertOutputsCollector.collect(
                 context, command, query, schema("entity_id", "name", "ts")))
-        .isFalse();
-    verify(builder, never()).addOutput(any(), anyString());
+        .isTrue();
+    verify(builder).addOutput(outputs.get(0).exprId(), "ts");
+    verify(builder).addOutput(outputs.get(1).exprId(), "entity_id");
+    verify(builder).addOutput(outputs.get(2).exprId(), "name");
+    verify(builder, never()).addOutput(any(), eq("TS"));
+  }
+
+  @Test
+  void testDuplicateQueryNamesAreAlignedByPosition() {
+    // INSERT INTO t SELECT name, name, ts FROM s: no column for entity_id, so Hudi goes by position
+    List<Attribute> outputs = queryOutputs("name", "name", "ts");
+
+    assertThat(
+            HudiInsertOutputsCollector.collect(
+                context, command, query, schema("entity_id", "name", "ts")))
+        .isTrue();
+    verify(builder).addOutput(outputs.get(0).exprId(), "entity_id");
+    verify(builder).addOutput(outputs.get(1).exprId(), "name");
+    verify(builder).addOutput(outputs.get(2).exprId(), "ts");
   }
 
   @Test
@@ -136,7 +151,7 @@ class HudiInsertOutputsCollectorTest {
     queryOutputs("id", "name");
 
     assertThat(
-            HudiInsertOutputsCollector.collectByPosition(
+            HudiInsertOutputsCollector.collect(
                 context, command, query, schema("entity_id", "name", "ts")))
         .isFalse();
   }
@@ -146,8 +161,7 @@ class HudiInsertOutputsCollectorTest {
     queryOutputs("id");
     LogicalPlan plan = mock(LogicalPlan.class);
 
-    assertThat(
-            HudiInsertOutputsCollector.collectByPosition(context, plan, query, schema("entity_id")))
+    assertThat(HudiInsertOutputsCollector.collect(context, plan, query, schema("entity_id")))
         .isFalse();
   }
 

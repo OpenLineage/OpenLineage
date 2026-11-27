@@ -468,14 +468,6 @@ tasks.register("integrationTest", Test.class) {
             filteredIntegrationTestCount.addAndGet(result.testCount)
         }
     }
-    doFirst {
-        // A --tests filter may only match tests of hudiIntegrationTest, which then checks that the
-        // filter matched tests in either task. Without Hudi, hudiIntegrationTest is skipped and this
-        // task keeps Gradle's own check.
-        if (!filter.commandLineIncludePatterns.isEmpty() && hasHudiDependencies(spark, scala)) {
-            filter.failOnNoMatchingTests = false
-        }
-    }
 }
 
 tasks.register("hudiIntegrationTest", Test.class) {
@@ -497,26 +489,36 @@ tasks.register("hudiIntegrationTest", Test.class) {
     }
     systemProperties.put("test.output.dir", buildDirectory.dir("test-output/${name}").get().asFile.toString())
     systemProperties.put("test.results.dir", buildDirectory.dir("test-results/${name}/o").get().asFile.toString())
-    doFirst {
-        // Apply the --tests filter given to integrationTest, so filtered local runs work the same way
-        def integrationTestFilter = tasks.named("integrationTest", Test.class).get().filter
-        if (!integrationTestFilter.commandLineIncludePatterns.isEmpty()) {
-            filter.includePatterns = integrationTestFilter.commandLineIncludePatterns
-            filter.failOnNoMatchingTests = false
-        }
-    }
     afterSuite { desc, result ->
         if (desc.parent == null) {
             filteredIntegrationTestCount.addAndGet(result.testCount)
         }
     }
     doLast {
-        def integrationTestFilter = tasks.named("integrationTest", Test.class).get().filter
+        // An up-to-date integrationTest ran no tests in this build, so the count can't tell
+        def integrationTest = tasks.named("integrationTest", Test.class).get()
+        def integrationTestFilter = integrationTest.filter
         if (!integrationTestFilter.commandLineIncludePatterns.isEmpty()
+                && !integrationTest.state.skipped
                 && filteredIntegrationTestCount.get() == 0) {
             throw new GradleException(
                     "No tests found for given includes: ${integrationTestFilter.commandLineIncludePatterns}")
         }
+    }
+}
+
+// Apply the --tests filter given to integrationTest to hudiIntegrationTest, so filtered local runs
+// work the same way. This runs before Gradle snapshots the task inputs, so the filter counts
+// toward up-to-date checks. A filter may only match tests of one of the two tasks, so neither
+// fails on its own; hudiIntegrationTest checks that it matched tests in either.
+gradle.taskGraph.whenReady { graph ->
+    def integrationTest = tasks.named("integrationTest", Test.class).get()
+    def hudiIntegrationTest = tasks.named("hudiIntegrationTest", Test.class).get()
+    def patterns = integrationTest.filter.commandLineIncludePatterns
+    if (!patterns.isEmpty() && graph.hasTask(hudiIntegrationTest) && hasHudiDependencies(spark, scala)) {
+        integrationTest.filter.failOnNoMatchingTests = false
+        hudiIntegrationTest.filter.includePatterns = patterns
+        hudiIntegrationTest.filter.failOnNoMatchingTests = false
     }
 }
 

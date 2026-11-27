@@ -135,6 +135,12 @@ public class InputFieldsCollector {
     } else if (node instanceof LogicalRelation
         && ((LogicalRelation) node).catalogTable().isDefined()) {
       return extractDatasetIdentifier(context, ((LogicalRelation) node).catalogTable().get());
+    } else if (node instanceof LogicalRelation && isHudiCopyOnWrite((LogicalRelation) node)) {
+      // the table's base path, not the partition path or glob the table may be read through
+      Object fileIndex = ((HadoopFsRelation) ((LogicalRelation) node).relation()).location();
+      return HudiUtils.basePath(fileIndex)
+          .map(uri -> Collections.singletonList(PathUtils.fromURI(uri)))
+          .orElse(Collections.emptyList());
     } else if (node instanceof LogicalRelation
         && (((LogicalRelation) node).relation() instanceof HadoopFsRelation)) {
       HadoopFsRelation relation = (HadoopFsRelation) ((LogicalRelation) node).relation();
@@ -174,6 +180,11 @@ public class InputFieldsCollector {
     }
 
     return Collections.emptyList();
+  }
+
+  private static boolean isHudiCopyOnWrite(LogicalRelation node) {
+    return node.relation() instanceof HadoopFsRelation
+        && HudiUtils.isHudiFileIndex(((HadoopFsRelation) node.relation()).location());
   }
 
   static List<DatasetIdentifier> extractDatasetIdentifier(
