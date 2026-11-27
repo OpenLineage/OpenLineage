@@ -21,7 +21,6 @@ import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkDatasetBuilder;
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -217,18 +216,9 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                 Collection<Path> rootPaths =
                     ScalaConversionUtils.fromSeq(relation.location().rootPaths());
 
-                if (isSingleFileRelation(rootPaths, hadoopConfig)) {
-                  return Collections.singletonList(
-                      buildHadoopDataset(
-                          rootPaths.stream().findFirst().get().toUri(),
-                          relation,
-                          datasetVersion,
-                          inputStats));
-                } else {
-                  return PlanUtils.getDirectoryPaths(rootPaths, hadoopConfig).stream()
-                      .map(p -> buildHadoopDataset(p.toUri(), relation, datasetVersion, inputStats))
-                      .collect(Collectors.toList());
-                }
+                return PlanUtils.getRelationPaths(rootPaths, hadoopConfig).stream()
+                    .map(p -> buildHadoopDataset(p.toUri(), relation, datasetVersion, inputStats))
+                    .collect(Collectors.toList());
               })
           .orElse(Collections.emptyList());
     } catch (Exception e) {
@@ -277,20 +267,6 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     datasetVersion.ifPresent(b::version);
     inputStats.ifPresent(s -> b.getInner().getInputFacets().inputStatistics(s));
     return b.build();
-  }
-
-  @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
-  private boolean isSingleFileRelation(Collection<Path> paths, Configuration hadoopConfig) {
-    if (paths.size() != 1) {
-      return false;
-    }
-
-    try {
-      Path path = paths.stream().findFirst().get();
-      return path.getFileSystem(hadoopConfig).isFile(path);
-    } catch (IOException e) {
-      return false;
-    }
   }
 
   protected Optional<String> getDatasetVersion(LogicalRelation x) {

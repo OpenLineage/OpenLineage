@@ -29,13 +29,18 @@ import io.openlineage.sql.ColumnLineage;
 import io.openlineage.sql.DbTableMeta;
 import io.openlineage.sql.SqlMeta;
 import java.net.URI;
+import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import lombok.SneakyThrows;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
@@ -54,6 +59,7 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 import org.apache.spark.sql.sources.BaseRelation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
 import scala.Option;
 import scala.collection.immutable.Seq;
@@ -286,6 +292,55 @@ class InputFieldsCollectorTest {
             exprId,
             new DatasetIdentifier("path", "abfss://tmp@storage.dfs.core.windows.net"),
             SOME_NAME);
+  }
+
+  @Test
+  @SneakyThrows
+  void collectWhenHadoopRelationRootPathsAreFiles(@TempDir java.nio.file.Path dir) {
+    java.nio.file.Path dir1 = Files.createDirectory(dir.resolve("dir1"));
+    java.nio.file.Path dir2 = Files.createDirectory(dir.resolve("dir2"));
+    List<Path> files = new ArrayList<>();
+    for (java.nio.file.Path d : Arrays.asList(dir1, dir2)) {
+      for (int i = 0; i < 2; i++) {
+        files.add(new Path(Files.createFile(d.resolve("part-" + i + ".parquet")).toUri()));
+      }
+    }
+    LogicalRelation logicalRelation = mockHadoopRelation(files);
+    SparkSession session = mock(SparkSession.class, RETURNS_DEEP_STUBS);
+    when(session.sessionState().newHadoopConfWithOptions(any())).thenReturn(new Configuration());
+    when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
+
+    InputFieldsCollector.collect(context, createPlanWithGrandChild(logicalRelation));
+
+    verify(builder, times(2)).addInput(any(), any(), any());
+    verify(builder).addInput(exprId, new DatasetIdentifier(dir1.toString(), FILE), SOME_NAME);
+    verify(builder).addInput(exprId, new DatasetIdentifier(dir2.toString(), FILE), SOME_NAME);
+  }
+
+  @Test
+  void collectWhenHadoopRelationPathsCannotBeResolved() {
+    Path file = new Path("s3://bucket/table/part-0.parquet");
+    LogicalRelation logicalRelation = mockHadoopRelation(Collections.singletonList(file));
+    SparkSession session = mock(SparkSession.class, RETURNS_DEEP_STUBS);
+    when(session.sessionState().newHadoopConfWithOptions(any()))
+        .thenThrow(new IllegalStateException("no credential scope"));
+    when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
+
+    InputFieldsCollector.collect(context, createPlanWithGrandChild(logicalRelation));
+
+    verify(builder)
+        .addInput(exprId, new DatasetIdentifier("table/part-0.parquet", "s3://bucket"), SOME_NAME);
+  }
+
+  private LogicalRelation mockHadoopRelation(List<Path> rootPaths) {
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    when(logicalRelation.catalogTable()).thenReturn(Option.empty());
+    HadoopFsRelation relation = mock(HadoopFsRelation.class, RETURNS_DEEP_STUBS);
+    when(logicalRelation.relation()).thenReturn(relation);
+    when(relation.location().rootPaths()).thenReturn(ScalaConversionUtils.fromList(rootPaths));
+    when(logicalRelation.output())
+        .thenReturn(ScalaConversionUtils.fromList(Arrays.asList(attributeReference)));
+    return logicalRelation;
   }
 
   @Test

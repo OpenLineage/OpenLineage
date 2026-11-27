@@ -98,7 +98,7 @@ class LogicalRelationDatasetBuilderTest {
 
     try (MockedStatic mocked = mockStatic(PlanUtils.class)) {
       try (MockedStatic mockedFacetUtils = mockStatic(DatasetVersionDatasetFacetUtils.class)) {
-        when(PlanUtils.getDirectoryPaths(any(), eq(hadoopConfig)))
+        when(PlanUtils.getRelationPaths(any(), eq(hadoopConfig)))
             .thenReturn(Collections.singletonList(new Path("/tmp")));
         when(DatasetVersionDatasetFacetUtils.extractVersionFromLogicalRelation(logicalRelation))
             .thenReturn(Optional.of(SOME_VERSION));
