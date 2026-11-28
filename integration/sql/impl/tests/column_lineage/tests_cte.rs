@@ -630,6 +630,16 @@ fn qualifier_in_a_nested_query_names_the_enclosing_from_item() {
             "SELECT (SELECT c.id) AS r FROM c AS C",
             ["id <- public.t.a", "id <- t.a"],
         ),
+        // The nearest enclosing FROM item that introduces the name wins,
+        // a derived table's alias included.
+        (
+            "SELECT (SELECT (SELECT c.id) FROM (SELECT b AS id FROM w) AS c) AS r FROM u AS c",
+            ["id <- public.w.b", "id <- w.b"],
+        ),
+        (
+            "SELECT (SELECT (SELECT c.id) FROM x AS c) AS r FROM u AS c",
+            ["id <- public.x.id", "id <- x.id"],
+        ),
         // An alias of the nested SELECT named like the relation the
         // enclosing alias renames (`u`) or like a table the CTE reads (`t`)
         // does not take the qualifier's table.

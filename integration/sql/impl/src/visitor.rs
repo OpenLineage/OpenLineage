@@ -1,7 +1,7 @@
 // Copyright 2018-2026 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::context::{Context, ContextFrame};
+use crate::context::{Context, ContextFrame, CorrelationName};
 use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
@@ -298,21 +298,7 @@ impl Visit for Expr {
                         Some(_) => None,
                         None => context
                             .cte_named_by(&qualifier)
-                            .and_then(|_| context.enclosing_correlation(&qualifier))
-                            .map(|(relation, is_alias)| {
-                                if is_alias {
-                                    // The alias as its FROM clause spells it,
-                                    // which is how the alias table holds it.
-                                    context.resolved_alias(&DbTableMeta::new(
-                                        relation.clone(),
-                                        context.dialect(),
-                                        context.default_schema().clone(),
-                                        context.default_database().clone(),
-                                    ))
-                                } else {
-                                    context.relation_table(relation.clone())
-                                }
-                            }),
+                            .and_then(|_| context.enclosing_table(&qualifier)),
                     };
                     let column = ColumnMeta::new(descendant, None);
                     if let Some(table) = enclosing {
@@ -738,20 +724,44 @@ fn visit_from(from: &[TableWithJoins], context: &mut Context) -> Result<ContextF
     Ok(tables_frame)
 }
 
-/// The names a FROM item introduces for column qualifiers, each with the
-/// relation it stands for and whether the name is an alias. An alias stands
-/// for itself and hides whatever it renames; an unaliased table stands for
-/// its full name (CTE references resolved) under its last name part; an
+/// The names a FROM item introduces for column qualifiers. An alias stands
+/// for itself and hides whatever it renames, and an alias of a table also
+/// records that table (CTE references resolved); an unaliased table stands
+/// for its full name (CTE references resolved) under its last name part; an
 /// unaliased parenthesized join introduces the names of its members, and an
 /// unaliased PIVOT or UNPIVOT those of the table it wraps.
-fn correlation_names(relation: &TableFactor, context: &Context) -> Vec<(Ident, Vec<Ident>, bool)> {
+fn correlation_names(relation: &TableFactor, context: &Context) -> Vec<(Ident, CorrelationName)> {
+    let table_name = || {
+        get_table_name_from_table_factor(relation, context)
+            .map(|name| context.resolve_cte_reference(name))
+            .filter(|name| !name.is_empty())
+    };
     if let Some(alias) = table_factor_alias(relation) {
-        return vec![(alias.name.clone(), vec![alias.name.clone()], true)];
+        let renames = match relation {
+            TableFactor::Table { .. } => table_name(),
+            _ => None,
+        };
+        return vec![(
+            alias.name.clone(),
+            CorrelationName {
+                relation: vec![alias.name.clone()],
+                is_alias: true,
+                renames,
+            },
+        )];
     }
     match relation {
-        TableFactor::Table { .. } => get_table_name_from_table_factor(relation, context)
-            .map(|name| context.resolve_cte_reference(name))
-            .and_then(|name| Some((name.last()?.clone(), name, false)))
+        TableFactor::Table { .. } => table_name()
+            .and_then(|name| {
+                Some((
+                    name.last()?.clone(),
+                    CorrelationName {
+                        relation: name,
+                        is_alias: false,
+                        renames: None,
+                    },
+                ))
+            })
             .into_iter()
             .collect(),
         TableFactor::NestedJoin {

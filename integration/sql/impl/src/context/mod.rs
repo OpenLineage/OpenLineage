@@ -160,11 +160,23 @@ pub struct Context<'a> {
     // Used to generate unique names for unaliased columns created from compound expressions
     column_id: u32,
     // For each SELECT being visited, innermost last: the names its own FROM
-    // clause introduces, keyed by `ident_key`, with the relation each one
-    // stands for and whether the name is an alias. An alias stands for
-    // itself, so the alias table resolves it; an unaliased table stands for
-    // its full name (`orders` for `FROM raw.orders`).
-    correlation_names: Vec<HashMap<String, (Vec<Ident>, bool)>>,
+    // clause introduces, keyed by `ident_key`.
+    correlation_names: Vec<HashMap<String, CorrelationName>>,
+}
+
+/// A name a FROM item introduces for column qualifiers.
+#[derive(Debug, Clone)]
+pub struct CorrelationName {
+    /// The relation the name stands for: an alias stands for itself, so
+    /// the alias table of its own SELECT resolves it; an unaliased table
+    /// stands for its full name (`orders` for `FROM raw.orders`).
+    pub relation: Vec<Ident>,
+    pub is_alias: bool,
+    /// For an alias of a table or CTE, that table's name as the FROM item
+    /// wrote it, CTE references resolved (`u` for `FROM u AS c`). None for
+    /// an unaliased table, and for the alias of a derived table, a table
+    /// function or anything else whose columns are keyed by the alias.
+    pub renames: Option<Vec<Ident>>,
 }
 
 /// The identifier a recorded table reference was written with, rebuilt
@@ -463,12 +475,12 @@ impl<'a> Context<'a> {
     /// Opens the scope of a SELECT with the names its FROM clause
     /// introduces, each an alias or an unaliased table's last name part,
     /// with the relation it stands for. Closed by `pop_correlation_names`.
-    pub fn push_correlation_names(&mut self, names: Vec<(Ident, Vec<Ident>, bool)>) {
+    pub fn push_correlation_names(&mut self, names: Vec<(Ident, CorrelationName)>) {
         let dialect = self.dialect.as_base();
         self.correlation_names.push(
             names
                 .into_iter()
-                .map(|(name, relation, is_alias)| (ident_key(&name, dialect), (relation, is_alias)))
+                .map(|(name, binding)| (ident_key(&name, dialect), binding))
                 .collect(),
         );
     }
@@ -477,23 +489,35 @@ impl<'a> Context<'a> {
         self.correlation_names.pop();
     }
 
-    /// The relation a qualifier names through the FROM clauses of the
-    /// enclosing SELECTs, innermost first, compared under the dialect's
-    /// folding, and whether that FROM clause introduced it as an alias;
-    /// `correlated_table` covers the SELECT being visited. Used for a
-    /// qualifier that CTE could take, to resolve it through the enclosing
-    /// FROM item instead.
-    pub fn enclosing_correlation(&self, qualifier: &[Ident]) -> Option<(&Vec<Ident>, bool)> {
+    /// The table a qualifier names through the nearest FROM clause of an
+    /// enclosing SELECT that introduces it, compared under the dialect's
+    /// folding, or None when none does; `correlated_table` covers the
+    /// SELECT being visited. The table comes from the FROM item alone, not
+    /// from the alias table, which an alias of a nested SELECT with the same
+    /// name could answer: a table alias is the table it renames (the CTE's
+    /// table for `FROM c AS c`), any other alias keeps its own name for its
+    /// own columns, and an unaliased item is the table it names.
+    pub fn enclosing_table(&self, qualifier: &[Ident]) -> Option<DbTableMeta> {
         let [name] = qualifier else {
             return None;
         };
         let key = ident_key(name, self.dialect().as_base());
-        self.correlation_names
+        let binding = self
+            .correlation_names
             .iter()
             .rev()
             .skip(1)
-            .find_map(|scope| scope.get(&key))
-            .map(|(relation, is_alias)| (relation, *is_alias))
+            .find_map(|scope| scope.get(&key))?;
+        Some(match (&binding.renames, binding.is_alias) {
+            (Some(table), _) => self.relation_table(table.clone()),
+            (None, true) => DbTableMeta::new(
+                binding.relation.clone(),
+                self.dialect,
+                self.default_schema.clone(),
+                self.default_database.clone(),
+            ),
+            (None, false) => self.relation_table(binding.relation.clone()),
+        })
     }
 
     /// `name` with a reference to a CTE in scope replaced by the CTE's name
@@ -527,16 +551,16 @@ impl<'a> Context<'a> {
             return None;
         };
         let key = ident_key(name, self.dialect().as_base());
-        let (relation, is_alias) = self.correlation_names.last()?.get(&key)?;
-        if *is_alias {
+        let binding = self.correlation_names.last()?.get(&key)?;
+        if binding.is_alias {
             return Some(DbTableMeta::new(
-                relation.clone(),
+                binding.relation.clone(),
                 self.dialect,
                 self.default_schema.clone(),
                 self.default_database.clone(),
             ));
         }
-        Some(self.relation_table(relation.clone()))
+        Some(self.relation_table(binding.relation.clone()))
     }
 
     /// The table `name` refers to: the CTE's table when `name` is a
@@ -610,28 +634,6 @@ impl<'a> Context<'a> {
             current = frame.aliases.resolve_table(current);
         }
         current
-    }
-
-    /// The relation the alias `name` renames, from the innermost frame that
-    /// registers it, or `name` itself when no frame does (a derived table's
-    /// alias). One step only: what an alias renames is a table or a CTE named
-    /// in its FROM item, never another alias, and looking that name up again
-    /// would let an alias of a nested SELECT with the same name take it. The
-    /// placeholder entries `With::visit` registers for CTE names map to an
-    /// empty table and are skipped, so a CTE of a nested query named like
-    /// an enclosing alias does not hide that alias.
-    pub fn resolved_alias(&self, name: &DbTableMeta) -> DbTableMeta {
-        self.frames
-            .iter()
-            .rev()
-            .find_map(|frame| {
-                frame
-                    .aliases
-                    .get_table_from_alias(name.qualified_name())
-                    .filter(|table| !table.name.is_empty())
-            })
-            .unwrap_or(name)
-            .clone()
     }
 
     pub fn is_table_alias(&self, name: &DbTableMeta) -> bool {
