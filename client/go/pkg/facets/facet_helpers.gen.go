@@ -822,7 +822,7 @@ func NewIcebergScanReportInputDatasetFacet(
 ) *IcebergScanReportInputDatasetFacet {
 	return &IcebergScanReportInputDatasetFacet{
 		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-1/IcebergScanReportInputDatasetFacet.json",
+		SchemaURL: "https://openlineage.io/spec/facets/1-1-0/IcebergScanReportInputDatasetFacet.json",
 	}
 }
 
@@ -855,14 +855,14 @@ func (f *IcebergScanReportInputDatasetFacet) WithScanMetrics(scanMetrics *Iceber
 }
 
 // WithSchemaID sets the SchemaID field on this IcebergScanReportInputDatasetFacet.
-func (f *IcebergScanReportInputDatasetFacet) WithSchemaID(schemaID float64) *IcebergScanReportInputDatasetFacet {
+func (f *IcebergScanReportInputDatasetFacet) WithSchemaID(schemaID int64) *IcebergScanReportInputDatasetFacet {
 	f.SchemaID = &schemaID
 
 	return f
 }
 
 // WithSnapshotID sets the SnapshotID field on this IcebergScanReportInputDatasetFacet.
-func (f *IcebergScanReportInputDatasetFacet) WithSnapshotID(snapshotID float64) *IcebergScanReportInputDatasetFacet {
+func (f *IcebergScanReportInputDatasetFacet) WithSnapshotID(snapshotID int64) *IcebergScanReportInputDatasetFacet {
 	f.SnapshotID = &snapshotID
 
 	return f
@@ -1391,7 +1391,7 @@ func NewIcebergCommitReportOutputDatasetFacet(
 ) *IcebergCommitReportOutputDatasetFacet {
 	return &IcebergCommitReportOutputDatasetFacet{
 		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-2/IcebergCommitReportOutputDatasetFacet.json",
+		SchemaURL: "https://openlineage.io/spec/facets/1-1-0/IcebergCommitReportOutputDatasetFacet.json",
 	}
 }
 
@@ -1417,14 +1417,14 @@ func (f *IcebergCommitReportOutputDatasetFacet) WithOperation(operation string) 
 }
 
 // WithSequenceNumber sets the SequenceNumber field on this IcebergCommitReportOutputDatasetFacet.
-func (f *IcebergCommitReportOutputDatasetFacet) WithSequenceNumber(sequenceNumber float64) *IcebergCommitReportOutputDatasetFacet {
+func (f *IcebergCommitReportOutputDatasetFacet) WithSequenceNumber(sequenceNumber int64) *IcebergCommitReportOutputDatasetFacet {
 	f.SequenceNumber = &sequenceNumber
 
 	return f
 }
 
 // WithSnapshotID sets the SnapshotID field on this IcebergCommitReportOutputDatasetFacet.
-func (f *IcebergCommitReportOutputDatasetFacet) WithSnapshotID(snapshotID float64) *IcebergCommitReportOutputDatasetFacet {
+func (f *IcebergCommitReportOutputDatasetFacet) WithSnapshotID(snapshotID int64) *IcebergCommitReportOutputDatasetFacet {
 	f.SnapshotID = &snapshotID
 
 	return f

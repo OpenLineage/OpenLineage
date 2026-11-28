@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -549,5 +550,98 @@ class OpenLineageTest {
     assertThat(run).isEqualTo(sameRun);
     assertThat(run.hashCode()).isNotEqualTo(differentRun.hashCode());
     assertThat(run).isNotEqualTo(differentRun);
+  }
+
+  @Test
+  void testIcebergReportFacetsPreserve64BitLongPrecision() {
+    URI producer = URI.create("producer");
+    OpenLineage ol = new OpenLineage(producer);
+    long largeSnapshotId = 7574105995826888948L;
+    long sequenceNumber = 42L;
+    long schemaId = 7L;
+
+    OpenLineage.IcebergCommitReportOutputDatasetFacet commitFacet =
+        ol.newIcebergCommitReportOutputDatasetFacetBuilder()
+            .snapshotId(largeSnapshotId)
+            .sequenceNumber(sequenceNumber)
+            .operation("append")
+            .commitMetrics(
+                ol.newIcebergCommitReportOutputDatasetFacetCommitMetricsBuilder()
+                    .totalDuration(125L)
+                    .addedDataFiles(3L)
+                    .totalRecords(100000L)
+                    .build())
+            .build();
+
+    OpenLineage.OutputDatasetOutputFacets mergedOutputFacets =
+        OpenLineageClientUtils.mergeFacets(
+            Collections.singletonMap("icebergCommitReport", commitFacet),
+            ol.newOutputDatasetOutputFacetsBuilder().build(),
+            OpenLineage.OutputDatasetOutputFacets.class);
+
+    assertThat(mergedOutputFacets.getIcebergCommitReport().getSnapshotId())
+        .isEqualTo(largeSnapshotId);
+    assertThat(mergedOutputFacets.getIcebergCommitReport().getSequenceNumber())
+        .isEqualTo(sequenceNumber);
+    assertThat(mergedOutputFacets.getIcebergCommitReport().getCommitMetrics().getTotalDuration())
+        .isEqualTo(125L);
+    assertThat(mergedOutputFacets.getIcebergCommitReport().getCommitMetrics().getAddedDataFiles())
+        .isEqualTo(3L);
+    assertThat(mergedOutputFacets.getIcebergCommitReport().getCommitMetrics().getTotalRecords())
+        .isEqualTo(100000L);
+
+    String outputJson = OpenLineageClientUtils.toJson(mergedOutputFacets);
+    assertThat(outputJson).contains("\"snapshotId\":" + largeSnapshotId);
+    assertThat(outputJson).contains("\"addedDataFiles\":3");
+    OpenLineage.OutputDatasetOutputFacets roundTrippedOutputFacets =
+        OpenLineageClientUtils.fromJson(
+            outputJson, new TypeReference<OpenLineage.OutputDatasetOutputFacets>() {});
+    assertThat(roundTrippedOutputFacets.getIcebergCommitReport().getSnapshotId())
+        .isEqualTo(largeSnapshotId);
+    assertThat(
+            roundTrippedOutputFacets
+                .getIcebergCommitReport()
+                .getCommitMetrics()
+                .getAddedDataFiles())
+        .isEqualTo(3L);
+
+    OpenLineage.IcebergScanReportInputDatasetFacet scanFacet =
+        ol.newIcebergScanReportInputDatasetFacetBuilder()
+            .snapshotId(largeSnapshotId)
+            .schemaId(schemaId)
+            .filterDescription("id > 0")
+            .scanMetrics(
+                ol.newIcebergScanReportInputDatasetFacetScanMetricsBuilder()
+                    .totalPlanningDuration(85L)
+                    .resultDataFiles(4L)
+                    .totalFileSizeInBytes(4096L)
+                    .build())
+            .build();
+
+    OpenLineage.InputDatasetInputFacets mergedInputFacets =
+        OpenLineageClientUtils.mergeFacets(
+            Collections.singletonMap("icebergScanReport", scanFacet),
+            ol.newInputDatasetInputFacetsBuilder().build(),
+            OpenLineage.InputDatasetInputFacets.class);
+
+    assertThat(mergedInputFacets.getIcebergScanReport().getSnapshotId()).isEqualTo(largeSnapshotId);
+    assertThat(mergedInputFacets.getIcebergScanReport().getSchemaId()).isEqualTo(schemaId);
+    assertThat(mergedInputFacets.getIcebergScanReport().getScanMetrics().getTotalPlanningDuration())
+        .isEqualTo(85L);
+    assertThat(mergedInputFacets.getIcebergScanReport().getScanMetrics().getResultDataFiles())
+        .isEqualTo(4L);
+    assertThat(mergedInputFacets.getIcebergScanReport().getScanMetrics().getTotalFileSizeInBytes())
+        .isEqualTo(4096L);
+
+    String inputJson = OpenLineageClientUtils.toJson(mergedInputFacets);
+    assertThat(inputJson).contains("\"snapshotId\":" + largeSnapshotId);
+    assertThat(inputJson).contains("\"resultDataFiles\":4");
+    OpenLineage.InputDatasetInputFacets roundTrippedInputFacets =
+        OpenLineageClientUtils.fromJson(
+            inputJson, new TypeReference<OpenLineage.InputDatasetInputFacets>() {});
+    assertThat(roundTrippedInputFacets.getIcebergScanReport().getSnapshotId())
+        .isEqualTo(largeSnapshotId);
+    assertThat(roundTrippedInputFacets.getIcebergScanReport().getScanMetrics().getResultDataFiles())
+        .isEqualTo(4L);
   }
 }

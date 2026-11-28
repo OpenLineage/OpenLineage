@@ -289,9 +289,9 @@ type IcebergScanReportInputDatasetFacet struct {
 	ProjectedFieldNames []string                                       `json:"projectedFieldNames,omitempty"`
 	ScanMetrics         *IcebergScanReportInputDatasetFacetScanMetrics `json:"scanMetrics,omitempty"`
 	// Schema ID of the iceberg table
-	SchemaID *float64 `json:"schemaId,omitempty"`
+	SchemaID *int64 `json:"schemaId,omitempty"`
 	// Snapshot ID of the iceberg table
-	SnapshotID *float64 `json:"snapshotId,omitempty"`
+	SnapshotID *int64 `json:"snapshotId,omitempty"`
 }
 
 // InputStatisticsInputDatasetFacet
@@ -495,9 +495,9 @@ type IcebergCommitReportOutputDatasetFacet struct {
 	// Operation that was performed on the iceberg table
 	Operation *string `json:"operation,omitempty"`
 	// Sequence number of the iceberg table
-	SequenceNumber *float64 `json:"sequenceNumber,omitempty"`
+	SequenceNumber *int64 `json:"sequenceNumber,omitempty"`
 	// Snapshot ID of the iceberg table
-	SnapshotID *float64 `json:"snapshotId,omitempty"`
+	SnapshotID *int64 `json:"snapshotId,omitempty"`
 }
 
 // OutputStatisticsOutputDatasetFacet
@@ -1058,93 +1058,93 @@ type HierarchyDatasetFacetLevel struct {
 // IcebergCommitReportOutputDatasetFacetCommitMetrics
 type IcebergCommitReportOutputDatasetFacetCommitMetrics struct {
 	// Number of added DVs
-	AddedDVs *float64 `json:"addedDVs,omitempty"`
+	AddedDVs *int64 `json:"addedDVs,omitempty"`
 	// Number of data files that are added during the commit
-	AddedDataFiles *float64 `json:"addedDataFiles,omitempty"`
+	AddedDataFiles *int64 `json:"addedDataFiles,omitempty"`
 	// Number of delete files that are added during the commit
-	AddedDeleteFiles *float64 `json:"addedDeleteFiles,omitempty"`
+	AddedDeleteFiles *int64 `json:"addedDeleteFiles,omitempty"`
 	// Number of added equality delete files
-	AddedEqualityDeleteFiles *float64 `json:"addedEqualityDeleteFiles,omitempty"`
+	AddedEqualityDeleteFiles *int64 `json:"addedEqualityDeleteFiles,omitempty"`
 	// Number of equality deletes that are added during the commit
-	AddedEqualityDeletes *float64 `json:"addedEqualityDeletes,omitempty"`
+	AddedEqualityDeletes *int64 `json:"addedEqualityDeletes,omitempty"`
 	// Number of files size in bytes that are added during the commit
-	AddedFilesSizeInBytes *float64 `json:"addedFilesSizeInBytes,omitempty"`
+	AddedFilesSizeInBytes *int64 `json:"addedFilesSizeInBytes,omitempty"`
 	// Number of added positional delete files
-	AddedPositionalDeleteFiles *float64 `json:"addedPositionalDeleteFiles,omitempty"`
+	AddedPositionalDeleteFiles *int64 `json:"addedPositionalDeleteFiles,omitempty"`
 	// Number of positional deletes that are added during the commit
-	AddedPositionalDeletes *float64 `json:"addedPositionalDeletes,omitempty"`
+	AddedPositionalDeletes *int64 `json:"addedPositionalDeletes,omitempty"`
 	// Number of records that are added during the commit
-	AddedRecords *float64 `json:"addedRecords,omitempty"`
+	AddedRecords *int64 `json:"addedRecords,omitempty"`
 	// Number of attempts made to commit the iceberg table
-	Attempts *float64 `json:"attempts,omitempty"`
+	Attempts *int64 `json:"attempts,omitempty"`
 	// Number of removed DVs
-	RemovedDVs *float64 `json:"removedDVs,omitempty"`
+	RemovedDVs *int64 `json:"removedDVs,omitempty"`
 	// Number of data files that are removed during the commit
-	RemovedDataFiles *float64 `json:"removedDataFiles,omitempty"`
+	RemovedDataFiles *int64 `json:"removedDataFiles,omitempty"`
 	// Number of delete files that are removed during the commit
-	RemovedDeleteFiles *float64 `json:"removedDeleteFiles,omitempty"`
+	RemovedDeleteFiles *int64 `json:"removedDeleteFiles,omitempty"`
 	// Number of removed equality delete files
-	RemovedEqualityDeleteFiles *float64 `json:"removedEqualityDeleteFiles,omitempty"`
+	RemovedEqualityDeleteFiles *int64 `json:"removedEqualityDeleteFiles,omitempty"`
 	// Number of equality deletes that are removed during the commit
-	RemovedEqualityDeletes *float64 `json:"removedEqualityDeletes,omitempty"`
+	RemovedEqualityDeletes *int64 `json:"removedEqualityDeletes,omitempty"`
 	// Number of files size in bytes that are removed during the commit
-	RemovedFilesSizeInBytes *float64 `json:"removedFilesSizeInBytes,omitempty"`
+	RemovedFilesSizeInBytes *int64 `json:"removedFilesSizeInBytes,omitempty"`
 	// Number of removed positional delete files
-	RemovedPositionalDeleteFiles *float64 `json:"removedPositionalDeleteFiles,omitempty"`
+	RemovedPositionalDeleteFiles *int64 `json:"removedPositionalDeleteFiles,omitempty"`
 	// Number of positional deletes that are removed during the commit
-	RemovedPositionalDeletes *float64 `json:"removedPositionalDeletes,omitempty"`
+	RemovedPositionalDeletes *int64 `json:"removedPositionalDeletes,omitempty"`
 	// Number of records that are removed during the commit
-	RemovedRecords *float64 `json:"removedRecords,omitempty"`
+	RemovedRecords *int64 `json:"removedRecords,omitempty"`
 	// Total number of data files that are present in the iceberg table
-	TotalDataFiles *float64 `json:"totalDataFiles,omitempty"`
+	TotalDataFiles *int64 `json:"totalDataFiles,omitempty"`
 	// Total number of temporary delete files that are present in the iceberg table
-	TotalDeleteFiles *float64 `json:"totalDeleteFiles,omitempty"`
+	TotalDeleteFiles *int64 `json:"totalDeleteFiles,omitempty"`
 	// Duration of the commit in MILLISECONDS
-	TotalDuration *float64 `json:"totalDuration,omitempty"`
+	TotalDuration *int64 `json:"totalDuration,omitempty"`
 	// Number of equality deletes that are present in the iceberg table
-	TotalEqualityDeletes *float64 `json:"totalEqualityDeletes,omitempty"`
+	TotalEqualityDeletes *int64 `json:"totalEqualityDeletes,omitempty"`
 	// Number of files size in bytes in the iceberg table
-	TotalFilesSizeInBytes *float64 `json:"totalFilesSizeInBytes,omitempty"`
+	TotalFilesSizeInBytes *int64 `json:"totalFilesSizeInBytes,omitempty"`
 	// Number of positional deletes that are present in the iceberg table
-	TotalPositionalDeletes *float64 `json:"totalPositionalDeletes,omitempty"`
+	TotalPositionalDeletes *int64 `json:"totalPositionalDeletes,omitempty"`
 	// Number of records that are present in the iceberg table
-	TotalRecords *float64 `json:"totalRecords,omitempty"`
+	TotalRecords *int64 `json:"totalRecords,omitempty"`
 }
 
 // IcebergScanReportInputDatasetFacetScanMetrics
 type IcebergScanReportInputDatasetFacetScanMetrics struct {
 	// Number of delete files that are equality indexed during the scan
-	EqualityDeleteFiles *float64 `json:"equalityDeleteFiles,omitempty"`
+	EqualityDeleteFiles *int64 `json:"equalityDeleteFiles,omitempty"`
 	// Number of delete files that are indexed during the scan
-	IndexedDeleteFiles *float64 `json:"indexedDeleteFiles,omitempty"`
+	IndexedDeleteFiles *int64 `json:"indexedDeleteFiles,omitempty"`
 	// Number of delete files that are positional indexed during the scan
-	PositionalDeleteFiles *float64 `json:"positionalDeleteFiles,omitempty"`
+	PositionalDeleteFiles *int64 `json:"positionalDeleteFiles,omitempty"`
 	// List of data files that are read during the scan
-	ResultDataFiles *float64 `json:"resultDataFiles,omitempty"`
+	ResultDataFiles *int64 `json:"resultDataFiles,omitempty"`
 	// List of delete files that are read during the scan
-	ResultDeleteFiles *float64 `json:"resultDeleteFiles,omitempty"`
+	ResultDeleteFiles *int64 `json:"resultDeleteFiles,omitempty"`
 	// Number of data manifests that are scanned during the scan
-	ScannedDataManifests *float64 `json:"scannedDataManifests,omitempty"`
+	ScannedDataManifests *int64 `json:"scannedDataManifests,omitempty"`
 	// Number of delete manifests that are scanned during the scan
-	ScannedDeleteManifests *float64 `json:"scannedDeleteManifests,omitempty"`
+	ScannedDeleteManifests *int64 `json:"scannedDeleteManifests,omitempty"`
 	// Number of data files that are skipped during the scan
-	SkippedDataFiles *float64 `json:"skippedDataFiles,omitempty"`
+	SkippedDataFiles *int64 `json:"skippedDataFiles,omitempty"`
 	// Number of data manifests that are skipped during the scan
-	SkippedDataManifests *float64 `json:"skippedDataManifests,omitempty"`
+	SkippedDataManifests *int64 `json:"skippedDataManifests,omitempty"`
 	// Number of delete files that are skipped during the scan
-	SkippedDeleteFiles *float64 `json:"skippedDeleteFiles,omitempty"`
+	SkippedDeleteFiles *int64 `json:"skippedDeleteFiles,omitempty"`
 	// Number of delete manifests that are skipped during the scan
-	SkippedDeleteManifests *float64 `json:"skippedDeleteManifests,omitempty"`
+	SkippedDeleteManifests *int64 `json:"skippedDeleteManifests,omitempty"`
 	// Total number of manifests that are scanned during the scan
-	TotalDataManifests *float64 `json:"totalDataManifests,omitempty"`
+	TotalDataManifests *int64 `json:"totalDataManifests,omitempty"`
 	// Total delete file size in bytes that are read during the scan
-	TotalDeleteFileSizeInBytes *float64 `json:"totalDeleteFileSizeInBytes,omitempty"`
+	TotalDeleteFileSizeInBytes *int64 `json:"totalDeleteFileSizeInBytes,omitempty"`
 	// Total number of delete manifests that are scanned during the scan
-	TotalDeleteManifests *float64 `json:"totalDeleteManifests,omitempty"`
+	TotalDeleteManifests *int64 `json:"totalDeleteManifests,omitempty"`
 	// Total file size in bytes that are read during the scan
-	TotalFileSizeInBytes *float64 `json:"totalFileSizeInBytes,omitempty"`
+	TotalFileSizeInBytes *int64 `json:"totalFileSizeInBytes,omitempty"`
 	// Duration of the scan in MILLISECONDS
-	TotalPlanningDuration *float64 `json:"totalPlanningDuration,omitempty"`
+	TotalPlanningDuration *int64 `json:"totalPlanningDuration,omitempty"`
 }
 
 // InputField — Represents a single dependency on some field (column).
