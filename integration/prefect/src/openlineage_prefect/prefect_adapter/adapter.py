@@ -13,6 +13,7 @@ from openlineage.client.event_v2 import (
     Run,
     RunEvent,
     RunState,
+    set_producer,
 )
 from openlineage.client.facet_v2 import (
     error_message_run,
@@ -22,6 +23,7 @@ from openlineage.client.facet_v2 import (
     parent_run,
     processing_engine_run,
 )
+
 from openlineage_prefect.prefect_adapter.facets.run_facets import PrefectDeploymentRunFacet
 
 PRODUCER: str = "https://github.com/OpenLineage/openlineage/integration/prefect"
@@ -69,7 +71,7 @@ class DatasetInfo:
 
 class PrefectOpenLineageAdapter:
     def __init__(self, client: OpenLineageClient | None = None):
-        self.client = client or OpenLineageClient()
+        self.client = client or OpenLineageClient(set_producer(PRODUCER))
 
     def create_and_emit_flow_event(
         self,
@@ -81,6 +83,10 @@ class PrefectOpenLineageAdapter:
     ) -> None:
         """Create and emit a flow-level OpenLineage event."""
 
+        if flow_info.event_time is None:
+            message = "FlowInfo.event_time must be set before emitting a flow event."
+            raise ValueError(message)
+
         run_facets = {
             "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                 version=prefect_version if prefect_version else "unknown", name="Prefect"
@@ -89,8 +95,7 @@ class PrefectOpenLineageAdapter:
 
         if flow_info.state_msg and event_type in [RunState.FAIL, RunState.ABORT]:
             run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
-                message=flow_info.state_msg,
-                programmingLanguage="Python",
+                message=flow_info.state_msg, programmingLanguage="Python"
             )
 
         if deployment and all([deployment.id, deployment.created, deployment.updated, deployment.name]):
@@ -112,7 +117,6 @@ class PrefectOpenLineageAdapter:
             eventTime=flow_info.event_time.isoformat(),
             run=Run(runId=run_id, facets=run_facets),
             job=Job(flow_info.namespace, flow_info.name, job_facets),
-            producer=PRODUCER,
         )
 
         try:
@@ -162,7 +166,7 @@ class PrefectOpenLineageAdapter:
                 name=deployment.name,
             )
 
-        if state_msg:
+        if state_msg and event_type in [RunState.FAIL, RunState.ABORT]:
             run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
                 message=state_msg,
                 programmingLanguage="Python",
@@ -170,8 +174,8 @@ class PrefectOpenLineageAdapter:
 
         if flow_run_id and flow_name:
             run_facets["parent"] = parent_run.ParentRunFacet(
-                run=Run(runId=flow_run_id),
-                job=Job(namespace=namespace, name=flow_name),
+                run=parent_run.Run(runId=flow_run_id),
+                job=parent_run.Job(namespace=namespace, name=flow_name),
             )
 
         if job_deps:

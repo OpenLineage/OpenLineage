@@ -23,6 +23,7 @@ from openlineage_prefect.prefect_adapter.adapter import (
 )
 from openlineage_prefect.prefect_adapter.listener import PrefectOpenLineageListener
 from prefect.events.schemas.events import Event
+from prefect.exceptions import ObjectNotFound
 from test_events import FLOW_START_EVENT, TASK_START_EVENT
 
 FLOW_NAME_TYPE = "flow-run"
@@ -39,6 +40,7 @@ def mock_prefect_client():
 def mock_adapter():
     """Create a mock OpenLineage adapter."""
     adapter = MagicMock(spec=PrefectOpenLineageAdapter)
+    adapter.client = MagicMock()
     adapter.create_and_emit_flow_event = MagicMock()
     adapter.create_and_emit_task_event = MagicMock()
     return adapter
@@ -99,6 +101,19 @@ def test_build_run_id_different_for_different_inputs(listener):
     run_id_2 = listener.build_run_id(execution_time, "flow_b", "default", prefect_run_id)
 
     assert run_id_1 != run_id_2
+
+
+@pytest.mark.parametrize(
+    ("run_name", "expected"),
+    [
+        ("step-1", "step-1"),
+        ("step-2", "step-2"),
+        ("load-feed", "load-feed"),
+        ("fake_ingest-f83", "fake_ingest"),
+    ],
+)
+def test_get_base_name_only_strips_prefect_suffix(listener, run_name, expected):
+    assert listener.get_base_name(run_name) == expected
 
 
 # ========== Tests for get_deployment_info ==========
@@ -321,6 +336,7 @@ async def test_get_parent_runs_success(listener, mock_prefect_client):
     parent_task_run = MagicMock()
     parent_task_run.name = "parent_task-abc"
     parent_task_run.start_time = datetime.fromisoformat("2026-07-06T11:04:46.467291+00:00")
+    parent_task_run.flow_run_id = None
 
     mock_prefect_client.read_task_run.return_value = parent_task_run
 
@@ -328,13 +344,42 @@ async def test_get_parent_runs_success(listener, mock_prefect_client):
         listener,
         "get_deployment_info",
         new_callable=AsyncMock,
-        return_value=DeploymentInfo(namespace="default", flow_run=None),
-    ):
+    ) as get_deployment_info:
         result = await listener.get_parent_runs(payload, "task-run-123")
 
     assert len(result) == 1
     assert result[0]["name"] == "parent_task"
     assert result[0]["namespace"] == "default"
+    get_deployment_info.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "lookup_error",
+    [
+        ObjectNotFound(Exception("parent task run not found")),
+        httpx.ConnectError("Prefect API unavailable"),
+    ],
+)
+async def test_get_parent_runs_skips_failed_parent_and_continues(listener, mock_prefect_client, lookup_error):
+    payload = {
+        "task_run": {
+            "task_inputs": {
+                "__parents__": [
+                    {"input_type": "task_run", "id": "missing-parent"},
+                    {"input_type": "task_run", "id": "available-parent"},
+                ]
+            }
+        }
+    }
+    available_parent = MagicMock()
+    available_parent.name = "available_parent"
+    available_parent.flow_run_id = None
+    mock_prefect_client.read_task_run.side_effect = [lookup_error, available_parent]
+
+    result = await listener.get_parent_runs(payload, "task-run-123")
+
+    assert result == [{"name": "available_parent", "namespace": "default"}]
 
 
 @pytest.mark.asyncio
@@ -375,7 +420,7 @@ async def test_get_parent_runs_filters_non_task_inputs(listener, mock_prefect_cl
     parent_task_run = MagicMock()
     parent_task_run.name = "parent_task-abc"
     parent_task_run.start_time = datetime.fromisoformat("2026-07-06T11:04:46.467291+00:00")
-    parent_task_run.flow_run_id = "flow-run-456"
+    parent_task_run.flow_run_id = UUID("123e4567-e89b-12d3-a456-426614174000")
 
     mock_prefect_client.read_task_run.return_value = parent_task_run
 
@@ -384,10 +429,12 @@ async def test_get_parent_runs_filters_non_task_inputs(listener, mock_prefect_cl
         "get_deployment_info",
         new_callable=AsyncMock,
         return_value=DeploymentInfo(namespace="default", flow_run=None),
-    ):
+    ) as get_deployment_info:
         result = await listener.get_parent_runs(payload, "task-run-123")
 
     assert [run["name"] for run in result] == ["parent_task", "parent_task"]
+    get_deployment_info.assert_awaited_once_with(str(parent_task_run.flow_run_id))
+    assert list(listener.related_deployment_info) == [str(parent_task_run.flow_run_id)]
 
 
 # ========== Tests for collect_and_process_flow_runs ==========
@@ -417,14 +464,45 @@ async def test_collect_and_process_flow_runs_success(listener, sample_flow_event
     assert call_args["flow_info"].name == "GitHub Stars"
     assert call_args["flow_info"].namespace == "default"
     assert call_args["prefect_version"] == "3.7.6"
+    mock_adapter.client.close.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_collect_and_process_flow_runs_closes_client_when_terminal_emit_fails(
+    listener, sample_flow_event, mock_adapter
+):
+    """Test that terminal flow event processing closes the client after an emission failure."""
+    mock_adapter.create_and_emit_flow_event.side_effect = RuntimeError("emit failed")
+    deployment = DeploymentInfo(namespace="default", flow_run=MagicMock())
+    flow_info = FlowInfo(
+        start_time=datetime.fromisoformat("2026-07-06T11:04:46.467291+00:00"),
+        name="GitHub Stars",
+        namespace=None,
+        event_time=None,
+    )
+
+    with (
+        patch.object(listener, "get_deployment_info", new_callable=AsyncMock, return_value=deployment),
+        patch.object(listener, "get_flow_info", new_callable=AsyncMock, return_value=flow_info),
+        pytest.raises(RuntimeError, match="emit failed"),
+    ):
+        await listener.collect_and_process_flow_runs("3.7.6", sample_flow_event, RunState.COMPLETE)
+
+    mock_adapter.client.close.assert_called_once_with()
+    assert not listener.related_deployment_info
+    assert not listener.cached_flow_info
 
 
 # ========== Tests for collect_and_process_task_runs ==========
 
 
 @pytest.mark.asyncio
-async def test_collect_and_process_task_runs_success(listener, sample_task_event, mock_adapter):
-    """Test successful task event processing."""
+async def test_collect_and_process_task_runs_survives_parent_lookup_error(
+    listener, sample_task_event, mock_adapter, mock_prefect_client
+):
+    """Test that a failed parent lookup doesn't prevent task event processing."""
+    mock_prefect_client.read_task_run.side_effect = httpx.ConnectError("Prefect API unavailable")
+
     deployment = DeploymentInfo(namespace="default", flow_run=MagicMock())
     flow_info = FlowInfo(
         start_time=datetime.fromisoformat("2026-07-07T13:21:07.336123+00:00"),
@@ -437,7 +515,6 @@ async def test_collect_and_process_task_runs_success(listener, sample_task_event
         patch.object(listener, "get_deployment_info", new_callable=AsyncMock, return_value=deployment),
         patch.object(listener, "build_run_id", return_value="task-run-id"),
         patch.object(listener, "get_artifacts_by_task_run", new_callable=AsyncMock, return_value=[]),
-        patch.object(listener, "get_parent_runs", new_callable=AsyncMock, return_value=[]),
         patch.object(listener, "get_flow_info", new_callable=AsyncMock, return_value=flow_info),
     ):
         await listener.collect_and_process_task_runs("3.7.6", sample_task_event, RunState.START)
@@ -452,6 +529,34 @@ async def test_collect_and_process_task_runs_success(listener, sample_task_event
         == sample_task_event.payload["task_run"]["expected_start_time"]
     )
     assert call_args["flow_name"] == "GitHub Stars"
+    mock_adapter.client.close.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_collect_and_process_task_runs_closes_client_when_terminal_emit_fails(
+    listener, sample_task_event, mock_adapter
+):
+    """Test that terminal task event processing closes the client after an emission failure."""
+    mock_adapter.create_and_emit_task_event.side_effect = RuntimeError("emit failed")
+    deployment = DeploymentInfo(namespace="default", flow_run=MagicMock())
+    flow_info = FlowInfo(
+        start_time=datetime.fromisoformat("2026-07-07T13:21:07.336123+00:00"),
+        name="GitHub Stars",
+        namespace=None,
+        event_time=None,
+    )
+
+    with (
+        patch.object(listener, "get_deployment_info", new_callable=AsyncMock, return_value=deployment),
+        patch.object(listener, "build_run_id", return_value="task-run-id"),
+        patch.object(listener, "process_datasets", new_callable=AsyncMock),
+        patch.object(listener, "get_parent_runs", new_callable=AsyncMock, return_value=[]),
+        patch.object(listener, "get_flow_info", new_callable=AsyncMock, return_value=flow_info),
+        pytest.raises(RuntimeError, match="emit failed"),
+    ):
+        await listener.collect_and_process_task_runs("3.7.6", sample_task_event, RunState.COMPLETE)
+
+    mock_adapter.client.close.assert_called_once_with()
 
 
 @pytest.mark.asyncio

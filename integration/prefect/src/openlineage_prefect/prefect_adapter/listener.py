@@ -13,13 +13,6 @@ from datetime import datetime
 import httpx
 from openlineage.client.event_v2 import RunState
 from openlineage.client.uuid import generate_static_uuid
-from openlineage_prefect.prefect_adapter.adapter import (
-    DatasetInfo,
-    DeploymentInfo,
-    FlowInfo,
-    PrefectOpenLineageAdapter,
-    TaskInfo,
-)
 from prefect.client.orchestration import get_client
 from prefect.client.schemas.filters import ArtifactFilter, ArtifactFilterTaskRunId
 from prefect.events.clients import get_events_subscriber
@@ -27,13 +20,21 @@ from prefect.events.filters import EventFilter, EventNameFilter
 from prefect.events.schemas.events import Event
 from prefect.exceptions import ObjectNotFound, PrefectHTTPStatusError
 
+from openlineage_prefect.prefect_adapter.adapter import (
+    DatasetInfo,
+    DeploymentInfo,
+    FlowInfo,
+    PrefectOpenLineageAdapter,
+    TaskInfo,
+)
+
 TASK_NAME_ERR_MSG = "TASK_NAME_TYPE must be either 'base' or 'full'."
 TASK_NAME_TYPE = os.environ.get("TASK_NAME_TYPE") or os.environ.get("JOB_NAME_TYPE", "base")
 if TASK_NAME_TYPE not in ("base", "full"):
     raise ValueError(TASK_NAME_ERR_MSG)
-JOB_NAMESPACE: str = os.environ.get("OPENLINEAGE_NAMESPACE", "default")
+JOB_NAMESPACE: str = os.environ.get("OPENLINEAGE_NAMESPACE") or "default"
 FLOW_NAME_ERR_MSG = "FLOW_NAME_TYPE must be either 'flow' or 'flow-run'."
-FLOW_NAME_TYPE: str = os.environ.get("FLOW_NAME_TYPE", "flow")
+FLOW_NAME_TYPE: str = os.environ.get("FLOW_NAME_TYPE") or "flow"
 if FLOW_NAME_TYPE not in ("flow", "flow-run"):
     raise ValueError(FLOW_NAME_ERR_MSG)
 MAX_CACHED_FLOW_RUNS = 128
@@ -57,7 +58,6 @@ class PrefectOpenLineageListener:
                 prefix=[
                     "prefect.task-run.",
                     "prefect.flow-run.",
-                    "prefect.asset.materialization.",
                 ]
             ),
         )
@@ -92,7 +92,7 @@ class PrefectOpenLineageListener:
         """
         Removes auto-generated unique suffixes from a Prefect task run name.
         """
-        return re.sub(r"-[a-f0-9]+$", "", run_name)
+        return re.sub(r"-[a-f0-9]{3}$", "", run_name)
 
     async def get_deployment_info(self, flow_run_id: str) -> DeploymentInfo:
         """
@@ -141,7 +141,7 @@ class PrefectOpenLineageListener:
         return FlowInfo(
             start_time=flow_run.start_time,
             name=flow_name,
-            namespace=None,
+            namespace=JOB_NAMESPACE,
             event_time=None,
             state_msg=None,
         )
@@ -224,25 +224,42 @@ class PrefectOpenLineageListener:
             task_parents = payload["task_run"]["task_inputs"]["__parents__"]
             for parent in task_parents:
                 task_run_id: str | None = parent["id"] if parent["input_type"] == "task_run" else None
-                if task_run_id:
+                if not task_run_id:
+                    logger.info("Parent task run ID not found for parent %s", parent)
+                    continue
+                try:
                     parent_run = await self.client.read_task_run(task_run_id)
                     if TASK_NAME_TYPE == "base":
                         parent_name = self.get_base_name(parent_run.name)
                     elif TASK_NAME_TYPE == "full":
                         parent_name = parent_run.name
-                    try:
-                        parent_deployment_info = self._get_related_deployment_info(parent_run.flow_run_id)
-                    except KeyError:
-                        parent_deployment_info = await self.get_deployment_info(parent_run.flow_run_id)
-                        self._cache_related_deployment_info(parent_run.flow_run_id, parent_deployment_info)
+
+                    parent_flow_run_id = (
+                        str(parent_run.flow_run_id) if parent_run.flow_run_id is not None else None
+                    )
+                    if parent_flow_run_id is None:
+                        parent_namespace = JOB_NAMESPACE
+                    else:
+                        try:
+                            parent_deployment_info = self._get_related_deployment_info(parent_flow_run_id)
+                        except KeyError:
+                            parent_deployment_info = await self.get_deployment_info(parent_flow_run_id)
+                            self._cache_related_deployment_info(parent_flow_run_id, parent_deployment_info)
+                        parent_namespace = parent_deployment_info.namespace
+
                     parent_runs.append(
                         {
                             "name": parent_name,
-                            "namespace": parent_deployment_info.namespace,
+                            "namespace": parent_namespace,
                         }
                     )
-                else:
-                    logger.info("Parent task run ID not found for parent %s", parent)
+                except (ObjectNotFound, PrefectHTTPStatusError, httpx.HTTPError):
+                    logger.warning(
+                        "Failed to retrieve parent task run %s for task run %s; skipping parent.",
+                        task_run_id,
+                        prefect_task_run_id,
+                        exc_info=True,
+                    )
         except KeyError:
             logger.info("No task parents found for %s", prefect_task_run_id)
         return parent_runs
@@ -273,10 +290,27 @@ class PrefectOpenLineageListener:
                         flow_info = self.cached_flow_info[flow_run_id]
                     except KeyError:
                         flow_info = await self.get_flow_info(related_deployment_info.flow_run)
+                        if flow_info.start_time is None:
+                            logger.info(
+                                "No start time found for flow run %s. Flow %s event will not be emitted.",
+                                flow_run_id,
+                                event_state,
+                            )
+                            self.related_deployment_info.pop(flow_run_id, None)
+                            self.cached_flow_info.pop(flow_run_id, None)
+                            continue
+
                 else:
                     related_deployment_info = await self.get_deployment_info(flow_run_id)
                     self._cache_related_deployment_info(flow_run_id, related_deployment_info)
                     flow_info = await self.get_flow_info(related_deployment_info.flow_run)
+                    if flow_info.start_time is None:
+                        logger.info(
+                            "No start time found for flow run %s. Flow %s event will not be emitted.",
+                            flow_run_id,
+                            event_state,
+                        )
+                        continue
                     self.cached_flow_info[flow_run_id] = flow_info
 
                 try:
@@ -301,26 +335,27 @@ class PrefectOpenLineageListener:
                     state_msg=prefect_state_msg,
                 )
 
-                self.ol_adapter.create_and_emit_flow_event(
-                    run_id=ol_flow_run_id,
-                    event_type=event_state,
-                    flow_info=flow_info,
-                    prefect_version=prefect_version,
-                    deployment=related_deployment_info if related_deployment_info.id else None,
-                )
-
-                if event_state in [RunState.COMPLETE, RunState.FAIL, RunState.ABORT]:
-                    self.related_deployment_info.pop(flow_run_id, None)
-                    self.cached_flow_info.pop(flow_run_id, None)
+                try:
+                    await asyncio.to_thread(
+                        self.ol_adapter.create_and_emit_flow_event,
+                        run_id=ol_flow_run_id,
+                        event_type=event_state,
+                        flow_info=flow_info,
+                        prefect_version=prefect_version,
+                        deployment=related_deployment_info if related_deployment_info.id else None,
+                    )
+                finally:
+                    if event_state in [RunState.COMPLETE, RunState.FAIL, RunState.ABORT]:
+                        self.related_deployment_info.pop(flow_run_id, None)
+                        self.cached_flow_info.pop(flow_run_id, None)
+                        self.ol_adapter.client.close()
 
     def process_task_run_event(self, event: Event, event_state: RunState):
         event_time = event.occurred
-        expected_start_time = (event.payload.get("task_run") or {}).get("expected_start_time")
+        task_run = event.payload.get("task_run") or {}
+        expected_start_time = task_run.get("expected_start_time")
         prefect_task_run_id = event.resource.id.split(".")[-1]
-        try:
-            raw_start_time = event.payload.get("task_run", {}).get("start_time")
-        except KeyError:
-            raw_start_time = None
+        raw_start_time = task_run.get("start_time")
         if not raw_start_time:
             logger.info(
                 "No start time found for task run %s. An event will not be emitted.", prefect_task_run_id
@@ -357,7 +392,7 @@ class PrefectOpenLineageListener:
         ]
         return DatasetInfo(input_datasets=input_datasets, output_datasets=output_datasets)
 
-    async def collect_and_process_task_runs(
+    async def collect_and_process_task_runs(  # NOQA: C901
         self, prefect_version: str, event: Event, event_state: RunState
     ) -> None:
         """Retrieves the task runs for a given event and emits OpenLineage events."""
@@ -368,8 +403,10 @@ class PrefectOpenLineageListener:
 
         flow_run_id = ""
         for res in event.related:
-            if res["prefect.resource.id"].split(".")[1] == "flow-run":
-                flow_run_id = res["prefect.resource.id"].split(".")[-1]
+            resource_id = res.get("prefect.resource.id", "")
+            if res.get("prefect.resource.role") == "flow-run" and resource_id.startswith("prefect.flow-run."):
+                flow_run_id = resource_id.removeprefix("prefect.flow-run.")
+                break
 
         # Skip task runs that are not related to a flow run (e.g., standalone task runs)
         if not flow_run_id:
@@ -379,8 +416,11 @@ class PrefectOpenLineageListener:
             )
             return
 
-        related_deployment_info = await self.get_deployment_info(flow_run_id)
-        self._cache_related_deployment_info(flow_run_id, related_deployment_info)
+        try:
+            related_deployment_info = self._get_related_deployment_info(flow_run_id)
+        except KeyError:
+            related_deployment_info = await self.get_deployment_info(flow_run_id)
+            self._cache_related_deployment_info(flow_run_id, related_deployment_info)
 
         # Skip task runs without a start time
         try:
@@ -397,8 +437,10 @@ class PrefectOpenLineageListener:
             )
             return
 
-        # Get datasets from Prefect Artifacts
-        dataset_info = await self.process_datasets(task_run_data["prefect_task_run_id"])
+        # Get datasets from Prefect Artifacts for task runs with terminal states (COMPLETE, FAIL, ABORT)
+        dataset_info = DatasetInfo(input_datasets=[], output_datasets=[])
+        if event_state in [RunState.COMPLETE, RunState.FAIL, RunState.ABORT]:
+            dataset_info = await self.process_datasets(task_run_data["prefect_task_run_id"])
 
         # Get job dependencies (Prefect "parents") info for JobDependenciesRunFacet
         parent_runs = await self.get_parent_runs(event.payload, task_run_data["prefect_task_run_id"])
@@ -436,13 +478,18 @@ class PrefectOpenLineageListener:
             state_msg=task_run_data["prefect_state_msg"],
         )
 
-        self.ol_adapter.create_and_emit_task_event(
-            task_info=task_info,
-            flow_run_id=ol_flow_run_id,
-            flow_name=flow_info.name,
-            deployment=related_deployment_info,
-            datasets=dataset_info,
-        )
+        try:
+            await asyncio.to_thread(
+                self.ol_adapter.create_and_emit_task_event,
+                task_info=task_info,
+                flow_run_id=ol_flow_run_id,
+                flow_name=flow_info.name,
+                deployment=related_deployment_info,
+                datasets=dataset_info,
+            )
+        finally:
+            if event_state in [RunState.COMPLETE, RunState.FAIL, RunState.ABORT]:
+                self.ol_adapter.client.close()
 
     async def collect_and_process_runs(self) -> None:
         """Collects and processes Prefect events."""

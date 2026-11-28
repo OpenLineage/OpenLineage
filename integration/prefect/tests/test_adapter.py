@@ -116,6 +116,19 @@ def test_create_and_emit_flow_event_without_deployment(adapter, flow_info, sampl
     assert event.run.facets["processingEngine"].version == "unknown"
 
 
+def test_create_and_emit_flow_event_requires_event_time(adapter, flow_info, sample_run_id):
+    flow_info.event_time = None
+
+    with pytest.raises(ValueError, match=r"FlowInfo\.event_time must be set"):
+        adapter.create_and_emit_flow_event(
+            run_id=sample_run_id,
+            event_type=RunState.START,
+            flow_info=flow_info,
+        )
+
+    adapter.client.emit.assert_not_called()
+
+
 def test_create_and_emit_flow_event_includes_error_message(adapter, sample_datetime, sample_run_id):
     flow_info = FlowInfo(
         start_time=sample_datetime,

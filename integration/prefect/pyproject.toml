@@ -28,6 +28,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "jsonschema",
     "mypy",
     "pillow",
     "pre-commit",
@@ -43,4 +44,7 @@ dev = [
 [project.urls]
 Homepage = "https://openlineage.io/"
 Source = "https://github.com/OpenLineage/OpenLineage/tree/main/integration/prefect"
+
+[tool.uv.sources]
+openlineage-integration-common = { path = "../common", editable = true }
 

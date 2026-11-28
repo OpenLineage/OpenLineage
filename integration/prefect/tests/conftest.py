@@ -6,7 +6,7 @@ import sys
 
 # Find the absolute path of the directory containing 'src'
 # by stepping one folder up from 'tests/'
-root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..src/openlineage/"))
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../src/openlineage_prefect/"))
 
 # Inject it into the front of Python's search path
 if root_dir not in sys.path:

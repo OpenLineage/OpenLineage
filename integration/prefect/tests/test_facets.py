@@ -16,7 +16,7 @@ from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
 from openlineage.client.facet_v2 import BaseFacet
 from openlineage.client.serde import Serde
-from prefect_adapter.facets.run_facets import PrefectDeploymentRunFacet
+from openlineage_prefect.prefect_adapter.facets.run_facets import PrefectDeploymentRunFacet
 
 # ========== Tests for PrefectDeploymentRunFacet initialization ==========
 
