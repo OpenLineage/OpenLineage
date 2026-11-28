@@ -161,10 +161,10 @@ pub struct Context<'a> {
     column_id: u32,
     // For each SELECT being visited, innermost last: the names its own FROM
     // clause introduces, keyed by `ident_key`, with the relation each one
-    // stands for. An alias stands for itself, so the alias table resolves it;
-    // an unaliased table stands for its full name (`orders` for
-    // `FROM raw.orders`).
-    correlation_names: Vec<HashMap<String, Vec<Ident>>>,
+    // stands for and whether the name is an alias. An alias stands for
+    // itself, so the alias table resolves it; an unaliased table stands for
+    // its full name (`orders` for `FROM raw.orders`).
+    correlation_names: Vec<HashMap<String, (Vec<Ident>, bool)>>,
 }
 
 /// The identifier a recorded table reference was written with, rebuilt
@@ -441,12 +441,12 @@ impl<'a> Context<'a> {
     /// Opens the scope of a SELECT with the names its FROM clause
     /// introduces, each an alias or an unaliased table's last name part,
     /// with the relation it stands for. Closed by `pop_correlation_names`.
-    pub fn push_correlation_names(&mut self, names: Vec<(Ident, Vec<Ident>)>) {
+    pub fn push_correlation_names(&mut self, names: Vec<(Ident, Vec<Ident>, bool)>) {
         let dialect = self.dialect.as_base();
         self.correlation_names.push(
             names
                 .into_iter()
-                .map(|(name, relation)| (ident_key(&name, dialect), relation))
+                .map(|(name, relation, is_alias)| (ident_key(&name, dialect), (relation, is_alias)))
                 .collect(),
         );
     }
@@ -455,22 +455,11 @@ impl<'a> Context<'a> {
         self.correlation_names.pop();
     }
 
-    /// The relation a column qualifier names through the FROM clause of the
-    /// SELECT being visited, compared under the dialect's folding, or None
-    /// when that FROM clause does not introduce it. Enclosing SELECTs are
-    /// not consulted, so a qualifier in a nested query that names an outer
-    /// FROM item is resolved as it is on `main`.
-    pub fn correlation_named_by(&self, qualifier: &[Ident]) -> Option<Vec<Ident>> {
-        let [name] = qualifier else {
-            return None;
-        };
-        let key = ident_key(name, self.dialect().as_base());
-        self.correlation_names.last()?.get(&key).cloned()
-    }
-
-    /// Like `correlation_named_by`, but for the FROM clauses of the
-    /// enclosing SELECTs, innermost first. Used only to keep a CTE from
-    /// capturing a qualifier that may name one of those FROM items.
+    /// The relation a qualifier names through the FROM clauses of the
+    /// enclosing SELECTs, innermost first, compared under the dialect's
+    /// folding; `correlated_table` covers the SELECT being visited. Used
+    /// only to keep a CTE from capturing a qualifier that may name one of
+    /// those FROM items.
     pub fn enclosing_correlation_named_by(&self, qualifier: &[Ident]) -> Option<&Vec<Ident>> {
         let [name] = qualifier else {
             return None;
@@ -480,7 +469,7 @@ impl<'a> Context<'a> {
             .iter()
             .rev()
             .skip(1)
-            .find_map(|scope| scope.get(&key))
+            .find_map(|scope| scope.get(&key).map(|(relation, _)| relation))
     }
 
     /// `name` with a reference to a CTE in scope replaced by the CTE's name
@@ -500,21 +489,30 @@ impl<'a> Context<'a> {
         DbTableMeta::new(vec![cte], self.dialect, None, None)
     }
 
-    /// The table a name from a FROM clause stands for, as
-    /// `correlation_named_by` returns it: an alias keeps its own name under
-    /// the defaults, so the alias table resolves it, and an unaliased
+    /// The table a column qualifier names through the FROM clause of the
+    /// SELECT being visited, compared under the dialect's folding, or None
+    /// when that FROM clause does not introduce it. Enclosing SELECTs are not
+    /// consulted, so a qualifier in a nested query that names an outer FROM
+    /// item is resolved as it is on `main`. Whether the name is an alias
+    /// comes from that FROM clause, not from the alias table, which also
+    /// holds the aliases of enclosing queries: an alias, a derived table's
+    /// included, keeps its own name under the defaults, and an unaliased
     /// reference to a CTE is the CTE's table.
-    pub fn correlated_table(&self, relation: Vec<Ident>) -> DbTableMeta {
-        let as_named = DbTableMeta::new(
-            relation.clone(),
-            self.dialect,
-            self.default_schema.clone(),
-            self.default_database.clone(),
-        );
-        if self.is_relation_alias(&as_named) {
-            return as_named;
+    pub fn correlated_table(&self, qualifier: &[Ident]) -> Option<DbTableMeta> {
+        let [name] = qualifier else {
+            return None;
+        };
+        let key = ident_key(name, self.dialect().as_base());
+        let (relation, is_alias) = self.correlation_names.last()?.get(&key)?;
+        if *is_alias {
+            return Some(DbTableMeta::new(
+                relation.clone(),
+                self.dialect,
+                self.default_schema.clone(),
+                self.default_database.clone(),
+            ));
         }
-        self.relation_table(relation)
+        Some(self.relation_table(relation.clone()))
     }
 
     /// The table `name` refers to: the CTE's table when `name` is a

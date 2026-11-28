@@ -288,8 +288,8 @@ impl Visit for Expr {
                         context.default_schema().clone(),
                         context.default_database().clone(),
                     );
-                    let table = match context.correlation_named_by(&qualifier) {
-                        Some(relation) => context.correlated_table(relation),
+                    let table = match context.correlated_table(&qualifier) {
+                        Some(table) => table,
                         None => match context.cte_named_by(&qualifier) {
                             Some(cte) => {
                                 let outer = context.enclosing_correlation_named_by(&qualifier);
@@ -713,19 +713,19 @@ fn visit_from(from: &[TableWithJoins], context: &mut Context) -> Result<ContextF
 }
 
 /// The names a FROM item introduces for column qualifiers, each with the
-/// relation it stands for. An alias stands for itself and hides whatever
-/// it renames; an unaliased table stands for its full name (CTE references
-/// resolved) under its last name part; an unaliased parenthesized join
-/// introduces the names of its members, and an unaliased PIVOT or UNPIVOT
-/// those of the table it wraps.
-fn correlation_names(relation: &TableFactor, context: &Context) -> Vec<(Ident, Vec<Ident>)> {
+/// relation it stands for and whether the name is an alias. An alias stands
+/// for itself and hides whatever it renames; an unaliased table stands for
+/// its full name (CTE references resolved) under its last name part; an
+/// unaliased parenthesized join introduces the names of its members, and an
+/// unaliased PIVOT or UNPIVOT those of the table it wraps.
+fn correlation_names(relation: &TableFactor, context: &Context) -> Vec<(Ident, Vec<Ident>, bool)> {
     if let Some(alias) = table_factor_alias(relation) {
-        return vec![(alias.name.clone(), vec![alias.name.clone()])];
+        return vec![(alias.name.clone(), vec![alias.name.clone()], true)];
     }
     match relation {
         TableFactor::Table { .. } => get_table_name_from_table_factor(relation, context)
             .map(|name| context.resolve_cte_reference(name))
-            .and_then(|name| Some((name.last()?.clone(), name)))
+            .and_then(|name| Some((name.last()?.clone(), name, false)))
             .into_iter()
             .collect(),
         TableFactor::NestedJoin {

@@ -561,3 +561,36 @@ fn cte_reading_its_own_name_under_a_default_schema() {
         );
     }
 }
+
+// Whether a qualifier names an alias or a CTE is decided by the FROM clause
+// of its own SELECT: an enclosing `u AS c` does not turn an inner `FROM c`
+// into an alias, and a derived table aliased like a CTE is read through its
+// own columns rather than the CTE's.
+#[test]
+fn alias_or_cte_is_decided_by_the_qualifiers_own_from_clause() {
+    let cases = [
+        (
+            "WITH c AS (SELECT a AS id FROM t) \
+             SELECT d.id FROM u AS c CROSS JOIN (SELECT c.id FROM c) AS d",
+            ["id <- public.t.a", "id <- t.a"],
+        ),
+        (
+            "WITH c AS (SELECT a AS id FROM t) SELECT c.id FROM (SELECT b AS id FROM u) AS c",
+            ["id <- public.u.b", "id <- u.b"],
+        ),
+    ];
+    for dialect in ["postgres", "snowflake"] {
+        for (sql, [with_schema, without]) in cases {
+            assert_eq!(
+                edges_with_schema(sql, dialect, Some("public")),
+                vec![with_schema],
+                "{dialect}, default schema: {sql}"
+            );
+            assert_eq!(
+                edges_with_schema(sql, dialect, None),
+                vec![without],
+                "{dialect}, no default schema: {sql}"
+            );
+        }
+    }
+}
