@@ -290,29 +290,50 @@ impl Visit for Expr {
                         context.default_schema().clone(),
                         context.default_database().clone(),
                     );
-                    let table = match context.correlated_table(&qualifier) {
-                        Some(table) => table,
-                        None => match context.cte_named_by(&qualifier) {
-                            Some(cte) => match context.enclosing_correlation(&qualifier) {
-                                // The alias as its FROM clause spells it, which
-                                // is how the alias table holds it.
-                                Some((alias, true)) => context.resolved_alias(&DbTableMeta::new(
-                                    alias.clone(),
-                                    context.dialect(),
-                                    context.default_schema().clone(),
-                                    context.default_database().clone(),
-                                )),
-                                Some((relation, false)) => context.relation_table(relation.clone()),
-                                None if context.is_relation_alias(&as_written) => as_written,
-                                _ => context.cte_table(cte),
-                            },
-                            None => as_written,
-                        },
+                    // A table resolved through an enclosing FROM item is
+                    // final; the others still go through the alias table of
+                    // this SELECT's FROM clause.
+                    let own = context.correlated_table(&qualifier);
+                    let enclosing = match own {
+                        Some(_) => None,
+                        None => context
+                            .cte_named_by(&qualifier)
+                            .and_then(|_| context.enclosing_correlation(&qualifier))
+                            .map(|(relation, is_alias)| {
+                                if is_alias {
+                                    // The alias as its FROM clause spells it,
+                                    // which is how the alias table holds it.
+                                    context.resolved_alias(&DbTableMeta::new(
+                                        relation.clone(),
+                                        context.dialect(),
+                                        context.default_schema().clone(),
+                                        context.default_database().clone(),
+                                    ))
+                                } else {
+                                    context.relation_table(relation.clone())
+                                }
+                            }),
                     };
-                    context.add_column_ancestors(
-                        ColumnMeta::new(descendant, None),
-                        vec![ColumnMeta::new(ancestor, Some(table))],
-                    );
+                    let column = ColumnMeta::new(descendant, None);
+                    if let Some(table) = enclosing {
+                        context.add_resolved_column_ancestors(
+                            column,
+                            vec![ColumnMeta::new(ancestor, Some(table))],
+                        );
+                    } else {
+                        let table = match own {
+                            Some(table) => table,
+                            None => match context.cte_named_by(&qualifier) {
+                                Some(_) if context.is_relation_alias(&as_written) => as_written,
+                                Some(cte) => context.cte_table(cte),
+                                None => as_written,
+                            },
+                        };
+                        context.add_column_ancestors(
+                            column,
+                            vec![ColumnMeta::new(ancestor, Some(table))],
+                        );
+                    }
                 }
             }
             Expr::Function(func) => func.visit(context)?,

@@ -343,6 +343,28 @@ impl<'a> Context<'a> {
             .or_insert(HashSet::from_iter(ancestors));
     }
 
+    /// Like `add_column_ancestors`, for ancestors whose tables are already
+    /// resolved: they are recorded as they are, not looked up again in the
+    /// alias table of the SELECT being visited. A qualifier that names an
+    /// enclosing SELECT's FROM item is resolved through that FROM item, and
+    /// its table must not be taken by an alias of the nested SELECT that
+    /// happens to share its name: in
+    /// `SELECT (SELECT c.id FROM t AS u) FROM u AS c`, `c.id` is `u.id`,
+    /// not `t.id`.
+    pub fn add_resolved_column_ancestors(
+        &mut self,
+        column: ColumnMeta,
+        ancestors: Vec<ColumnMeta>,
+    ) {
+        if let Some(frame) = self.frames.last_mut() {
+            frame
+                .column_ancestry
+                .entry(column)
+                .or_default()
+                .extend(ancestors);
+        }
+    }
+
     // --- Context Manipulators ---
 
     pub fn push_frame(&mut self) {
@@ -590,27 +612,26 @@ impl<'a> Context<'a> {
         current
     }
 
-    /// The table an alias in any frame stands for, following a chain of
-    /// aliases, or the name itself when it is not an alias. The placeholder
-    /// entries `With::visit` registers for CTE names map to an empty table
-    /// and are not followed, so `FROM c AS c` resolves to CTE `c` rather
-    /// than to nothing.
+    /// The relation the alias `name` renames, from the innermost frame that
+    /// registers it, or `name` itself when no frame does (a derived table's
+    /// alias). One step only: what an alias renames is a table or a CTE named
+    /// in its FROM item, never another alias, and looking that name up again
+    /// would let an alias of a nested SELECT with the same name take it. The
+    /// placeholder entries `With::visit` registers for CTE names map to an
+    /// empty table and are skipped, so a CTE of a nested query named like
+    /// an enclosing alias does not hide that alias.
     pub fn resolved_alias(&self, name: &DbTableMeta) -> DbTableMeta {
-        let mut current = name.clone();
-        for _ in 0..20 {
-            let next = self
-                .frames
-                .iter()
-                .rev()
-                .find_map(|frame| frame.aliases.get_table_from_alias(current.qualified_name()));
-            match next {
-                Some(table) if !table.name.is_empty() && *table != current => {
-                    current = table.clone();
-                }
-                _ => break,
-            }
-        }
-        current
+        self.frames
+            .iter()
+            .rev()
+            .find_map(|frame| {
+                frame
+                    .aliases
+                    .get_table_from_alias(name.qualified_name())
+                    .filter(|table| !table.name.is_empty())
+            })
+            .unwrap_or(name)
+            .clone()
     }
 
     pub fn is_table_alias(&self, name: &DbTableMeta) -> bool {

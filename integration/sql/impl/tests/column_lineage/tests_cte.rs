@@ -630,6 +630,25 @@ fn qualifier_in_a_nested_query_names_the_enclosing_from_item() {
             "SELECT (SELECT c.id) AS r FROM c AS C",
             ["id <- public.t.a", "id <- t.a"],
         ),
+        // An alias of the nested SELECT named like the relation the
+        // enclosing alias renames (`u`) or like a table the CTE reads (`t`)
+        // does not take the qualifier's table.
+        (
+            "SELECT (SELECT c.id FROM t AS u) AS r FROM u AS c",
+            ["id <- public.u.id", "id <- u.id"],
+        ),
+        (
+            "SELECT d.r FROM u AS c CROSS JOIN (SELECT c.id AS r FROM t AS u) AS d",
+            ["r <- public.u.id", "r <- u.id"],
+        ),
+        (
+            "SELECT (SELECT c.id FROM w AS s) AS r FROM s.c",
+            ["id <- s.c.id", "id <- s.c.id"],
+        ),
+        (
+            "SELECT (SELECT c.id FROM w AS t) AS r FROM c AS c",
+            ["id <- public.t.a", "id <- t.a"],
+        ),
         (
             "SELECT (SELECT c.id) AS r FROM s.c",
             ["id <- s.c.id", "id <- s.c.id"],
@@ -654,6 +673,30 @@ fn qualifier_in_a_nested_query_names_the_enclosing_from_item() {
             assert_eq!(
                 edges_with_schema(&sql, dialect, None),
                 vec![without],
+                "{dialect}, no default schema: {sql}"
+            );
+        }
+    }
+}
+
+// A CTE that a nested query defines does not take a qualifier its FROM
+// clause never reads: `c.id` names the enclosing `u AS c`.
+#[test]
+fn nested_cte_named_like_an_enclosing_alias_does_not_hide_it() {
+    for sql in [
+        "WITH c AS (SELECT a AS id FROM t) \
+         SELECT (WITH c AS (SELECT q AS id FROM p) SELECT c.id FROM x) AS r FROM u AS c",
+        "SELECT (WITH c AS (SELECT q AS id FROM p) SELECT c.id FROM x) AS r FROM u AS c",
+    ] {
+        for dialect in ["postgres", "snowflake"] {
+            assert_eq!(
+                edges_with_schema(sql, dialect, Some("public")),
+                vec!["id <- public.u.id"],
+                "{dialect}, default schema: {sql}"
+            );
+            assert_eq!(
+                edges_with_schema(sql, dialect, None),
+                vec!["id <- u.id"],
                 "{dialect}, no default schema: {sql}"
             );
         }
