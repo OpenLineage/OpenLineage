@@ -306,15 +306,19 @@ fn qualifier_in_a_nested_query_does_not_bind_to_an_enclosing_from_item() {
 
 #[test]
 fn cte_does_not_capture_a_qualifier_an_enclosing_from_item_introduces() {
-    // `orders` may name `raw.orders` in both, so CTE `Orders` must not take
-    // it; the qualifier stays as written, as on `main`.
+    // `orders` names `raw.orders` from the enclosing FROM clause in both,
+    // so CTE `Orders` must not take it, and it traces to that table.
     for sql in [
         "WITH Orders AS (SELECT id FROM wrong_src) \
          SELECT id FROM (SELECT 1) t JOIN raw.orders ON 1 = (SELECT orders.id FROM helper)",
         "WITH Orders AS (SELECT id FROM wrong_src) \
          SELECT (SELECT orders.id FROM helper) AS id FROM raw.orders",
     ] {
-        assert_eq!(edges(sql, "snowflake"), vec!["id <- orders.id"], "{sql}");
+        assert_eq!(
+            edges(sql, "snowflake"),
+            vec!["id <- raw.orders.id"],
+            "{sql}"
+        );
     }
 }
 
@@ -588,6 +592,67 @@ fn alias_or_cte_is_decided_by_the_qualifiers_own_from_clause() {
             );
             assert_eq!(
                 edges_with_schema(sql, dialect, None),
+                vec![without],
+                "{dialect}, no default schema: {sql}"
+            );
+        }
+    }
+}
+
+// A qualifier in a nested query that its own FROM clause does not introduce
+// names the FROM item of an enclosing SELECT with that name, before the CTE:
+// what an alias renames (`FROM c AS c` is the CTE, `FROM u AS c` is `u`), the
+// table an unaliased item names, and a derived table's own columns. A FROM
+// clause of the nested query that does introduce the name wins over them.
+#[test]
+fn qualifier_in_a_nested_query_names_the_enclosing_from_item() {
+    let cte = "WITH c AS (SELECT a AS id FROM t) ";
+    let cases = [
+        (
+            "SELECT (SELECT c.id) AS r FROM c AS c",
+            ["id <- public.t.a", "id <- t.a"],
+        ),
+        (
+            "SELECT (SELECT c.id) AS r FROM c",
+            ["id <- public.t.a", "id <- t.a"],
+        ),
+        (
+            "SELECT (SELECT c.id) AS r FROM u AS c",
+            ["id <- public.u.id", "id <- u.id"],
+        ),
+        // The alias is matched under the dialect's folding, as it is written
+        // in its FROM clause, not as the qualifier spells it.
+        (
+            "SELECT (SELECT c.id) AS r FROM u AS C",
+            ["id <- public.u.id", "id <- u.id"],
+        ),
+        (
+            "SELECT (SELECT c.id) AS r FROM c AS C",
+            ["id <- public.t.a", "id <- t.a"],
+        ),
+        (
+            "SELECT (SELECT c.id) AS r FROM s.c",
+            ["id <- s.c.id", "id <- s.c.id"],
+        ),
+        (
+            "SELECT (SELECT c.id) AS r FROM (SELECT b AS id FROM u) AS c",
+            ["id <- public.u.b", "id <- u.b"],
+        ),
+        (
+            "SELECT d.r FROM u AS c CROSS JOIN (SELECT c.id AS r FROM c) AS d",
+            ["r <- public.t.a", "r <- t.a"],
+        ),
+    ];
+    for dialect in ["postgres", "snowflake"] {
+        for (query, [with_schema, without]) in cases {
+            let sql = format!("{cte}{query}");
+            assert_eq!(
+                edges_with_schema(&sql, dialect, Some("public")),
+                vec![with_schema],
+                "{dialect}, default schema: {sql}"
+            );
+            assert_eq!(
+                edges_with_schema(&sql, dialect, None),
                 vec![without],
                 "{dialect}, no default schema: {sql}"
             );

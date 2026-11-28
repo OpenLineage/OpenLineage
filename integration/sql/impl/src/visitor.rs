@@ -279,9 +279,11 @@ impl Visit for Expr {
                     // the dialect's folding: `orders.x` is `t.x` in
                     // `FROM t AS ORDERS`, and `raw.orders.id` in
                     // `FROM raw.orders`, even with CTE `Orders` in scope.
-                    // A name an enclosing SELECT's FROM clause introduces
-                    // keeps the qualifier as written, unless that FROM item
-                    // is the CTE itself.
+                    // A name an enclosing SELECT's FROM clause introduces as
+                    // an alias (`FROM u AS c`, a derived table `AS c`, or
+                    // `FROM c AS c`) names what that alias renames; one it
+                    // introduces unaliased names that table (`s.c` for
+                    // `FROM s.c`), or the CTE when the FROM item is the CTE.
                     let as_written = DbTableMeta::new(
                         qualifier.clone(),
                         context.dialect(),
@@ -291,16 +293,19 @@ impl Visit for Expr {
                     let table = match context.correlated_table(&qualifier) {
                         Some(table) => table,
                         None => match context.cte_named_by(&qualifier) {
-                            Some(cte) => {
-                                let outer = context.enclosing_correlation_named_by(&qualifier);
-                                if context.is_relation_alias(&as_written)
-                                    || outer.is_some_and(|relation| relation[..] != [cte.clone()])
-                                {
-                                    as_written
-                                } else {
-                                    context.cte_table(cte)
-                                }
-                            }
+                            Some(cte) => match context.enclosing_correlation(&qualifier) {
+                                // The alias as its FROM clause spells it, which
+                                // is how the alias table holds it.
+                                Some((alias, true)) => context.resolved_alias(&DbTableMeta::new(
+                                    alias.clone(),
+                                    context.dialect(),
+                                    context.default_schema().clone(),
+                                    context.default_database().clone(),
+                                )),
+                                Some((relation, false)) => context.relation_table(relation.clone()),
+                                None if context.is_relation_alias(&as_written) => as_written,
+                                _ => context.cte_table(cte),
+                            },
                             None => as_written,
                         },
                     };

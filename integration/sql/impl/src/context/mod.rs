@@ -457,10 +457,11 @@ impl<'a> Context<'a> {
 
     /// The relation a qualifier names through the FROM clauses of the
     /// enclosing SELECTs, innermost first, compared under the dialect's
-    /// folding; `correlated_table` covers the SELECT being visited. Used
-    /// only to keep a CTE from capturing a qualifier that may name one of
-    /// those FROM items.
-    pub fn enclosing_correlation_named_by(&self, qualifier: &[Ident]) -> Option<&Vec<Ident>> {
+    /// folding, and whether that FROM clause introduced it as an alias;
+    /// `correlated_table` covers the SELECT being visited. Used for a
+    /// qualifier that CTE could take, to resolve it through the enclosing
+    /// FROM item instead.
+    pub fn enclosing_correlation(&self, qualifier: &[Ident]) -> Option<(&Vec<Ident>, bool)> {
         let [name] = qualifier else {
             return None;
         };
@@ -469,7 +470,8 @@ impl<'a> Context<'a> {
             .iter()
             .rev()
             .skip(1)
-            .find_map(|scope| scope.get(&key).map(|(relation, _)| relation))
+            .find_map(|scope| scope.get(&key))
+            .map(|(relation, is_alias)| (relation, *is_alias))
     }
 
     /// `name` with a reference to a CTE in scope replaced by the CTE's name
@@ -584,6 +586,29 @@ impl<'a> Context<'a> {
         let mut current = name;
         for frame in self.frames.iter().rev() {
             current = frame.aliases.resolve_table(current);
+        }
+        current
+    }
+
+    /// The table an alias in any frame stands for, following a chain of
+    /// aliases, or the name itself when it is not an alias. The placeholder
+    /// entries `With::visit` registers for CTE names map to an empty table
+    /// and are not followed, so `FROM c AS c` resolves to CTE `c` rather
+    /// than to nothing.
+    pub fn resolved_alias(&self, name: &DbTableMeta) -> DbTableMeta {
+        let mut current = name.clone();
+        for _ in 0..20 {
+            let next = self
+                .frames
+                .iter()
+                .rev()
+                .find_map(|frame| frame.aliases.get_table_from_alias(current.qualified_name()));
+            match next {
+                Some(table) if !table.name.is_empty() && *table != current => {
+                    current = table.clone();
+                }
+                _ => break,
+            }
         }
         current
     }
