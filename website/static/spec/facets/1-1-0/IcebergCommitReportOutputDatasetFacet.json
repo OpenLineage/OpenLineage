@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-3/IcebergCommitReportOutputDatasetFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-1-0/IcebergCommitReportOutputDatasetFacet.json",
   "$defs": {
     "IcebergCommitReportOutputDatasetFacet": {
       "allOf": [

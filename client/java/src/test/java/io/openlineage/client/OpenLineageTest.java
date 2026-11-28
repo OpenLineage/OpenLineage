@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -552,7 +553,7 @@ class OpenLineageTest {
   }
 
   @Test
-  void testIcebergReportFacetsPreserve64BitLongPrecision() throws JsonProcessingException {
+  void testIcebergReportFacetsPreserve64BitLongPrecision() {
     URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
     long largeSnapshotId = 7574105995826888948L;
@@ -589,6 +590,21 @@ class OpenLineageTest {
     assertThat(mergedOutputFacets.getIcebergCommitReport().getCommitMetrics().getTotalRecords())
         .isEqualTo(100000L);
 
+    String outputJson = OpenLineageClientUtils.toJson(mergedOutputFacets);
+    assertThat(outputJson).contains("\"snapshotId\":" + largeSnapshotId);
+    assertThat(outputJson).contains("\"addedDataFiles\":3");
+    OpenLineage.OutputDatasetOutputFacets roundTrippedOutputFacets =
+        OpenLineageClientUtils.fromJson(
+            outputJson, new TypeReference<OpenLineage.OutputDatasetOutputFacets>() {});
+    assertThat(roundTrippedOutputFacets.getIcebergCommitReport().getSnapshotId())
+        .isEqualTo(largeSnapshotId);
+    assertThat(
+            roundTrippedOutputFacets
+                .getIcebergCommitReport()
+                .getCommitMetrics()
+                .getAddedDataFiles())
+        .isEqualTo(3L);
+
     OpenLineage.IcebergScanReportInputDatasetFacet scanFacet =
         ol.newIcebergScanReportInputDatasetFacetBuilder()
             .snapshotId(largeSnapshotId)
@@ -616,5 +632,16 @@ class OpenLineageTest {
         .isEqualTo(4L);
     assertThat(mergedInputFacets.getIcebergScanReport().getScanMetrics().getTotalFileSizeInBytes())
         .isEqualTo(4096L);
+
+    String inputJson = OpenLineageClientUtils.toJson(mergedInputFacets);
+    assertThat(inputJson).contains("\"snapshotId\":" + largeSnapshotId);
+    assertThat(inputJson).contains("\"resultDataFiles\":4");
+    OpenLineage.InputDatasetInputFacets roundTrippedInputFacets =
+        OpenLineageClientUtils.fromJson(
+            inputJson, new TypeReference<OpenLineage.InputDatasetInputFacets>() {});
+    assertThat(roundTrippedInputFacets.getIcebergScanReport().getSnapshotId())
+        .isEqualTo(largeSnapshotId);
+    assertThat(roundTrippedInputFacets.getIcebergScanReport().getScanMetrics().getResultDataFiles())
+        .isEqualTo(4L);
   }
 }

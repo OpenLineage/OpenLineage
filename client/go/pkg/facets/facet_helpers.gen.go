@@ -822,7 +822,7 @@ func NewIcebergScanReportInputDatasetFacet(
 ) *IcebergScanReportInputDatasetFacet {
 	return &IcebergScanReportInputDatasetFacet{
 		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-2/IcebergScanReportInputDatasetFacet.json",
+		SchemaURL: "https://openlineage.io/spec/facets/1-1-0/IcebergScanReportInputDatasetFacet.json",
 	}
 }
 
@@ -1391,7 +1391,7 @@ func NewIcebergCommitReportOutputDatasetFacet(
 ) *IcebergCommitReportOutputDatasetFacet {
 	return &IcebergCommitReportOutputDatasetFacet{
 		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-3/IcebergCommitReportOutputDatasetFacet.json",
+		SchemaURL: "https://openlineage.io/spec/facets/1-1-0/IcebergCommitReportOutputDatasetFacet.json",
 	}
 }
 
