@@ -77,10 +77,10 @@ repos:
       - id: ruff
         name: ruff-lint
         args: [--fix]
-        files: ^client/python/|^dev/|^integration/common/|^integration/dbt/|^integration/odata/|^integration/spark/|^integration/sql/
+        files: ^client/python/|^dev/|^integration/common/|^integration/dbt/|^integration/odata/|^integration/spark/|^integration/sql/|^integration/prefect/
       - id: ruff-format
         name: ruff-format
-        files: ^client/python/|^dev/|^integration/common/|^integration/dbt/|^integration/odata/|^integration/spark/|^integration/sql/
+        files: ^client/python/|^dev/|^integration/common/|^integration/dbt/|^integration/odata/|^integration/spark/|^integration/sql/|^integration/prefect/
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:

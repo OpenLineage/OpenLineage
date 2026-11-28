@@ -407,6 +407,18 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run pytest tests/
 
+  unit-test-integration-prefect:
+    working_directory: ~/openlineage/integration/prefect
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - *checkout_project_root
+      - install_uv_python
+      - run: uv sync --extra dev
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest tests/
+
   build-integration-common:
     working_directory: ~/openlineage/integration/common
     docker:
