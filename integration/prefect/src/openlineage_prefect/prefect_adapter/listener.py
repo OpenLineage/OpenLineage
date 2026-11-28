@@ -491,7 +491,7 @@ class PrefectOpenLineageListener:
             if event_state in [RunState.COMPLETE, RunState.FAIL, RunState.ABORT]:
                 self.ol_adapter.client.close()
 
-    async def collect_and_process_runs(self) -> None:
+    async def collect_and_process_runs(self) -> None:  # NOQA: C901
         """Collects and processes Prefect events."""
 
         async with get_events_subscriber(filter=self.filter_criteria) as subscriber, self.client:
@@ -500,18 +500,22 @@ class PrefectOpenLineageListener:
             async for event in subscriber:
                 try:
                     entity_type = event.event.split(".")[1]
-                    prefect_state = event.event.split(".")[-1]
+                    try:
+                        prefect_state = event.resource.get("prefect.state-type").lower()
+                    except AttributeError:
+                        logger.info("Failed to get Prefect state for event %s", event.event)
+                        continue
 
-                    if prefect_state not in ["Running", "Completed", "Cancelled", "Failed", "Crashed"]:
+                    if prefect_state not in ["running", "completed", "cancelled", "failed", "crashed"]:
                         continue
                     match prefect_state:
-                        case "Running":
+                        case "running":
                             event_state = RunState.START
-                        case "Completed":
+                        case "completed":
                             event_state = RunState.COMPLETE
-                        case "Cancelled":
+                        case "cancelled":
                             event_state = RunState.ABORT
-                        case "Failed" | "Crashed":
+                        case "failed" | "crashed":
                             event_state = RunState.FAIL
 
                     if entity_type == "flow-run":
