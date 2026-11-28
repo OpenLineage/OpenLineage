@@ -1,7 +1,7 @@
 // Copyright 2018-2026 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::context::{Context, ContextFrame};
+use crate::context::{Context, ContextFrame, CorrelationName};
 use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
@@ -50,13 +50,8 @@ impl Visit for With {
                 // enclosing query, where they would capture references
                 // meant for real tables or enclosing CTEs.
                 context.resolve_subquery_cte_dependencies(&mut f);
-                let table = DbTableMeta::new(
-                    vec![cte.alias.name.clone()],
-                    context.dialect(),
-                    context.default_schema().clone(),
-                    context.default_database().clone(),
-                );
-                context.collect_with_table(f, table);
+                let table = context.cte_table(cte.alias.name.clone());
+                context.collect_with_table(f, table, true);
             }
 
             if i == 0 {
@@ -92,12 +87,15 @@ impl Visit for TableFactor {
                     None => effective_idents.clone(),
                 };
 
-                let table = DbTableMeta::new(
-                    idents.clone(),
-                    context.dialect(),
-                    context.default_schema().clone(),
-                    context.default_database().clone(),
-                );
+                let table = match &cte {
+                    Some(cte) => context.cte_table(cte.clone()),
+                    None => DbTableMeta::new(
+                        idents.clone(),
+                        context.dialect(),
+                        context.default_schema().clone(),
+                        context.default_database().clone(),
+                    ),
+                };
                 if let Some(alias) = alias {
                     context.add_table_alias(table, vec![alias.name.clone()]);
                 }
@@ -124,12 +122,7 @@ impl Visit for TableFactor {
                 if let Some(ident) = get_table_name_from_table_factor(table, &*context) {
                     if let Some(pivot_alias) = alias {
                         context.add_table_alias(
-                            DbTableMeta::new(
-                                context.resolve_cte_reference(ident),
-                                context.dialect(),
-                                context.default_schema().clone(),
-                                context.default_database().clone(),
-                            ),
+                            context.relation_table(ident),
                             vec![pivot_alias.clone().name],
                         );
                     }
@@ -158,7 +151,7 @@ impl Visit for TableFactor {
                         context.default_schema().clone(),
                         context.default_database().clone(),
                     );
-                    context.collect_with_table(frame, table);
+                    context.collect_with_table(frame, table, false);
                 } else {
                     context.collect(frame);
                 }
@@ -206,12 +199,7 @@ impl Visit for TableFactor {
                 if let Some(ident) = get_table_name_from_table_factor(table, &*context) {
                     if let Some(unpivot_alias) = alias {
                         context.add_table_alias(
-                            DbTableMeta::new(
-                                context.resolve_cte_reference(ident),
-                                context.dialect(),
-                                context.default_schema().clone(),
-                                context.default_database().clone(),
-                            ),
+                            context.relation_table(ident),
                             vec![unpivot_alias.clone().name],
                         );
                     }
@@ -291,41 +279,47 @@ impl Visit for Expr {
                     // the dialect's folding: `orders.x` is `t.x` in
                     // `FROM t AS ORDERS`, and `raw.orders.id` in
                     // `FROM raw.orders`, even with CTE `Orders` in scope.
-                    // A name an enclosing SELECT's FROM clause introduces
-                    // keeps the qualifier as written, unless that FROM item
-                    // is the CTE itself.
-                    let relation = match context.correlation_named_by(&qualifier) {
-                        Some(relation) => relation,
-                        None => match context.cte_named_by(&qualifier) {
-                            Some(cte) => {
-                                let as_written = DbTableMeta::new(
-                                    qualifier.clone(),
-                                    context.dialect(),
-                                    context.default_schema().clone(),
-                                    context.default_database().clone(),
-                                );
-                                let outer = context.enclosing_correlation_named_by(&qualifier);
-                                if context.is_relation_alias(&as_written)
-                                    || outer.is_some_and(|relation| relation[..] != [cte.clone()])
-                                {
-                                    qualifier
-                                } else {
-                                    vec![cte]
-                                }
-                            }
-                            None => qualifier,
-                        },
-                    };
-                    let table = DbTableMeta::new(
-                        relation,
+                    // A name an enclosing SELECT's FROM clause introduces as
+                    // an alias (`FROM u AS c`, a derived table `AS c`, or
+                    // `FROM c AS c`) names what that alias renames; one it
+                    // introduces unaliased names that table (`s.c` for
+                    // `FROM s.c`), or the CTE when the FROM item is the CTE.
+                    let as_written = DbTableMeta::new(
+                        qualifier.clone(),
                         context.dialect(),
                         context.default_schema().clone(),
                         context.default_database().clone(),
                     );
-                    context.add_column_ancestors(
-                        ColumnMeta::new(descendant, None),
-                        vec![ColumnMeta::new(ancestor, Some(table))],
-                    );
+                    // A table resolved through an enclosing FROM item is
+                    // final; the others still go through the alias table of
+                    // this SELECT's FROM clause.
+                    let own = context.correlated_table(&qualifier);
+                    let enclosing = match own {
+                        Some(_) => None,
+                        None => context
+                            .cte_named_by(&qualifier)
+                            .and_then(|_| context.enclosing_table(&qualifier)),
+                    };
+                    let column = ColumnMeta::new(descendant, None);
+                    if let Some(table) = enclosing {
+                        context.add_resolved_column_ancestors(
+                            column,
+                            vec![ColumnMeta::new(ancestor, Some(table))],
+                        );
+                    } else {
+                        let table = match own {
+                            Some(table) => table,
+                            None => match context.cte_named_by(&qualifier) {
+                                Some(_) if context.is_relation_alias(&as_written) => as_written,
+                                Some(cte) => context.cte_table(cte),
+                                None => as_written,
+                            },
+                        };
+                        context.add_column_ancestors(
+                            column,
+                            vec![ColumnMeta::new(ancestor, Some(table))],
+                        );
+                    }
                 }
             }
             Expr::Function(func) => func.visit(context)?,
@@ -648,12 +642,7 @@ impl Visit for Select {
             let t = self.from.first().unwrap();
             if let TableFactor::Table { alias, .. } = &t.relation {
                 if let Some(ident) = get_table_name_from_table_factor(&t.relation, &*context) {
-                    let table = DbTableMeta::new(
-                        context.resolve_cte_reference(ident),
-                        context.dialect(),
-                        context.default_schema().clone(),
-                        context.default_database().clone(),
-                    );
+                    let table = context.relation_table(ident);
                     if let Some(alias) = alias {
                         context.add_table_alias(table.clone(), vec![alias.clone().name]);
                     }
@@ -735,20 +724,44 @@ fn visit_from(from: &[TableWithJoins], context: &mut Context) -> Result<ContextF
     Ok(tables_frame)
 }
 
-/// The names a FROM item introduces for column qualifiers, each with the
-/// relation it stands for. An alias stands for itself and hides whatever
-/// it renames; an unaliased table stands for its full name (CTE references
-/// resolved) under its last name part; an unaliased parenthesized join
-/// introduces the names of its members, and an unaliased PIVOT or UNPIVOT
-/// those of the table it wraps.
-fn correlation_names(relation: &TableFactor, context: &Context) -> Vec<(Ident, Vec<Ident>)> {
+/// The names a FROM item introduces for column qualifiers. An alias stands
+/// for itself and hides whatever it renames, and an alias of a table also
+/// records that table (CTE references resolved); an unaliased table stands
+/// for its full name (CTE references resolved) under its last name part; an
+/// unaliased parenthesized join introduces the names of its members, and an
+/// unaliased PIVOT or UNPIVOT those of the table it wraps.
+fn correlation_names(relation: &TableFactor, context: &Context) -> Vec<(Ident, CorrelationName)> {
+    let table_name = || {
+        get_table_name_from_table_factor(relation, context)
+            .map(|name| context.resolve_cte_reference(name))
+            .filter(|name| !name.is_empty())
+    };
     if let Some(alias) = table_factor_alias(relation) {
-        return vec![(alias.name.clone(), vec![alias.name.clone()])];
+        let renames = match relation {
+            TableFactor::Table { .. } => table_name(),
+            _ => None,
+        };
+        return vec![(
+            alias.name.clone(),
+            CorrelationName {
+                relation: vec![alias.name.clone()],
+                is_alias: true,
+                renames,
+            },
+        )];
     }
     match relation {
-        TableFactor::Table { .. } => get_table_name_from_table_factor(relation, context)
-            .map(|name| context.resolve_cte_reference(name))
-            .and_then(|name| Some((name.last()?.clone(), name)))
+        TableFactor::Table { .. } => table_name()
+            .and_then(|name| {
+                Some((
+                    name.last()?.clone(),
+                    CorrelationName {
+                        relation: name,
+                        is_alias: false,
+                        renames: None,
+                    },
+                ))
+            })
             .into_iter()
             .collect(),
         TableFactor::NestedJoin {

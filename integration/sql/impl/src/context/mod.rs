@@ -160,11 +160,23 @@ pub struct Context<'a> {
     // Used to generate unique names for unaliased columns created from compound expressions
     column_id: u32,
     // For each SELECT being visited, innermost last: the names its own FROM
-    // clause introduces, keyed by `ident_key`, with the relation each one
-    // stands for. An alias stands for itself, so the alias table resolves it;
-    // an unaliased table stands for its full name (`orders` for
-    // `FROM raw.orders`).
-    correlation_names: Vec<HashMap<String, Vec<Ident>>>,
+    // clause introduces, keyed by `ident_key`.
+    correlation_names: Vec<HashMap<String, CorrelationName>>,
+}
+
+/// A name a FROM item introduces for column qualifiers.
+#[derive(Debug, Clone)]
+pub struct CorrelationName {
+    /// The relation the name stands for: an alias stands for itself, so
+    /// the alias table of its own SELECT resolves it; an unaliased table
+    /// stands for its full name (`orders` for `FROM raw.orders`).
+    pub relation: Vec<Ident>,
+    pub is_alias: bool,
+    /// For an alias of a table or CTE, that table's name as the FROM item
+    /// wrote it, CTE references resolved (`u` for `FROM u AS c`). None for
+    /// an unaliased table, and for the alias of a derived table, a table
+    /// function or anything else whose columns are keyed by the alias.
+    pub renames: Option<Vec<Ident>>,
 }
 
 /// The identifier a recorded table reference was written with, rebuilt
@@ -343,6 +355,28 @@ impl<'a> Context<'a> {
             .or_insert(HashSet::from_iter(ancestors));
     }
 
+    /// Like `add_column_ancestors`, for ancestors whose tables are already
+    /// resolved: they are recorded as they are, not looked up again in the
+    /// alias table of the SELECT being visited. A qualifier that names an
+    /// enclosing SELECT's FROM item is resolved through that FROM item, and
+    /// its table must not be taken by an alias of the nested SELECT that
+    /// happens to share its name: in
+    /// `SELECT (SELECT c.id FROM t AS u) FROM u AS c`, `c.id` is `u.id`,
+    /// not `t.id`.
+    pub fn add_resolved_column_ancestors(
+        &mut self,
+        column: ColumnMeta,
+        ancestors: Vec<ColumnMeta>,
+    ) {
+        if let Some(frame) = self.frames.last_mut() {
+            frame
+                .column_ancestry
+                .entry(column)
+                .or_default()
+                .extend(ancestors);
+        }
+    }
+
     // --- Context Manipulators ---
 
     pub fn push_frame(&mut self) {
@@ -441,12 +475,12 @@ impl<'a> Context<'a> {
     /// Opens the scope of a SELECT with the names its FROM clause
     /// introduces, each an alias or an unaliased table's last name part,
     /// with the relation it stands for. Closed by `pop_correlation_names`.
-    pub fn push_correlation_names(&mut self, names: Vec<(Ident, Vec<Ident>)>) {
+    pub fn push_correlation_names(&mut self, names: Vec<(Ident, CorrelationName)>) {
         let dialect = self.dialect.as_base();
         self.correlation_names.push(
             names
                 .into_iter()
-                .map(|(name, relation)| (ident_key(&name, dialect), relation))
+                .map(|(name, binding)| (ident_key(&name, dialect), binding))
                 .collect(),
         );
     }
@@ -455,32 +489,35 @@ impl<'a> Context<'a> {
         self.correlation_names.pop();
     }
 
-    /// The relation a column qualifier names through the FROM clause of the
-    /// SELECT being visited, compared under the dialect's folding, or None
-    /// when that FROM clause does not introduce it. Enclosing SELECTs are
-    /// not consulted, so a qualifier in a nested query that names an outer
-    /// FROM item is resolved as it is on `main`.
-    pub fn correlation_named_by(&self, qualifier: &[Ident]) -> Option<Vec<Ident>> {
+    /// The table a qualifier names through the nearest FROM clause of an
+    /// enclosing SELECT that introduces it, compared under the dialect's
+    /// folding, or None when none does; `correlated_table` covers the
+    /// SELECT being visited. The table comes from the FROM item alone, not
+    /// from the alias table, which an alias of a nested SELECT with the same
+    /// name could answer: a table alias is the table it renames (the CTE's
+    /// table for `FROM c AS c`), any other alias keeps its own name for its
+    /// own columns, and an unaliased item is the table it names.
+    pub fn enclosing_table(&self, qualifier: &[Ident]) -> Option<DbTableMeta> {
         let [name] = qualifier else {
             return None;
         };
         let key = ident_key(name, self.dialect().as_base());
-        self.correlation_names.last()?.get(&key).cloned()
-    }
-
-    /// Like `correlation_named_by`, but for the FROM clauses of the
-    /// enclosing SELECTs, innermost first. Used only to keep a CTE from
-    /// capturing a qualifier that may name one of those FROM items.
-    pub fn enclosing_correlation_named_by(&self, qualifier: &[Ident]) -> Option<&Vec<Ident>> {
-        let [name] = qualifier else {
-            return None;
-        };
-        let key = ident_key(name, self.dialect().as_base());
-        self.correlation_names
+        let binding = self
+            .correlation_names
             .iter()
             .rev()
             .skip(1)
-            .find_map(|scope| scope.get(&key))
+            .find_map(|scope| scope.get(&key))?;
+        Some(match (&binding.renames, binding.is_alias) {
+            (Some(table), _) => self.relation_table(table.clone()),
+            (None, true) => DbTableMeta::new(
+                binding.relation.clone(),
+                self.dialect,
+                self.default_schema.clone(),
+                self.default_database.clone(),
+            ),
+            (None, false) => self.relation_table(binding.relation.clone()),
+        })
     }
 
     /// `name` with a reference to a CTE in scope replaced by the CTE's name
@@ -489,6 +526,55 @@ impl<'a> Context<'a> {
         match self.cte_named_by(&name) {
             Some(cte) => vec![cte],
             None => name,
+        }
+    }
+
+    /// The table under which a CTE's columns are collected and looked up:
+    /// its name as defined, without the default schema or database. A real
+    /// table is always named with them, so `public.c` under default schema
+    /// `public` never shares the key of CTE `c`.
+    pub fn cte_table(&self, cte: Ident) -> DbTableMeta {
+        DbTableMeta::new(vec![cte], self.dialect, None, None)
+    }
+
+    /// The table a column qualifier names through the FROM clause of the
+    /// SELECT being visited, compared under the dialect's folding, or None
+    /// when that FROM clause does not introduce it. Enclosing SELECTs are not
+    /// consulted, so a qualifier in a nested query that names an outer FROM
+    /// item is resolved as it is on `main`. Whether the name is an alias
+    /// comes from that FROM clause, not from the alias table, which also
+    /// holds the aliases of enclosing queries: an alias, a derived table's
+    /// included, keeps its own name under the defaults, and an unaliased
+    /// reference to a CTE is the CTE's table.
+    pub fn correlated_table(&self, qualifier: &[Ident]) -> Option<DbTableMeta> {
+        let [name] = qualifier else {
+            return None;
+        };
+        let key = ident_key(name, self.dialect().as_base());
+        let binding = self.correlation_names.last()?.get(&key)?;
+        if binding.is_alias {
+            return Some(DbTableMeta::new(
+                binding.relation.clone(),
+                self.dialect,
+                self.default_schema.clone(),
+                self.default_database.clone(),
+            ));
+        }
+        Some(self.relation_table(binding.relation.clone()))
+    }
+
+    /// The table `name` refers to: the CTE's table when `name` is a
+    /// reference to a CTE in scope, and otherwise `name` under the default
+    /// schema and database.
+    pub fn relation_table(&self, name: Vec<Ident>) -> DbTableMeta {
+        match self.cte_named_by(&name) {
+            Some(cte) => self.cte_table(cte),
+            None => DbTableMeta::new(
+                name,
+                self.dialect,
+                self.default_schema.clone(),
+                self.default_database.clone(),
+            ),
         }
     }
 
@@ -878,7 +964,18 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn collect_with_table(&mut self, mut old: ContextFrame, from_table: DbTableMeta) {
+    /// Collects the frame of a CTE body or derived table as the columns of
+    /// `from_table`. `is_cte_body` says that `from_table` is the CTE being
+    /// defined, so an ancestor in `from_table` itself refers to that name
+    /// as it stood before this definition rather than to the body, and is
+    /// not taken as an ancestry of its own. A CTE's table carries no default
+    /// schema, so the alias table, whose entries do, cannot tell this.
+    pub fn collect_with_table(
+        &mut self,
+        mut old: ContextFrame,
+        from_table: DbTableMeta,
+        is_cte_body: bool,
+    ) {
         if let Some(frame) = self.frames.last_mut() {
             let old_ancestry = old
                 .column_ancestry
@@ -890,7 +987,7 @@ impl<'a> Context<'a> {
                 .collect::<HashMap<ColumnMeta, ColumnAncestors>>();
 
             let removed_circular_deps =
-                Context::remove_circular_deps(&old_ancestry, frame, from_table);
+                Context::remove_circular_deps(&old_ancestry, frame, from_table, is_cte_body);
 
             if !removed_circular_deps.is_empty() {
                 frame.column_ancestry.extend(old_ancestry);
@@ -906,13 +1003,16 @@ impl<'a> Context<'a> {
         old_ancestry: &HashMap<ColumnMeta, ColumnAncestors>,
         frame: &ContextFrame,
         from_table: DbTableMeta,
+        is_cte_body: bool,
     ) -> HashMap<ColumnMeta, ColumnAncestors> {
         let mut removed_circular_deps: HashMap<ColumnMeta, ColumnAncestors> = HashMap::new();
 
         for (key_column_meta, column_ancestors) in old_ancestry.iter() {
             for column_meta in column_ancestors {
                 if let Some(origin) = column_meta.origin.clone() {
-                    if frame.aliases.is_table_alias(&origin) && origin == from_table {
+                    if origin == from_table
+                        && (is_cte_body || frame.aliases.is_table_alias(&origin))
+                    {
                         continue;
                     }
                 }
@@ -1256,7 +1356,11 @@ mod tests {
         );
 
         let frame = context.pop_frame().unwrap();
-        context.collect_with_table(frame, DbTableMeta::new_default_dialect("alias".to_string()));
+        context.collect_with_table(
+            frame,
+            DbTableMeta::new_default_dialect("alias".to_string()),
+            false,
+        );
 
         let mut ancestry = Vec::from_iter(context.frames.last().unwrap().column_ancestry.iter());
         ancestry.sort_by(|a, b| a.0.cmp(b.0));
